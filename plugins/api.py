@@ -9,6 +9,7 @@
 
 """Interfaces for drill tutor plugins."""
 
+from cjktools import enum
 from html import *
 
 class Question(object):
@@ -18,7 +19,8 @@ class Question(object):
     >>> Question(options=['One'], answer='One', pivot='1').as_html(0)
     '<ul><li><input type="radio" name="question_0_0">One</input></li></ul>'
     """
-    def __init__(self, options=None, answer=None, pivot=None, stimulus=None):
+    def __init__(self, options=None, answer=None, pivot=None, stimulus=None,
+            instructions=None):
         if not (options and answer and pivot):
             raise ValueError('need options, answer and pivot as arguments')
             
@@ -41,25 +43,18 @@ class Question(object):
                 )
         output.append(UL(*option_choices))
         return '\n'.join(output)
-        
+
+#----------------------------------------------------------------------------#
+
+class NotImplementedError(Exception):
+    pass
+
 class QuestionFactoryI(object):
     """An abstract interface for factories which build questions."""
-    def getName(self):
-        """Returns the name of this factory."""
-        raise Exception
-    
-    def supportsKanjiQuestions(self):
-        """Returns True if kanji questions are supported, False otherwise."""
-        raise Exception
-            
-    def supportsWordQuestions(self):
-        """Returns True if word questions are supported, False otherwise."""
-        raise Exception
-        
-    def getWordQuestion(self, word):
+    def get_word_question(self, word):
         """Constructs and returns a new question based on the given word."""
-        raise Exception
+        raise NotImplementedError
     
-    def getKanjiQuestion(self, kanji):
+    def get_kanji_question(self, kanji):
         """Constructs and returns a new question based on the given kanji."""
-        raise Exception
+        raise NotImplementedError
