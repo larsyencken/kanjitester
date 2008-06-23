@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}
+Test question factories
+{% endblock %}
+
+{% block content %}
+<h1>Test question factories</h1>
+<h2>Plug-in architecture</h2>
+<p>Kanji tester contains a number of different plug-ins which each provide questions. This page allows you to generate questions for each of the different plug-ins, to get a feel for how they work.</p>
+
+<h2>Generate a test question</h2>
+<p>Use the following form to generate a test question.</p>
+<form method="POST">
+<table>
+  <tr>
+    <th style="vertical-align:middle !important">Kanji/word</th>
+    <td><input type="text" name="query" value="{{query}}"></td>
+  </tr>
+  <tr>
+    <td colspan="2" style="text-align:right !important">
+      <input type="submit" name="submit" value="Get questions">
+    </td>
+  </tr>
+</table>
+</form>
+
+{% if questions %}
+<h2>Questions</h2>
+<p>Found {{questions|length}} question{{questions|pluralize}}.</p>
+<form method="POST">
+<input type="hidden" name="query" value="{{query}}">
+<table>
+  <thead>
+    <tr>
+      <th>Question Factory</th>
+      <th>Example Question</th>
+    </tr>
+  </thead>
+  <tbody>
+{% for question in questions %}
+  <tr>
+    <td><p>{{question.factory_name.title}}</p></td>
+    <td>
+      <p>
+      {% autoescape off %}
+      {{question.as_html}}
+      {% endautoescape %}
+      </p>
+    </td>
+  </tr>
+{% endfor %}
+<tr>
+  <td colspan="2" style="text-align:right !important">
+    <input type="submit" name="submit" value="Check answers">
+  </td>
+</tr>
+</tbody>
+</table>
+{% endif %}
+{% endblock %}

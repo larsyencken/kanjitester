@@ -10,8 +10,6 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
-    # Example:
-    # (r'^kanji_test/', include('kanji_test.foo.urls')),
-
     (r'^admin/', include('django.contrib.admin.urls')),
+    (r'', include('drill_tutor.urls')),
 )

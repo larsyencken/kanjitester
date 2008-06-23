@@ -22,27 +22,33 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
     supports_kanji = True
     supports_words = True
     instructions = 'Choose the correct reading for the %s.'
+    verbose_name = 'reading question factory'
     
     def get_word_question(self, word):
-        if not scripts.containsKanji(word):
+        if not scripts.containsScript(scripts.Script.Kanji, word):
             raise ValueError("must pass in a word containing kanji")
         lexeme_surface = models.LexemeSurface.objects.get(surface=word)
-        real_readings = set(
-                [
+        real_readings = [
                     o['reading'] for o in \
                     models.LexemeReading.objects.filter(
                         lexeme=lexeme_surface.lexeme
                     ).values('reading')
                 ]
-            )
         options = list(
-                islice(self._random_reading_iter(len(word), real_readings)))
+                itertools.islice(
+                    self._random_reading_iter(len(word), real_readings), 
+                    5,
+                )
             )
-        options.append(random.choice(real_readings))
-        return Question(
+        answer = random.choice(real_readings)
+        options.append(answer)
+        return plugins.api.Question(
                 instructions=self.instructions % 'word',
                 options=options,
                 pivot=word,
+                answer=answer,
+                factory_name=self.verbose_name,
+                stimulus=word,
             )
             
     def get_kanji_question(self, kanji):
@@ -50,13 +56,20 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             raise ValueError("must pass in a kanji")
         kjd = kanjidic.Kanjidic.getCached()
         real_readings = kjd[kanji].allReadings
-        options = list(islice(self._random_reading_iter(1, real_readings, 5)))
-        options.append(random.choice(real_readings))
+        options = list(itertools.islice(
+                self._random_reading_iter(1, real_readings),
+                5,
+            ))
+        answer = random.choice(list(real_readings))
+        options.append(answer)
         random.shuffle(options)
-        return Question(
+        return plugins.api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 pivot=kanji,
+                answer=answer,
+                factory_name=self.verbose_name,
+                stimulus=kanji,
             )
     
     def _random_reading_iter(self, length, real_reading_set):
@@ -67,7 +80,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             readings = []
             for _i in xrange(length):
                 kanji = random.choice(all_kanji)
-                reading = random.choice(kjd[kanji].allReadings)
+                reading = random.choice(list(kjd[kanji].allReadings))
                 readings.append(reading)
             result = ''.join(readings)
             if result not in real_reading_set:

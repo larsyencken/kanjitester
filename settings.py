@@ -106,6 +106,10 @@ INSTALLED_APPS = (
 TEST_DATABASE_CHARSET = 'utf-8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
+INSTALLED_QUESTION_PLUGINS = (
+    'plugins.basic.ReadingQuestionFactory',
+)
+
 # Overwrite any of these settings with local customizations.
 try:
     from localSettings import *
