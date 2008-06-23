@@ -3,3 +3,6 @@ syntax: glob
 *.pyo
 *.orig
 localSettings.py
+media
+.DS_Store
+*.db
