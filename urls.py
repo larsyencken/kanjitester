@@ -13,6 +13,5 @@ urlpatterns = patterns('',
     # Example:
     # (r'^kanji_test/', include('kanji_test.foo.urls')),
 
-    # Uncomment this for admin:
-#     (r'^admin/', include('django.contrib.admin.urls')),
+    (r'^admin/', include('django.contrib.admin.urls')),
 )

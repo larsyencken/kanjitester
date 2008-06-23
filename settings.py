@@ -61,7 +61,7 @@ MEDIA_URL = '/media/'
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/admin/'
+ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'dc6hz00zcf8wym4hsx0jf-%c)_hq%n)rt55@*!(*3y9^48pj-s'
@@ -80,12 +80,17 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.doc.XViewMiddleware',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'context_processors.basic_vars',
+)
+
 ROOT_URLCONF = 'kanji_test.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    path.join(PROJECT_ROOT, 'templates')
 )
 
 INSTALLED_APPS = (
@@ -97,6 +102,9 @@ INSTALLED_APPS = (
     'drill_tutor',
     'lexicon',
 )
+
+TEST_DATABASE_CHARSET = 'utf-8'
+TEST_DATABASE_COLLATION = 'utf8_bin'
 
 # Overwrite any of these settings with local customizations.
 try:
