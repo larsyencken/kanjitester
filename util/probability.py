@@ -1,0 +1,102 @@
+# -*- coding: utf-8 -*-
+# 
+#  probability.py
+#  kanji_test
+#  
+#  Created by Lars Yencken on 2008-06-30.
+#  Copyright 2008 Lars Yencken. All rights reserved.
+# 
+
+import math
+
+from nltk import probability as nltk_prob
+from cjktools.common import sopen
+
+class FreqDist(nltk_prob.FreqDist):
+    """
+    >>> x = FreqDist()
+    >>> x.inc('a', 5)
+    >>> x['a']
+    5
+    """
+    @staticmethod
+    def from_file(filename):
+        dist = FreqDist()
+        i_stream = sopen(filename)
+        for line in i_stream:
+            symbol, count = line.rstrip().split()
+            dist.inc(symbol, int(count))
+        i_stream.close()
+        return dist
+    
+    def to_file(self, filename):
+        o_stream = sopen(filename, 'w')
+        for sample in self.samples():
+            count = self[sample]
+            sample = unicode(sample)
+            if len(sample.split()) > 1:
+                raise ValueError('sample contains whitespace')
+            print >> o_stream, u'%s %d' % (sample, count)
+        o_stream.close()
+        return
+
+class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
+    """
+    >>> x = ConditionalFreqDist()
+    >>> x['dog'].inc('barks')
+    >>> x['dog'].freq('barks')
+    1.0
+    >>> x['cat'].inc('purrs', 1)
+    >>> x['cat'].inc('scratches', 7)
+    >>> x['cat'].samples()
+    ['purrs', 'scratches']
+    >>> x['cat'].freq('scratches')
+    0.875
+    """
+    @staticmethod
+    def from_file(filename):
+        dist = CondFreqDist()
+        i_stream = sopen(filename)
+        for line in i_stream:
+            condition, symbol, count = line.rstrip().split()
+            count = int(count)
+            dist.inc(condition, symbol, count)
+        i_stream.close()
+        return dist
+    
+    def to_file(self, filename):
+        """Stores the distribution to a file."""
+        o_stream = sopen(filename, 'w')
+        for condition in self.conditions():
+            cond_dist = self[condition]
+            for sample in cond_dist.samples():
+                count = cond_dist[sample]
+                print >> o_stream, u'%s %s %d' % (condition, sample, count)
+        o_stream.close()
+        return
+
+class UnsupportedMethodError(Exception):
+    pass
+
+class FixedProbDist(nltk_prob.ProbDistI):
+    """A fixed probability distribution, not based on a FreqDist object."""
+    def __init__(self, samples):
+        cdf = 0.0
+        backing_dist = {}
+        for sample, pdf in samples:
+            backing_dist[sample] = pdf
+            cdf += pdf
+        
+        if abs(cdf - 1.0) > 1e-8:
+            raise ValueError("probability mass must sum to 1.0")
+
+        self._prob_dist = backing_dist        
+    
+    def max(self):
+        raise UnsupportedMethodError
+    
+    def prob(self, key):
+        return self._prob_dist.get(key, 0.0)
+    
+    def logprob(self, key):
+        return math.log(self.prob(key))

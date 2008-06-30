@@ -13,23 +13,33 @@ from xml.etree import cElementTree as ElementTree
 
 from cjktools.common import sopen
 import consoleLog
+from nltk.probability import FreqDist
 
 from lexicon import models
 import settings
 
 log = consoleLog.default
-_jmDictPath = path.join(settings.DATA_DIR, 'JMdict.gz')
+_jmdict_path = path.join(settings.DATA_DIR, 'JMdict.gz')
+_word_dist_path = path.join(settings.DATA_DIR, 'corpus',
+        'jp_word_corpus_counts.gz')
 
 #----------------------------------------------------------------------------#
 
-def load_lexicon(filename=_jmDictPath):
+def load_lexicon(filename=_jmdict_path):
     """
     Reloads the lexicon into the database.
     """
-    log.start('Rebuilding the lexicon', nSteps=3)
+    log.start('Rebuilding the lexicon', nSteps=5)
     log.log('Clearing the database')
+    models.LexemeSurfaceDist.objects.all().delete()
     models.Lexeme.objects.all().delete()
 
+    log.log('Loading kanji reading distribution')
+    models.KanjiReadingProb.initialise()
+    
+    log.log('Loading lexeme surface distribution')
+    models.LexemeSurfaceProb.initialise()
+    
     log.start('Loading JMdict', nSteps=2)
     
     log.log('Reading from %s' % path.basename(filename))
@@ -43,8 +53,9 @@ def load_lexicon(filename=_jmDictPath):
     log.finish()
     
     log.log('Storing lexemes', newLine=False)
-    for lexeme in consoleLog.withProgress(tree.getchildren(), 100):
-        _store_lexeme(lexeme)
+    for lexeme_node in consoleLog.withProgress(tree.getchildren(), 100):
+        lexeme = _store_lexeme(lexeme_node)
+        # Store probability distribution.
     log.finish()
 
 #----------------------------------------------------------------------------#
@@ -83,7 +94,8 @@ def _store_lexeme(lexeme_node):
             language = _get_language(language_code)
             lexeme.sense_set.create(gloss=gloss.text,
                     language=language)
-    return
+
+    return lexeme
 
 _known_languages = {}
 def _get_language(language_code):
