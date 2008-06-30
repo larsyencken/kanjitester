@@ -45,8 +45,10 @@ class Question(object):
         option_choices = []
         for option in self.options:
             option_name = 'question_%d' % self.question_id
+            if option_choices:
+                option_choices.append(BR())
             option_choices.append(
-                    INPUT(option, type='radio', name=option_name)
+                    INPUT('&nbsp;' + option, type='radio', name=option_name)
                 )
         output.append(P(*option_choices))
         output.append(INPUT(
