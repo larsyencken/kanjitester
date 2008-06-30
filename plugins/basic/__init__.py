@@ -42,6 +42,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             )
         answer = random.choice(real_readings)
         options.append(answer)
+        random.shuffle(options)
         return plugins.api.Question(
                 instructions=self.instructions % 'word',
                 options=options,
