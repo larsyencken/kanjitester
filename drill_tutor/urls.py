@@ -10,5 +10,6 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('drill_tutor.views',
-    url(r'test_factories/$', 'test_factories', name="test_factories"),
+    url(r'^test_factories/$', 'test_factories', name="drill_tutor_test"),
+    url(r'^$', 'test_factories', name='drill_tutor_home'),
 )
