@@ -29,21 +29,12 @@ def load_lexicon(filename=_jmdict_path):
     """
     Reloads the lexicon into the database.
     """
-    log.start('Rebuilding the lexicon', nSteps=6)
-    log.log('Clearing the database')
-    models.LexemeSurfaceDist.objects.all().delete()
-    models.Lexeme.objects.all().delete()
-
-    log.log('Loading kanji distribution')
-    models.KanjiProb.initialise()
-
-    log.log('Loading kanji reading distribution')
-    models.KanjiReadingProb.initialise()
-    
-    log.log('Loading lexeme surface distribution')
-    models.LexemeSurfaceProb.initialise()
+    log.start('Rebuilding the lexicon', nSteps=2)
+    log.log('Loading probability distributions')
+    models.initialise()
     
     log.start('Loading JMdict', nSteps=2)
+    models.Lexeme.objects.all().delete()
     
     log.log('Reading from %s' % path.basename(filename))
     iStream = sopen(filename, 'r', 'byte')
@@ -58,7 +49,7 @@ def load_lexicon(filename=_jmdict_path):
     log.log('Storing lexemes', newLine=False)
     for lexeme_node in consoleLog.withProgress(tree.getchildren(), 100):
         lexeme = _store_lexeme(lexeme_node)
-        # Store probability distribution.
+    log.finish()
     log.finish()
 
 #----------------------------------------------------------------------------#

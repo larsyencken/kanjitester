@@ -373,3 +373,11 @@ class KanjiReading(models.Model):
 
     def __unicode__(self):
         return u'%s /%s/' % (self.kanji, self.reading)
+
+def initialise():
+    Kanji.initialise()
+    KanjiProb.initialise()
+    KanjiReadingProb.initialise()
+    KanjiReadingCondProb.initialise()
+    LexemeSurfaceProb.initialise()
+    #LexemeReadingProb.initialise()
