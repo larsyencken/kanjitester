@@ -20,7 +20,7 @@ class Question(object):
     '<ul><li><input type="radio" name="question_0">One</input></li></ul>'
     """
     def __init__(self, options=None, answer=None, pivot=None, stimulus=None,
-            instructions=None, factory_name=None):
+            instructions=None, factory=None):
         if not (options and answer and pivot):
             raise ValueError('need options, answer and pivot as arguments')
             
@@ -29,7 +29,7 @@ class Question(object):
         self.pivot = pivot
         self.stimulus = stimulus
         self.question_id = None
-        self.factory_name = factory_name
+        self.factory = factory
         self.instructions = instructions
     
     def as_html(self):
@@ -50,7 +50,7 @@ class Question(object):
             option_choices.append(
                     INPUT('&nbsp;' + option, type='radio', name=option_name)
                 )
-        output.append(P(*option_choices))
+        output.append(P(*option_choices, **{'class': 'option_choices'}))
         output.append(INPUT(
                 type="hidden",
                 name="answer_%d" % self.question_id,

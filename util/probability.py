@@ -53,14 +53,46 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
     >>> x['cat'].freq('scratches')
     0.875
     """
+    
+    @classmethod
+    def from_file(cls, filename, format='row'):
+        if format == 'row':
+            return cls.from_file_row_format(filename)
+        elif format == 'packed':
+            return cls.from_file_packed_format(filename)
+        
+        raise ValueError('invalid file format %s' % format)
+
     @staticmethod
-    def from_file(filename):
-        dist = CondFreqDist()
+    def from_file_row_format(filename):
+        """
+        Loads a distribution from a row_format file.
+        """
+        dist = ConditionalFreqDist()
         i_stream = sopen(filename)
         for line in i_stream:
             condition, symbol, count = line.rstrip().split()
             count = int(count)
-            dist.inc(condition, symbol, count)
+            dist[condition].inc(symbol, count)
+        i_stream.close()
+        return dist
+    
+    @staticmethod
+    def from_file_packed_format(filename):
+        """
+        Loads a distribution from a packed format file. Rows in this file
+        look like:
+        
+        conditionA symA:1,symB:10
+        """
+        dist = ConditionalFreqDist()
+        i_stream = sopen(filename)
+        for line in i_stream:
+            condition, symbol_counts = line.split()
+            for symbol_count in symbol_counts.split(','):
+                symbol, count_str = symbol_count.split(':')
+                count = int(count_str)
+            dist[condition].inc(symbol, count)
         i_stream.close()
         return dist
     
@@ -74,6 +106,18 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
                 print >> o_stream, u'%s %s %d' % (condition, sample, count)
         o_stream.close()
         return
+    
+    def without_condition(self):
+        """
+        Returns a new frequency distribution where the condition is
+        ignored.
+        """
+        result = FreqDist()
+        for condition in self.conditions():
+            cond_dist = self[condition]
+            for symbol in cond_dist.samples():
+                result.inc(symbol, cond_dist[symbol])
+        return result
 
 class UnsupportedMethodError(Exception):
     pass

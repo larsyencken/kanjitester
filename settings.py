@@ -61,7 +61,7 @@ MEDIA_URL = '/media/'
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+ADMIN_MEDIA_PREFIX = '/admin_media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'dc6hz00zcf8wym4hsx0jf-%c)_hq%n)rt55@*!(*3y9^48pj-s'
@@ -108,7 +108,13 @@ TEST_DATABASE_COLLATION = 'utf8_bin'
 
 INSTALLED_QUESTION_PLUGINS = (
     'plugins.basic.ReadingQuestionFactory',
+    'plugins.basic.SurfaceQuestionFactory',
+    'plugins.basic.GlossQuestionFactory',
 )
+
+N_QUESTION_CHOICES = 6
+
+DEFAULT_LANGUAGE_CODE = 'eng'
 
 # Overwrite any of these settings with local customizations.
 try:

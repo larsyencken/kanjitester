@@ -29,10 +29,13 @@ def load_lexicon(filename=_jmdict_path):
     """
     Reloads the lexicon into the database.
     """
-    log.start('Rebuilding the lexicon', nSteps=5)
+    log.start('Rebuilding the lexicon', nSteps=6)
     log.log('Clearing the database')
     models.LexemeSurfaceDist.objects.all().delete()
     models.Lexeme.objects.all().delete()
+
+    log.log('Loading kanji distribution')
+    models.KanjiProb.initialise()
 
     log.log('Loading kanji reading distribution')
     models.KanjiReadingProb.initialise()

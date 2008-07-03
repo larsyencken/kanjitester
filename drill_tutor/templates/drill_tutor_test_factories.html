@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+  <link rel="stylesheet" href="{{media_url}}css/tutor.css" type="text/css" charset="utf-8">
+{% endblock %}
+
 {% block title %}
 Test question factories
 {% endblock %}
@@ -33,20 +37,19 @@ Test question factories
 <table>
   <thead>
     <tr>
-      <th>Question Factory</th>
+      <th width="20%">Question Factory</th>
       <th>Example Question</th>
     </tr>
   </thead>
   <tbody>
 {% for question in questions %}
   <tr>
-    <td><p>{{question.factory_name.title}}</p></td>
+    <td><p>{{question.factory.question_type.capitalize}}<br>
+      [<em>{{question.factory.question_variant.lower}}</em>]</p></td>
     <td>
-      <p>
       {% autoescape off %}
       {{question.as_html}}
       {% endautoescape %}
-      </p>
     </td>
   </tr>
 {% endfor %}
