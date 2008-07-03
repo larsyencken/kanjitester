@@ -50,7 +50,6 @@ def load_lexicon(filename=_jmdict_path):
     for lexeme_node in consoleLog.withProgress(tree.getchildren(), 100):
         lexeme = _store_lexeme(lexeme_node)
     log.finish()
-    log.finish()
 
 #----------------------------------------------------------------------------#
 
