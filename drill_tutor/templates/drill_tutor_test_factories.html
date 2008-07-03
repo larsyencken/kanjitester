@@ -21,6 +21,11 @@ Test question factories
     <th style="vertical-align:middle !important">Kanji/word</th>
     <td><input type="text" name="query" value="{{query}}"></td>
   </tr>
+  {% if error %}
+    <tr>
+      <td colspan="2"><p class="error">{{error}}</p></td>
+    </tr>
+  {% endif %}
   <tr>
     <td colspan="2" style="text-align:right !important">
       <input type="submit" name="submit" value="Get questions">

@@ -102,6 +102,7 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
         while len(options) < settings.N_QUESTION_CHOICES:
             random_kanji = models.KanjiProb.sample().symbol
             options.add(random_kanji)
+        options = list(options)
         random.shuffle(options)
         return plugins.api.Question(
                 instructions=self.instructions % 'kanji',
@@ -157,7 +158,7 @@ class GlossQuestionFactory(plugins.api.QuestionFactoryI):
         options = list(options)
         random.shuffle(options)
         return plugins.api.Question(
-                instructions=self.instructions % 'word',
+                instructions=self.instructions % 'kanji',
                 options=options,
                 answer=answer,
                 pivot=kanji,
