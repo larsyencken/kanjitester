@@ -9,8 +9,16 @@
 
 from django.conf.urls.defaults import *
 
-urlpatterns = patterns('',
-    (r'^admin/', include('django.contrib.admin.urls')),
-    url(r'^media/', 'views.media', name='media'),
-    (r'', include('drill_tutor.urls')),
-)
+import settings
+
+base_patterns = ('',
+        (r'^admin/', include('django.contrib.admin.urls')),
+        (r'', include('drill_tutor.urls')),
+    )
+
+if not settings.DEPLOYED:
+    base_patterns += (
+            url(r'^media/', 'views.media', name='media'),
+        )
+
+urlpatterns = patterns(*base_patterns)

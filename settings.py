@@ -116,6 +116,9 @@ N_QUESTION_CHOICES = 6
 
 DEFAULT_LANGUAGE_CODE = 'eng'
 
+# When True, enables the debugging media view.
+DEPLOYED = False
+
 # Overwrite any of these settings with local customizations.
 try:
     from localSettings import *
