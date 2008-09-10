@@ -8,11 +8,14 @@
 # 
 
 from django.conf.urls.defaults import *
+from django.contrib import admin
 
 import settings
 
+admin.autodiscover()
+
 base_patterns = ('',
-        (r'^admin/', include('django.contrib.admin.urls')),
+        (r'^admin/(.*)', admin.site.root),
         (r'', include('drill_tutor.urls')),
     )
 
