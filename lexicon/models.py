@@ -42,9 +42,8 @@ class Lexeme(models.Model):
         
 class LexemeSurface(models.Model):
     """A surface rendering of the word."""
-    lexeme = models.ForeignKey(Lexeme, related_name='surface_set',
-            raw_id_admin=True)
-    surface = models.CharField(max_length=60, db_index=True, core=True)
+    lexeme = models.ForeignKey(Lexeme, related_name='surface_set')
+    surface = models.CharField(max_length=60, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
 
     @staticmethod
@@ -68,9 +67,8 @@ class LexemeSurface(models.Model):
 
 class LexemeReading(models.Model):
     """A valid pronunciation for a lexeme."""
-    lexeme = models.ForeignKey(Lexeme, related_name='reading_set',
-            raw_id_admin=True)
-    reading = models.CharField(max_length=30, db_index=True, core=True)
+    lexeme = models.ForeignKey(Lexeme, related_name='reading_set')
+    reading = models.CharField(max_length=30, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
     
     class Admin:
@@ -94,7 +92,7 @@ class LexemeSense(models.Model):
     """A word sense."""
     lexeme = models.ForeignKey(Lexeme, related_name='sense_set')
     language = models.ForeignKey(Language)
-    gloss = models.CharField(max_length=300, core=True)
+    gloss = models.CharField(max_length=300)
 
     class Admin:
         list_display = ('lexeme', 'language', 'gloss')
@@ -314,7 +312,7 @@ class LexemeReadingProb(CondProb):
 class Kanji(models.Model):
     """A single unique kanji and its meaning."""
     kanji = models.CharField(max_length=3, primary_key=True)
-    gloss = models.CharField(max_length=100)
+    gloss = models.CharField(max_length=200)
     
     def _get_prob(self):
         return KanjiProb.objects.get(symbol=kanji)
@@ -336,8 +334,11 @@ class Kanji(models.Model):
         KanjiReading.objects.all().delete()
         Kanji.objects.all().delete()
         kjd = kanjidic.Kanjidic.getCached()
+        max_gloss_len = [f for f in cls._meta.fields \
+                if f.name == 'gloss'][0].max_length
         for entry in kjd.itervalues():
-            kanji = Kanji(kanji=entry.kanji, gloss=', '.join(entry.gloss))
+            truncated_gloss = ', '.join(entry.gloss)[:max_gloss_len]
+            kanji = Kanji(kanji=entry.kanji, gloss=truncated_gloss)
             kanji.save()
             for reading in cls._clean_readings(entry.onReadings):
                 kanji.reading_set.create(reading=reading, reading_type='o')

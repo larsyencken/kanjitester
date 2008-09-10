@@ -76,6 +76,8 @@ def _store_lexeme(lexeme_node):
     for reading in reading_list:
         lexeme.reading_set.create(reading=reading)
 
+    (gloss_field,) = [f for f in models.Kanji._meta.fields \
+            if f.name == 'gloss']
     for sense in sense_list:
         for gloss in sense.findall('gloss'):
             code_keys = [key for key in gloss.keys() if key.endswith('lang')]
@@ -85,7 +87,9 @@ def _store_lexeme(lexeme_node):
             else:
                 language_code = 'eng'
             language = _get_language(language_code)
-            lexeme.sense_set.create(gloss=gloss.text,
+            # Truncate the gloss to our database size.
+            gloss_text = gloss.text[:gloss_field.max_length]
+            lexeme.sense_set.create(gloss=gloss_text,
                     language=language)
 
     return lexeme
