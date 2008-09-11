@@ -12,5 +12,6 @@ import settings
 def basic_vars(request):
     """Provides some basic variables for the request."""
     return {
-        'media_url':    settings.MEDIA_URL,
+        'media_url':        settings.MEDIA_URL,
+        'admin_media_url':  settings.ADMIN_MEDIA_PREFIX,
     }

@@ -16,12 +16,17 @@ admin.autodiscover()
 
 base_patterns = ('',
         (r'^admin/(.*)', admin.site.root),
-        (r'', include('drill_tutor.urls')),
     )
 
+# Optional media view for debugging and testing.
 if not settings.DEPLOYED:
     base_patterns += (
             url(r'^media/', 'views.media', name='media'),
         )
+
+# Add the default pages.
+base_patterns += (
+        (r'', include('drill_tutor.urls')),
+    )
 
 urlpatterns = patterns(*base_patterns)
