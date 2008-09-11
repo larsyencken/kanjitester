@@ -29,18 +29,17 @@ def load_lexicon(filename=_jmdict_path):
     """
     Reloads the lexicon into the database.
     """
-    log.start('Rebuilding the lexicon', nSteps=2)
+    log.start('Rebuilding the lexicon', nSteps=3)
+    
     log.log('Loading probability distributions')
     models.initialise()
     
     log.start('Loading JMdict', nSteps=2)
     models.Lexeme.objects.all().delete()
-    
     log.log('Reading from %s' % path.basename(filename))
     iStream = sopen(filename, 'r', 'byte')
     data = iStream.read()
     iStream.close()
-    
     log.log('Parsing XML tree')
     tree = ElementTree.fromstring(data)
     del data
@@ -49,6 +48,7 @@ def load_lexicon(filename=_jmdict_path):
     log.log('Storing lexemes', newLine=False)
     for lexeme_node in consoleLog.withProgress(tree.getchildren(), 100):
         lexeme = _store_lexeme(lexeme_node)
+    
     log.finish()
 
 #----------------------------------------------------------------------------#
