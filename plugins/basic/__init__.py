@@ -12,7 +12,6 @@ import itertools
 
 from cjktools import scripts
 from cjktools import sequences
-from cjktools.resources import kanjidic
 
 import plugins.api
 from lexicon import models
@@ -55,13 +54,14 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             )
             
     def get_kanji_question(self, kanji):
-        if scripts.scriptType(kanji) != scripts.Script.Kanji:
+        if scripts.scriptType(kanji) != scripts.Script.Kanji or \
+                len(kanji) != 1:
             raise ValueError("must pass in a kanji")
-        kjd = kanjidic.Kanjidic.getCached()
-        real_readings = kjd[kanji].allReadings
+        real_readings = [r.reading for r in \
+                models.KanjiReading.objects.filter(kanji=kanji)]
         options = list(itertools.islice(
                 self._random_reading_iter(1, real_readings),
-                5,
+                settings.N_QUESTION_CHOICES - 1,
             ))
         answer = random.choice(list(real_readings))
         options.append(answer)
