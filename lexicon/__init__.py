@@ -10,3 +10,8 @@
 """
 An application which provides basic and exact lexical access.
 """
+
+import load_lexicon
+
+def build():
+    load_lexicon.load_lexicon()

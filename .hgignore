@@ -6,3 +6,8 @@ localSettings.py
 media
 .DS_Store
 *.db
+*.so
+*.os
+plugins/visual_similarity/metrics/stroke.c
+.sconsign.dblite
+config.log

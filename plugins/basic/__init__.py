@@ -39,7 +39,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
         options = list(
                 itertools.islice(
                     self._random_reading_iter(len(word), real_readings), 
-                    settings.N_QUESTION_CHOICES - 1,
+                    settings.N_DISTRACTORS,
                 )
             )
         options.append(answer)
@@ -61,7 +61,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
                 models.KanjiReading.objects.filter(kanji=kanji)]
         options = list(itertools.islice(
                 self._random_reading_iter(1, real_readings),
-                settings.N_QUESTION_CHOICES - 1,
+                settings.N_DISTRACTORS,
             ))
         answer = random.choice(list(real_readings))
         options.append(answer)
@@ -98,11 +98,11 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
     
     def get_kanji_question(self, kanji):
         kanji_row = models.Kanji.objects.get(kanji=kanji)
-        options = set([kanji])
-        while len(options) < settings.N_QUESTION_CHOICES:
+        option_set = set([kanji])
+        while len(option_set) < settings.N_DISTRACTORS + 1:
             random_kanji = models.KanjiProb.sample().symbol
-            options.add(random_kanji)
-        options = list(options)
+            option_set.add(random_kanji)
+        options = list(option_set)
         random.shuffle(options)
         return plugins.api.Question(
                 instructions=self.instructions % 'kanji',
@@ -119,15 +119,16 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
                 code=settings.DEFAULT_LANGUAGE_CODE)
         gloss = ', '.join(r.gloss for r in \
                 lexeme.sense_set.filter(language=language))
-        option_chars = map(list, [word] * settings.N_QUESTION_CHOICES)
+        option_chars = map(list, [word] * settings.N_DISTRACTORS)
         for j in xrange(len(word)):
             if scripts.scriptType(word[j]) != scripts.Script.Kanji:
                 continue
             
-            for i in xrange(1, settings.N_QUESTION_CHOICES):
+            for i in xrange(settings.N_DISTRACTORS):
                 option_chars[i][j] = models.KanjiProb.sample().symbol
         
         options = [''.join(option) for option in option_chars]
+        options.append(word)
         random.shuffle(options)
         return plugins.api.Question(
                 instructions=self.instructions % 'word',
@@ -139,7 +140,7 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
             )
 
 class GlossQuestionFactory(plugins.api.QuestionFactoryI):
-    """Asks the user to identify a kanji or word given its gloss."""
+    """Asks the user to identify the correct gloss for the stimulus."""
     supports_kanji = True
     supports_words = True
     question_type = 'identify gloss given kanji'
@@ -151,7 +152,7 @@ class GlossQuestionFactory(plugins.api.QuestionFactoryI):
         answer = kanji_row.gloss
         stimulus = kanji
         options = set([answer])
-        while len(options) < settings.N_QUESTION_CHOICES:
+        while len(options) < settings.N_DISTRACTORS + 1:
             options.add(
                     models.KanjiProb.sample().kanji.gloss,
                 )
@@ -170,7 +171,7 @@ class GlossQuestionFactory(plugins.api.QuestionFactoryI):
         word_row = models.LexemeSurface.objects.get(surface=word).lexeme
         answer = word_row.random_sense.gloss
         options = set([answer])
-        while len(options) < settings.N_QUESTION_CHOICES:
+        while len(options) < settings.N_DISTRACTORS + 1:
             while True:
                 random_surface = models.LexemeSurface.sample()
                 if scripts.containsScript(scripts.Script.Kanji,

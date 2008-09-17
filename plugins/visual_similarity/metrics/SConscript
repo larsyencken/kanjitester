@@ -1,0 +1,12 @@
+# 
+#  SConscript
+#  kanji_test
+#  
+#  Created by Lars Yencken on 2008-09-15.
+#  Copyright 2008 Lars Yencken. All rights reserved.
+# 
+
+Import('env')
+
+stroke = env.Pyrex('stroke.c', 'stroke.pyx')
+env.SharedLibrary('stroke', stroke)

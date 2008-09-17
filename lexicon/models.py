@@ -15,16 +15,13 @@ from cjktools.common import sopen
 from cjktools.resources import kanjidic
 from cjktools import scripts
 
-from util import probability
+from util import probability, prob_models
 import settings
 
 #----------------------------------------------------------------------------#
 
 class Lexeme(models.Model):
     """A single word or phrase."""
-    class Admin:
-        pass
-    
     def _get_default_sense_set(self):
         language = Language.objects.get(code=settings.DEFAULT_LANGUAGE_CODE)
         return self.sense_set.filter(language=language)
@@ -58,10 +55,6 @@ class LexemeSurface(models.Model):
         return models.LexemeSurfaceProb.objects.get(symbol=self.surface)
     prob = property(_get_prob)
     
-    class Admin:
-        list_display = 'lexeme', 'surface', 'priority_codes'
-        search_fields = 'surface',
-    
     def __unicode__(self):
         return self.surface
 
@@ -71,20 +64,12 @@ class LexemeReading(models.Model):
     reading = models.CharField(max_length=30, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
     
-    class Admin:
-        list_display = 'lexeme', 'reading', 'priority_codes'
-        search_fields = 'reading',
-    
 class Language(models.Model):
     """A human language."""
     code = models.CharField(max_length=10, primary_key=True)
     english_name = models.CharField(max_length=100, blank=True, null=True)
     native_name = models.CharField(max_length=100, blank=True, null=True)
 
-    class Admin:
-        list_display = ('code', 'english_name', 'native_name')
-        search_fields = ('code', 'english_name', 'native_name')
-    
     def __unicode__(self):
         return u"Language"
 
@@ -94,91 +79,12 @@ class LexemeSense(models.Model):
     language = models.ForeignKey(Language)
     gloss = models.CharField(max_length=300)
 
-    class Admin:
-        list_display = ('lexeme', 'language', 'gloss')
-        search_fields = ('gloss',)
-
     def __unicode__(self):
         return u'%s [%s]' % (self.gloss, self.language.code)
 
 #----------------------------------------------------------------------------#        
 
-class ProbI(models.Model):
-    """A probabilty distribution."""
-    pdf = models.FloatField()
-    cdf = models.FloatField()
-        
-    class Meta:
-        abstract = True
-
-    @classmethod
-    def sample(cls):
-        """Samples and returns an object from this distribution."""
-        target_cdf = random.random()
-        result = cls.objects.filter(cdf__gte=target_cdf).order_by('cdf')[0]
-        return result
-
-class Prob(ProbI):
-    """A basic probability distribution."""
-    symbol = models.CharField(max_length=50, db_index=True, unique=True)
-    
-    class Admin:
-        list_display = ('symbol', 'pdf', 'cdf')
-        search_fields = ('symbol',)
-    
-    class Meta:
-        abstract = True
-        ordering = ['-pdf', 'symbol']
-    
-    @classmethod
-    def from_dist(cls, prob_dist):
-        cls.objects.all().delete()
-        cdf = 0.0
-        for symbol in prob_dist.samples():
-            pdf = prob_dist.freq(symbol)
-            cdf += pdf
-            row = cls(symbol=symbol, pdf=pdf, cdf=cdf)
-            row.save()
-        return
-
-class CondProb(ProbI):
-    """A conditional probability distribution."""
-    condition = models.CharField(max_length=50, db_index=True)
-    symbol = models.CharField(max_length=50, db_index=True)
-
-    class Meta:
-        abstract = True
-        unique_together = (('condition', 'symbol'),)
-        ordering = ['condition', '-pdf', 'symbol']
-
-    @classmethod
-    def sample(cls, condition):
-        """
-        Samples and returns an object from this distribution given the 
-        condition.
-        """
-        target_cdf = random.random()
-        result = cls.objects.filter(condition=condition, cdf__gte=target_cdf
-                ).order_by('cdf')[0]
-        return result
-
-    @classmethod
-    def from_dist(cls, cond_prob_dist):
-        cls.objects.all().delete()
-        for condition in cond_prob_dist.conditions():
-            cdf = 0.0
-            prob_dist = cond_prob_dist[condition]
-            for symbol in prob_dist.samples():
-                pdf = prob_dist.freq(symbol)
-                cdf += pdf
-                row = cls(condition=condition, symbol=symbol, pdf=pdf,
-                        cdf=cdf)
-                row.save()
-        return                
-
-#----------------------------------------------------------------------------#
-
-class KanjiProb(Prob):
+class KanjiProb(prob_models.Prob):
     """A frequency distribution over kanji."""
     _freq_dist_file = path.join(settings.DATA_DIR, 'corpus',
             'jp_char_corpus_counts.gz')
@@ -187,11 +93,7 @@ class KanjiProb(Prob):
         return Kanji.objects.get(kanji=self.symbol)
     kanji = property(_get_kanji)
 
-    class Admin:
-        list_display = ('symbol', 'pdf', 'cdf')
-        search_fields = ('symbol',)
-
-    class Meta(Prob.Meta):
+    class Meta(prob_models.Prob.Meta):
         verbose_name = 'probability of kanji'
         verbose_name_plural = 'distribution of kanji'
 
@@ -208,15 +110,12 @@ class KanjiProb(Prob):
     def sample_kanji(cls):
         return Kanji.objects.get(kanji=cls.sample().symbol)
 
-class KanjiReadingProb(Prob):
+class KanjiReadingProb(prob_models.Prob):
     """A frequency distribution of kanji pronunciations."""
     _freq_dist_file = path.join(settings.DATA_DIR, 'corpus',
             'kanji_reading_counts')
         
-    class Admin:
-        list_display = ('symbol', 'pdf', 'cdf')
-    
-    class Meta(Prob.Meta):
+    class Meta(prob_models.Prob.Meta):
         verbose_name = 'probability of reading'
         verbose_name_plural = 'distribution of readings'
     
@@ -227,7 +126,7 @@ class KanjiReadingProb(Prob):
         dist = cond_dist.without_condition()
         cls.from_dist(dist)
 
-class KanjiReadingCondProb(CondProb):
+class KanjiReadingCondProb(prob_models.CondProb):
     """A conditional frequency distribution over kanji readings."""
     _freq_dist_file = path.join(settings.DATA_DIR, 'corpus',
             'kanji_reading_counts')
@@ -237,11 +136,7 @@ class KanjiReadingCondProb(CondProb):
                 reading=self.symbol)
     kanji_reading = property(_get_kanji_reading)
     
-    class Admin:
-        list_display = ('condition', 'symbol', 'pdf', 'cdf')
-        search_fields = ('condition', 'symbol')
-    
-    class Meta(CondProb.Meta):
+    class Meta(prob_models.CondProb.Meta):
         verbose_name = 'probability of reading given kanji'
         verbose_name_plural = 'distribution of readings given kanji'
     
@@ -270,16 +165,12 @@ class KanjiReadingCondProb(CondProb):
                 self.pdf,
             )
 
-class LexemeSurfaceProb(Prob):
+class LexemeSurfaceProb(prob_models.Prob):
     """A probability distribution over lexical surface items."""
     _freq_dist_file = path.join(settings.DATA_DIR, 'corpus',
             'jp_word_corpus_counts.gz')
-    
-    class Admin:
-        list_display = ('symbol', 'pdf', 'cdf')
-        search_fields = ('symbol',)
 
-    class Meta(Prob.Meta):
+    class Meta(prob_models.Prob.Meta):
         verbose_name = 'probability of lexeme surface'
         verbose_name_plural = 'distribution of lexeme surfaces'
 
@@ -294,18 +185,19 @@ class LexemeSurfaceProb(Prob):
         # Store it to the database.
         cls.from_dist(dist)
         
-class LexemeReadingProb(CondProb):
-    """A probability distribution over lexeme readings."""
-    class Admin:
-        list_display = ('condition', 'symbol', 'pdf', 'cdf')
-        search_fields = ('condition', 'symbol')
-    
-    class Meta(CondProb.Meta):
+class LexemeReadingProb(prob_models.CondProb):
+    """A probability distribution over lexeme readings."""    
+    class Meta(prob_models.CondProb.Meta):
         verbose_name = 'probability of reading given lexeme'
         verbose_name_plural = 'distribution of readings given lexeme'
     
     def __unicode__(self):
         return u'%s /%s/ %g' % (self.condition, self.symbol, self.pdf)
+    
+    @classmethod
+    def initialise(cls):
+        # TODO Find a data source for lexeme reading probabilities.
+        pass
 
 #----------------------------------------------------------------------------#
 
@@ -318,10 +210,6 @@ class Kanji(models.Model):
         return KanjiProb.objects.get(symbol=kanji)
     prob = property(_get_prob)
     
-    class Admin:
-        list_display = ('kanji', 'gloss',)
-        search_fields = ('kanji', 'gloss')
-
     class Meta:
         ordering = ['kanji']
         verbose_name_plural = 'kanji'
@@ -364,11 +252,6 @@ class KanjiReading(models.Model):
                 symbol=reading)
     prob = property(_get_prob)
     
-    class Admin:
-        list_display = ('kanji', 'reading', 'reading_type')
-        search_fields = ('kanji', 'reading')
-        list_filter = ('reading_type',)
-        
     class Meta:
         unique_together = (('reading', 'kanji', 'reading_type'),)
 
@@ -381,4 +264,4 @@ def initialise():
     KanjiReadingProb.initialise()
     KanjiReadingCondProb.initialise()
     LexemeSurfaceProb.initialise()
-    #LexemeReadingProb.initialise()
+    LexemeReadingProb.initialise()

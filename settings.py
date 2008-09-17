@@ -101,6 +101,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'drill_tutor',
     'lexicon',
+    'plugins.visual_similarity',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
@@ -110,9 +111,13 @@ INSTALLED_QUESTION_PLUGINS = (
     'plugins.basic.ReadingQuestionFactory',
     'plugins.basic.SurfaceQuestionFactory',
     'plugins.basic.GlossQuestionFactory',
+    'plugins.visual_similarity.SimilarityWithReading',
+    'plugins.visual_similarity.SimilarityWithMeaning',    
 )
 
-N_QUESTION_CHOICES = 6
+N_DISTRACTORS = 5
+
+MAX_GRAPH_DEGREE = 20
 
 DEFAULT_LANGUAGE_CODE = 'eng'
 
