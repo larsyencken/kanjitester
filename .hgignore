@@ -12,3 +12,7 @@ plugins/visual_similarity/metrics/stroke.c
 .sconsign.dblite
 config.log
 build
+dist
+*.deb
+*.rpm
+kanji_test.egg-info
