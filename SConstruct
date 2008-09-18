@@ -86,6 +86,7 @@ env.Append(BUILDERS={'Pyrex': pyxbuild})
 
 #----------------------------------------------------------------------------#
 
-SConscript('plugins/visual_similarity/metrics/SConscript', exports='env')
+SConscript('kanji_test/plugins/visual_similarity/metrics/SConscript',
+        exports='env')
 
 #----------------------------------------------------------------------------#
