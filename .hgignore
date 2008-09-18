@@ -11,3 +11,4 @@ media
 plugins/visual_similarity/metrics/stroke.c
 .sconsign.dblite
 config.log
+build
