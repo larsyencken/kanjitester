@@ -9,7 +9,7 @@
 
 from django.contrib import admin
 
-from lexicon import models
+from kanji_test.lexicon import models
 
 class KanjiAdmin(admin.ModelAdmin):
     list_display = ('kanji', 'gloss',)

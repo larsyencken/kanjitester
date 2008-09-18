@@ -18,8 +18,9 @@ from cjktools.exceptions import DomainError
 from cjktools.resources import kanjiList
 import consoleLog
 
-from plugins.visual_similarity import models, threshold_graph, metrics
-import settings
+from kanji_test import settings
+from kanji_test.plugins.visual_similarity import models
+import threshold_graph, metrics
 
 #----------------------------------------------------------------------------#
 # PUBLIC

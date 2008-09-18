@@ -7,7 +7,7 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-import settings
+from kanji_test import settings
 
 def basic_vars(request):
     """Provides some basic variables for the request."""

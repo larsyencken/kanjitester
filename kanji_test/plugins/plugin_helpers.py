@@ -7,7 +7,7 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-import settings
+from kanji_test import settings
 
 def load_plugins():
     """

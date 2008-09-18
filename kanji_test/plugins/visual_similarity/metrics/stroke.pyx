@@ -18,7 +18,7 @@ import os
 from cjktools.exceptions import DomainError
 from cjktools.common import sopen
 
-import settings
+from kanji_test import settings
 
 #----------------------------------------------------------------------------#
 

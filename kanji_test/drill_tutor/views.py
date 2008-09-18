@@ -12,8 +12,8 @@ from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
 from cjktools.scripts import containsScript, Script
 
-from plugins import plugin_helpers
-from lexicon import models
+from kanji_test.plugins import plugin_helpers
+from kanji_test.lexicon import models
 
 def test_factories(request):
     """Allows the user to generate questions from each factory."""

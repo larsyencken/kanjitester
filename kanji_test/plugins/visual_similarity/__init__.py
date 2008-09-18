@@ -15,13 +15,14 @@ import random
 
 from cjktools import scripts
 
-import settings
-import lexicon.models
-import plugins.api
-from plugins.visual_similarity import load_neighbours
-from plugins.visual_similarity import models
+from kanji_test import settings
+from kanji_test.lexicon import models as lexicon_models
+from kanji_test.plugins import api
+from kanji_test.plugins.visual_similarity import models
 
-class SimilarityWithReading(plugins.api.QuestionFactoryI):
+import load_neighbours
+
+class SimilarityWithReading(api.QuestionFactoryI):
     """
     Given a reading, makes the user choose which of similar kanji have that
     reading.
@@ -39,7 +40,7 @@ class SimilarityWithReading(plugins.api.QuestionFactoryI):
                 scripts.scriptType(kanji) == scripts.Script.Kanji
         
         # Sample a reading according to this kanji's reading distribution.
-        reading = lexicon.models.KanjiReadingCondProb.sample(kanji).symbol
+        reading = lexicon_models.KanjiReadingCondProb.sample(kanji).symbol
         answer = kanji
         
         # Get the distractor set.
@@ -49,7 +50,7 @@ class SimilarityWithReading(plugins.api.QuestionFactoryI):
         # 4. Filter out distractors which have the given reading.
         filtered_options = []
         for edge in edge_set:
-            if lexicon.models.KanjiReading.objects.filter(
+            if lexicon_models.KanjiReading.objects.filter(
                         kanji=edge.neighbour_label,
                         reading=reading
                     ).count() == 0:
@@ -62,7 +63,7 @@ class SimilarityWithReading(plugins.api.QuestionFactoryI):
         options = options[:settings.N_DISTRACTORS]
         options.append(answer)
 
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 pivot=kanji,
@@ -71,7 +72,7 @@ class SimilarityWithReading(plugins.api.QuestionFactoryI):
                 stimulus=reading,
             )
     
-class SimilarityWithMeaning(plugins.api.QuestionFactoryI):
+class SimilarityWithMeaning(api.QuestionFactoryI):
     """
     Given a gloss, makes the user choose which of similar kanji have that
     gloss.
@@ -85,7 +86,7 @@ class SimilarityWithMeaning(plugins.api.QuestionFactoryI):
     instructions = 'Choose the %s with the given meaning.'
     
     def get_kanji_question(self, kanji):
-        kanji_row = lexicon.models.Kanji.objects.get(kanji=kanji)
+        kanji_row = lexicon_models.Kanji.objects.get(kanji=kanji)
         neighbour_rows = models.SimilarityEdge.objects.filter(label=kanji
                 ).order_by('weight')
         options = [
@@ -93,7 +94,7 @@ class SimilarityWithMeaning(plugins.api.QuestionFactoryI):
                 ][:settings.N_DISTRACTORS]
         options.append(kanji)        
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 answer=kanji,

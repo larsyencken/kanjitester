@@ -13,9 +13,9 @@ import itertools
 from cjktools import scripts
 from cjktools import sequences
 
-import plugins.api
-from lexicon import models
-import settings
+from kanji_test import plugins.api
+from kanji_test.lexicon import models
+from kanji_test import settings
 
 class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
     """Forces the user to choose between alternative readings."""

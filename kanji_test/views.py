@@ -9,7 +9,7 @@
 
 import django.views.static
 
-import settings
+from kanji_test import settings
 
 def media(request):
     "A static view which renders media. Not to be used in deployment."

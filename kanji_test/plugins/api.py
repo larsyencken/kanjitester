@@ -10,7 +10,8 @@
 """Interfaces for drill tutor plugins."""
 
 from cjktools import enum
-from html import *
+
+from kanji_test.plugins.html import *
 
 class Question(object):
     """

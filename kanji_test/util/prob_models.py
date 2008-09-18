@@ -13,7 +13,10 @@ Abstract models for probability distributions.
 
 import random
 
-from django.db import models
+from django.db import models, connection
+from cjktools.sequences import groupsOfN
+
+from kanji_test.settings import N_ROWS_PER_INSERT
 
 class ProbI(models.Model):
     """A probabilty distribution."""
@@ -37,17 +40,29 @@ class Prob(ProbI):
     class Meta:
         abstract = True
         ordering = ['-pdf', 'symbol']
-    
+
     @classmethod
     def from_dist(cls, prob_dist):
-        cls.objects.all().delete()
+        table_name = cls._meta.db_table
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM %s' % table_name)
+
+        rows = []
         cdf = 0.0
         for symbol in prob_dist.samples():
             pdf = prob_dist.freq(symbol)
             cdf += pdf
-            row = cls(symbol=symbol, pdf=pdf, cdf=cdf)
-            row.save()
-        return
+            rows.append((symbol, pdf, cdf))
+
+        for row_set in groupsOfN(N_ROWS_PER_INSERT, rows):
+            cursor.executemany(
+                    """
+                    INSERT INTO `%s` (`symbol`, `pdf`, `cdf`)
+                    VALUES (%%s, %%s, %%s)
+                    """ % table_name,
+                    row_set
+                )
+        cursor.close()
 
 class CondProb(ProbI):
     """A conditional probability distribution."""
@@ -72,16 +87,26 @@ class CondProb(ProbI):
 
     @classmethod
     def from_dist(cls, cond_prob_dist):
-        cls.objects.all().delete()
+        table_name = cls._meta.db_table
+        cursor = connection.cursor()
+        cursor.execute('DELETE FROM %s' % table_name)
+
+        rows = []
         for condition in cond_prob_dist.conditions():
             cdf = 0.0
             prob_dist = cond_prob_dist[condition]
             for symbol in prob_dist.samples():
                 pdf = prob_dist.freq(symbol)
                 cdf += pdf
-                row = cls(condition=condition, symbol=symbol, pdf=pdf,
-                        cdf=cdf)
-                row.save()
-        return                
+                rows.append((condition, symbol, pdf, cdf))
 
+        for row_set in groupsOfN(N_ROWS_PER_INSERT, rows):
+            cursor.executemany(
+                    """
+                    INSERT INTO `%s` (`condition`, `symbol`, `pdf`, `cdf`)
+                    VALUES (%%s, %%s, %%s, %%s)
+                    """ % table_name,
+                    row_set
+                )
+        cursor.close()
 

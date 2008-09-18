@@ -15,8 +15,8 @@ from cjktools.common import sopen
 from cjktools.resources import kanjidic
 from cjktools import scripts
 
-from util import probability, prob_models
-import settings
+from kanji_test.util import probability, prob_models
+from kanji_test import settings
 
 #----------------------------------------------------------------------------#
 
@@ -61,7 +61,7 @@ class LexemeSurface(models.Model):
 class LexemeReading(models.Model):
     """A valid pronunciation for a lexeme."""
     lexeme = models.ForeignKey(Lexeme, related_name='reading_set')
-    reading = models.CharField(max_length=30, db_index=True)
+    reading = models.CharField(max_length=50, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
     
 class Language(models.Model):
@@ -77,7 +77,7 @@ class LexemeSense(models.Model):
     """A word sense."""
     lexeme = models.ForeignKey(Lexeme, related_name='sense_set')
     language = models.ForeignKey(Language)
-    gloss = models.CharField(max_length=300)
+    gloss = models.CharField(max_length=400)
 
     def __unicode__(self):
         return u'%s [%s]' % (self.gloss, self.language.code)
@@ -104,7 +104,6 @@ class KanjiProb(prob_models.Prob):
     def initialise(cls):
         dist = probability.FreqDist.from_file(cls._freq_dist_file)
         cls.from_dist(dist)
-        return
     
     @classmethod
     def sample_kanji(cls):
@@ -150,7 +149,6 @@ class KanjiReadingCondProb(prob_models.CondProb):
         dist = probability.ConditionalFreqDist.from_file(cls._freq_dist_file,
                 format='packed')
         cls.from_dist(dist)
-        return
     
     @classmethod
     def sample_kanji_reading(cls):
@@ -179,10 +177,7 @@ class LexemeSurfaceProb(prob_models.Prob):
 
     @classmethod
     def initialise(cls):
-        # Build the frequency distribution from our data source.
         dist = probability.FreqDist.from_file(cls._freq_dist_file)
-        
-        # Store it to the database.
         cls.from_dist(dist)
         
 class LexemeReadingProb(prob_models.CondProb):

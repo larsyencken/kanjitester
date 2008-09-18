@@ -99,25 +99,27 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'drill_tutor',
-    'lexicon',
-    'plugins.visual_similarity',
+    'kanji_test.drill_tutor',
+    'kanji_test.lexicon',
+    'kanji_test.plugins.visual_similarity',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
 INSTALLED_QUESTION_PLUGINS = (
-    'plugins.basic.ReadingQuestionFactory',
-    'plugins.basic.SurfaceQuestionFactory',
-    'plugins.basic.GlossQuestionFactory',
-    'plugins.visual_similarity.SimilarityWithReading',
-    'plugins.visual_similarity.SimilarityWithMeaning',    
+    'kanji_test.plugins.basic.ReadingQuestionFactory',
+    'kanji_test.plugins.basic.SurfaceQuestionFactory',
+    'kanji_test.plugins.basic.GlossQuestionFactory',
+    'kanji_test.plugins.visual_similarity.SimilarityWithReading',
+    'kanji_test.plugins.visual_similarity.SimilarityWithMeaning',    
 )
 
 N_DISTRACTORS = 5
 
 MAX_GRAPH_DEGREE = 20
+
+N_ROWS_PER_INSERT = 10000
 
 DEFAULT_LANGUAGE_CODE = 'eng'
 

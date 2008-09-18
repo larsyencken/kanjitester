@@ -8,7 +8,7 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-from lexicon import models
+from kanji_test.lexicon import models
 
 def main():
     print '%d lexemes' % models.Lexeme.objects.all().count()
