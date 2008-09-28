@@ -61,7 +61,7 @@ class LexemeSurface(models.Model):
 class LexemeReading(models.Model):
     """A valid pronunciation for a lexeme."""
     lexeme = models.ForeignKey(Lexeme, related_name='reading_set')
-    reading = models.CharField(max_length=50, db_index=True)
+    reading = models.CharField(max_length=60, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
     
 class Language(models.Model):
@@ -77,7 +77,7 @@ class LexemeSense(models.Model):
     """A word sense."""
     lexeme = models.ForeignKey(Lexeme, related_name='sense_set')
     language = models.ForeignKey(Language)
-    gloss = models.CharField(max_length=400)
+    gloss = models.CharField(max_length=500)
 
     def __unicode__(self):
         return u'%s [%s]' % (self.gloss, self.language.code)
