@@ -13,11 +13,11 @@ import itertools
 from cjktools import scripts
 from cjktools import sequences
 
-from kanji_test import plugins.api
+from kanji_test.plugins import api
 from kanji_test.lexicon import models
 from kanji_test import settings
 
-class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
+class ReadingQuestionFactory(api.QuestionFactoryI):
     """Forces the user to choose between alternative readings."""
     supports_kanji = True
     supports_words = True
@@ -44,7 +44,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             )
         options.append(answer)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'word',
                 options=options,
                 pivot=word,
@@ -66,7 +66,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
         answer = random.choice(list(real_readings))
         options.append(answer)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 pivot=kanji,
@@ -85,7 +85,7 @@ class ReadingQuestionFactory(plugins.api.QuestionFactoryI):
             if reading not in real_reading_set:
                 yield reading
 
-class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
+class SurfaceQuestionFactory(api.QuestionFactoryI):
     """
     A source of questions where the user must choose the right kanji 
     representation for a known gloss.
@@ -104,7 +104,7 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
             option_set.add(random_kanji)
         options = list(option_set)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 answer=kanji,
@@ -130,7 +130,7 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
         options = [''.join(option) for option in option_chars]
         options.append(word)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'word',
                 options=options,
                 answer=word,
@@ -139,7 +139,7 @@ class SurfaceQuestionFactory(plugins.api.QuestionFactoryI):
                 factory=self.__class__,
             )
 
-class GlossQuestionFactory(plugins.api.QuestionFactoryI):
+class GlossQuestionFactory(api.QuestionFactoryI):
     """Asks the user to identify the correct gloss for the stimulus."""
     supports_kanji = True
     supports_words = True
@@ -158,7 +158,7 @@ class GlossQuestionFactory(plugins.api.QuestionFactoryI):
                 )
         options = list(options)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'kanji',
                 options=options,
                 answer=answer,
@@ -180,7 +180,7 @@ class GlossQuestionFactory(plugins.api.QuestionFactoryI):
                     break
         options = list(options)
         random.shuffle(options)
-        return plugins.api.Question(
+        return api.Question(
                 instructions=self.instructions % 'word',
                 options=options,
                 answer=answer,
