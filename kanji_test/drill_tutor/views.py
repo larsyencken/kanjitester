@@ -32,11 +32,13 @@ def test_factories(request):
         
     if len(query) > 1:
         method = 'get_word_question'
+        supports_method = 'supports_words'
         if models.LexemeSurface.objects.filter(surface=query).count() != 1:
             context['error'] = 'No unique match found.'
             return render()
     else:
         method = 'get_kanji_question'
+        supports_method = 'supports_kanji'
         if models.Kanji.objects.filter(kanji=query).count() == 0:
             context['error'] = 'No matching kanji found.'
             return render()
@@ -44,7 +46,8 @@ def test_factories(request):
     # Render questions for consumption
     questions = []
     for plugin in plugin_helpers.load_plugins():
-        questions.append(getattr(plugin, method)(query))
+        if getattr(plugin, supports_method):
+            questions.append(getattr(plugin, method)(query))
     _number_questions(questions)
     context['questions'] = questions
     return render()
