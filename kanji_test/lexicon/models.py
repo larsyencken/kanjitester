@@ -70,8 +70,12 @@ class Language(models.Model):
     english_name = models.CharField(max_length=100, blank=True, null=True)
     native_name = models.CharField(max_length=100, blank=True, null=True)
 
+    @classmethod
+    def get_default(cls):
+        return cls.objects.get(code=settings.DEFAULT_LANGUAGE_CODE)
+
     def __unicode__(self):
-        return u"Language"
+        return self.code
 
 class LexemeSense(models.Model):
     """A word sense."""

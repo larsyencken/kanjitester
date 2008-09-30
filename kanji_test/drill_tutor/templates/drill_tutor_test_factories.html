@@ -49,8 +49,8 @@ Test question factories
   <tbody>
 {% for question in questions %}
   <tr>
-    <td><p>{{question.factory.question_type.capitalize}}<br>
-      [<em>{{question.factory.question_variant.lower}}</em>]</p></td>
+    <td><p>{{question.question_plugin.name}}<br>
+      [<em>{{question.question_plugin.description}}</em>]</p></td>
     <td>
       {% autoescape off %}
       {{question.as_html}}
