@@ -101,7 +101,9 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'kanji_test.drill_tutor',
     'kanji_test.lexicon',
+    'kanji_test.plugins.api',
     'kanji_test.plugins.visual_similarity',
+    'kanji_test.util',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'

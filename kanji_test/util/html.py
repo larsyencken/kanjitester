@@ -38,7 +38,7 @@ def _fromAttribs(**attribs):
     return ' '.join(results)
 
 _tags = ['p', 'td', 'tr', 'th', 'table', 'em', 'thead', 'tbody', 'br', 'ul',
-    'ol', 'li', 'input', 'form']
+    'ol', 'li', 'input', 'form', 'div', 'span']
     
 for tag in _tags:
     globals()[tag.upper()] = _makeTagFunction(tag)

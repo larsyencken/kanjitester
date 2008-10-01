@@ -15,7 +15,7 @@ Test question factories
 
 <h2>Generate a test question</h2>
 <p>Use the following form to generate a test question.</p>
-<form method="POST">
+<form method="POST" action="{% url drill_tutor_test %}">
 <table>
   <tr>
     <th style="vertical-align:middle !important">Kanji/word</th>
@@ -37,7 +37,7 @@ Test question factories
 {% if questions %}
 <h2>Questions</h2>
 <p>Found {{questions|length}} question{{questions|pluralize}}.</p>
-<form method="POST">
+<form method="POST" action="{% url drill_tutor_answers %}">
 <input type="hidden" name="query" value="{{query}}">
 <table>
   <thead>
@@ -49,8 +49,8 @@ Test question factories
   <tbody>
 {% for question in questions %}
   <tr>
-    <td><p>{{question.factory.question_type.capitalize}}<br>
-      [<em>{{question.factory.question_variant.lower}}</em>]</p></td>
+    <td><p>{{question.question_plugin.name}}<br>
+      [<em>{{question.question_plugin.description}}</em>]</p></td>
     <td>
       {% autoescape off %}
       {{question.as_html}}

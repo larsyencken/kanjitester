@@ -92,7 +92,7 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
             for symbol_count in symbol_counts.split(','):
                 symbol, count_str = symbol_count.split(':')
                 count = int(count_str)
-            dist[condition].inc(symbol, count)
+                dist[condition].inc(symbol, count)
         i_stream.close()
         return dist
     

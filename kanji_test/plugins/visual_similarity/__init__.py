@@ -17,28 +17,23 @@ from cjktools import scripts
 
 from kanji_test import settings
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.plugins import api
+from kanji_test.plugins.api import factory
 from kanji_test.plugins.visual_similarity import models
 
-import load_neighbours
+#----------------------------------------------------------------------------#
 
-class SimilarityWithReading(api.QuestionFactoryI):
+class SimilarityWithReading(factory.MultipleChoiceFactoryI):
     """
-    Given a reading, makes the user choose which of similar kanji have that
-    reading.
+    Distractors are chosen via visual similarity.
     """
     supports_kanji = True
     supports_words = False
-    question_type = 'identify kanji given reading'
-    question_variant = 'visual similarity'
-    instructions = 'Choose the correct %s for the given reading.'
-    # required_knowledge = ['pronunciation', 'recognition']
-    # ambiguity = ['recognition']
+    question_type = 'rp'
     
     def get_kanji_question(self, kanji):
-        assert len(kanji) == 1 and type(kanji) == unicode and \
-                scripts.scriptType(kanji) == scripts.Script.Kanji
-        
+        if not self.is_valid_kanji(kanji):
+            raise ValueError(kanji)
+                
         # Sample a reading according to this kanji's reading distribution.
         reading = lexicon_models.KanjiReadingCondProb.sample(kanji).symbol
         answer = kanji
@@ -59,50 +54,44 @@ class SimilarityWithReading(api.QuestionFactoryI):
         # 5. Randomly choose amongst remaining distractors according to
         #    weight.
         # random.shuffle(filtered_options)
-        options = [edge.neighbour_label for edge in filtered_options]
-        options = options[:settings.N_DISTRACTORS]
-        options.append(answer)
+        distractor_values = [edge.neighbour_label for edge in filtered_options]
+        distractor_values = distractor_values[:settings.N_DISTRACTORS]
 
-        return api.Question(
-                instructions=self.instructions % 'kanji',
-                options=options,
+        question = self.build_question(
                 pivot=kanji,
-                answer=answer,
-                factory=self.__class__,
+                pivot_type='k',
                 stimulus=reading,
             )
-    
-class SimilarityWithMeaning(api.QuestionFactoryI):
+        question.add_options(distractor_values, answer)
+        return question
+
+#----------------------------------------------------------------------------#
+
+class SimilarityWithMeaning(factory.MultipleChoiceFactoryI):
     """
-    Given a gloss, makes the user choose which of similar kanji have that
-    gloss.
+    Distractors are chosen via visual similarity.
     """
-    # required_knowledge = ['meaning', 'recognition']
-    # ambiguity = ['recognition']
-    question_type = 'identify kanji given gloss'
-    question_variant = 'visual similarity'
+    question_type = 'gp'
     supports_words = False
     supports_kanji = True
-    instructions = 'Choose the %s with the given meaning.'
-    
+        
     def get_kanji_question(self, kanji):
         kanji_row = lexicon_models.Kanji.objects.get(kanji=kanji)
         neighbour_rows = models.SimilarityEdge.objects.filter(label=kanji
-                ).order_by('weight')
-        options = [
-                    row.neighbour_label for row in neighbour_rows
-                ][:settings.N_DISTRACTORS]
-        options.append(kanji)        
-        random.shuffle(options)
-        return api.Question(
-                instructions=self.instructions % 'kanji',
-                options=options,
-                answer=kanji,
+                ).order_by('weight')[:settings.N_DISTRACTORS]
+        distractor_values = [row.neighbour_label for row in neighbour_rows]
+        
+        question = self.build_question(
                 pivot=kanji,
+                pivot_type='k',
                 stimulus=kanji_row.gloss,
-                factory=self.__class__,
             )
-    
+        question.add_options(distractor_values, kanji)
+        return question
+
+#----------------------------------------------------------------------------#
+
 def build():
     "Load the similarity graph into the database."
+    import load_neighbours
     load_neighbours.load_neighbours()
