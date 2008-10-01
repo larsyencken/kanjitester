@@ -30,13 +30,6 @@ class QuestionFactoryI(object):
                     supports_words=cls.supports_words,
                 )[0]
         return cls._question_plugin
-    
-    @classmethod
-    def get_question_type(cls):
-        if not hasattr(cls, '_question_type'):
-            cls._question_type = models.QuestionType.objects.get(
-                description=cls.question_type)
-        return cls._question_type
         
     def get_word_question(self, word):
         """Constructs and returns a new question based on the given word."""
@@ -57,7 +50,7 @@ class MultipleChoiceFactoryI(QuestionFactoryI):
     """An abstract factory for multiple choice questions."""
     @classmethod
     def build_question(cls, **kwargs):
-        kwargs.setdefault('question_type', cls.get_question_type())
+        kwargs.setdefault('question_type', cls.question_type)
         kwargs.setdefault('question_plugin', cls.get_question_plugin())
         question = models.MultipleChoiceQuestion(**kwargs)
         question.save()

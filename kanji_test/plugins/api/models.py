@@ -28,37 +28,54 @@ PIVOT_TYPES = (
         ('w', 'word'),
     )
 
-MC_QUESTION_TYPES = (
+QUESTION_TYPES = (
         ('rp', 'from reading determine pivot'),
         ('gp', 'from gloss determine pivot'),
         ('pg', 'from pivot determine gloss'),
         ('pr', 'from pivot determine reading')
     )
 
-MC_INSTRUCTIONS = (
-        ('rp', 'Choose the %s which matches the given reading.'),
-        ('gp', 'Choose the %s which matches the given gloss.'),
-        ('pg', 'Choose the gloss which matches the given %s.'),
-        ('pr', 'Choose the reading which matches the given %s.'),
-    )
-
-class QuestionType(models.Model):
-    description = models.CharField(max_length=2, choices=MC_QUESTION_TYPES, 
-            primary_key=True)
-    instructions = models.CharField(max_length=500)
-
-    def __unicode__(self):
-        return [full_desc for (desc, full_desc) in MC_QUESTION_TYPES if \
-                desc == self.description][0]
+INSTRUCTIONS = {
+        'rp': 'Choose the %s which matches the given reading.',
+        'gp': 'Choose the %s which matches the given gloss.',
+        'pg': 'Choose the gloss which matches the given %s.',
+        'pr': 'Choose the reading which matches the given %s.',
+    }
 
 class Question(models.Model):
     pivot = models.CharField(max_length=3, db_index=True)
     pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES)
-    question_type = models.ForeignKey(QuestionType)
+    question_type = models.CharField(max_length=2, choices=QUESTION_TYPES)
     question_plugin = models.ForeignKey(QuestionPlugin)
+
+    def pivot_type_verbose():
+        def fget(self):
+            return [vd for (d, vd) in PIVOT_TYPES if d == self.pivot_type][0]
+        return locals()
+    pivot_type_verbose = property(**pivot_type_verbose())
+
+    def question_type_verbose():
+        def fget(self):
+            return [vd for (d, vd) in QUESTION_TYPES 
+                    if d == self.question_type][0]
+        return locals()
+    question_type_verbose = property(**question_type_verbose())
+
+    def instructions():
+        def fget(self):
+            return INSTRUCTIONS[self.question_type] % self.pivot_type_verbose
+        return locals()
+    instructions = property(**instructions())
 
     class Meta:
         abstract = False
+
+    def __unicode__(self):
+        return 'type %s about %s %s' % (
+                self.question_type,
+                self.pivot_type_verbose,
+                self.pivot,
+            )
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -90,7 +107,7 @@ class MultipleChoiceQuestion(Question):
         if not self.id:
             raise Exception('Need a database id to display')            
         output = []
-        output.append(html.P(self.question_type.instructions,
+        output.append(html.P(self.instructions,
                 **{'class': 'instructions'}))
         if self.stimulus:
             output.append(html.P(self.stimulus, **{'class': 'stimulus'}))
@@ -102,14 +119,9 @@ class MultipleChoiceQuestion(Question):
                 option_choices.append(html.BR())
             option_choices.append(
                     html.INPUT('&nbsp;' + option.value, type='radio',
-                            name=question_name)
+                            name=question_name, value=option.id)
                 )
         output.append(html.P(*option_choices, **{'class': 'option_choices'}))
-        output.append(html.INPUT(
-                type="hidden",
-                name="answer_%d" % self.id,
-                value=self.answer.value,
-            ))
         return '\n'.join(output)
 
     def add_options(self, distractor_values, answer):
