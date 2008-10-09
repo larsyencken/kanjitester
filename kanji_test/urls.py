@@ -16,6 +16,7 @@ admin.autodiscover()
 
 base_patterns = ('',
         (r'^admin/(.*)', admin.site.root),
+        (r'^accounts/', include('registration.urls')),
     )
 
 # Optional media view for debugging and testing.

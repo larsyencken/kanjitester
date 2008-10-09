@@ -104,6 +104,7 @@ INSTALLED_APPS = (
     'kanji_test.plugins.api',
     'kanji_test.plugins.visual_similarity',
     'kanji_test.util',
+    'kanji_test.registration',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
@@ -124,6 +125,8 @@ MAX_GRAPH_DEGREE = 20
 N_ROWS_PER_INSERT = 10000
 
 DEFAULT_LANGUAGE_CODE = 'eng'
+
+ACCOUNT_ACTIVATION_DAYS = 15
 
 # When True, enables the debugging media view.
 DEPLOYED = False
