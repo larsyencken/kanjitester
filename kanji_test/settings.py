@@ -11,6 +11,8 @@
 
 from os import path
 
+PROJECT_NAME = 'Kanji Tester'
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -133,6 +135,6 @@ DEPLOYED = False
 
 # Overwrite any of these settings with local customizations.
 try:
-    from localSettings import *
+    from local_settings import *
 except ImportError:
     pass

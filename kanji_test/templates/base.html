@@ -4,8 +4,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title>Kanji tester | {% block title %}{% endblock %}</title>
+	<title>{{project_name}} | {% block title %}{% endblock %}</title>
 	<link rel="stylesheet" type="text/css" href="{{admin_media_url}}css/dashboard.css" />
+	<link rel="stylesheet" type="text/css" href="{{admin_media_url}}css/forms.css" />
 	{% block extra_head %}{% endblock %}
 </head>
 
@@ -13,10 +14,18 @@
   <div id="container">
     <div id="header">
       <div id="branding">
-        <a href="/"><h1>Kanji tester</h1></a>
+        <a href="/"><h1>{{project_name}}</h1></a>
       </div>
       <div id="user-tools">
-        {% block user_tools %}{% endblock %}
+        {% block user_tools %}
+          {% if user.is_anonymous %}
+            <a href="{% url registration_register %}">Register</a> or
+            <a href="{% url auth_login %}">Log-in</a>
+          {% else %}
+            Hello {{user.username}}.
+            <a href="{% url auth_logout %}">Log-out</a>
+          {% endif %}
+        {% endblock %}
       </div>
     </div>
     <div id="content" {% block content_attrs %}class="flex"{% endblock %}>

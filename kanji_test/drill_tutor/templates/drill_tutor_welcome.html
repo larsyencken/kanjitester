@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Welcome to {{project_name}}
+{% endblock %}
+
+{% block content %}
+  <h1>{{project_name}}</h1>
+  
+  <h2>What is {{project_name}}?</h2>
+  <p>A Japanese study application which drills repeatedly on your knowledge of  vocabulary and kanji.</p>
+
+  <h2>How do I get started?</h2>
+  <p><a href="{% url registration_register %}">Register</a>, then <a href="{% url auth_login %}">log-in</a>.</p>
+{% endblock %}

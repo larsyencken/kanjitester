@@ -4,41 +4,51 @@
 
 {% block content %}
 
+  <h1>Create an account</h1>
+  
   {% if form.errors %}
   <p class="errors">Please correct the errors below: {{ form.non_field_errors }}</p>
   {% endif %}
 
-  <h1>Create an account</h1>
-  
   <form method="post" action="" class="wide">
-    <p>
-      <label for="id_username">Username:</label>
-      {% if form.username.errors %}
-        <p class="errors">{{ form.username.errors.as_text }}</p>
-      {% endif %}
-      {{ form.username }}
-    </p>
-    <p>
-      <label for="id_email">Email address:</label>
-      {% if form.email.errors %}
-        <p class="errors">{{ form.email.errors.as_text }}</p>
-      {% endif %}
-      {{ form.email }}
-    </p>
-    <p>
-      <label for="id_password1">Password:</label>
-      {% if form.password1.errors %}
-        <p class="errors">{{ form.password1.errors.as_text }}</p>
-      {% endif %}
-      {{ form.password1 }}
-    </p>
-    <p>
-      <label for="id_password2">Password (type again to catch typos):</label>
-      {% if form.password2.errors %}
-        <p class="errors">{{ form.password2.errors.as_text }}</p>
-      {% endif %}
-      {{ form.password2 }}
-    </p>
+    <fieldset class="module aligned">
+      <div class="form-row">
+        <div>
+          <label for="id_username">Username:</label>
+          {{ form.username }}
+        </div>
+        {% if form.username.errors %}
+          <p class="errors">{{ form.username.errors.as_text }}</p>
+        {% endif %}
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="id_email">Email address:</label>
+          {{ form.email }}
+        </div>
+        {% if form.email.errors %}
+          <p class="errors">{{ form.email.errors.as_text }}</p>
+        {% endif %}
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="id_password1">Password:</label>
+          {{ form.password1 }}
+        </div>
+        {% if form.password1.errors %}
+          <p class="errors">{{ form.password1.errors.as_text }}</p>
+        {% endif %}
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="id_password2">Password (type again):</label>
+          {{ form.password2 }}
+        </div>
+        {% if form.password2.errors %}
+          <p class="errors">{{ form.password2.errors.as_text }}</p>
+        {% endif %}
+      </div>
+    </fieldset>
     <p class="submit"><input type="submit" value="Register &rarr;"></p>
   </form>
   

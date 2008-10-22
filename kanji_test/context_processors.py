@@ -14,4 +14,5 @@ def basic_vars(request):
     return {
         'media_url':        settings.MEDIA_URL,
         'admin_media_url':  settings.ADMIN_MEDIA_PREFIX,
+        'project_name':     settings.PROJECT_NAME,
     }

@@ -18,6 +18,25 @@ from kanji_test.lexicon import models as lexicon_models
 from kanji_test.plugins.api import models as api_models
 from kanji_test.util import html
 
+#----------------------------------------------------------------------------#
+
+def index(request):
+    """Render the dashboard interface."""
+    if not request.user.is_authenticated():
+        return welcome(request)
+    
+    return render_to_response('drill_tutor_dashboard.html', {},
+            context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+
+def welcome(request):
+    """An alternative to the dashboard for users who aren't logged in."""
+    return render_to_response('drill_tutor_welcome.html', {},
+            context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+
 def test_factories(request):
     """Allows the user to generate questions from each factory."""
     context = {}
