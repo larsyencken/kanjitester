@@ -103,6 +103,12 @@ class MultipleChoiceQuestion(Question):
         return locals()
     answer = property(**answer())
     
+    def _get_stimulus_class(self, stimulus):
+        if scripts.scriptType(stimulus) == scripts.Script.Ascii:
+            return 'stimulus_roman'
+        else:
+            return 'stimulus_cjk'
+        
     def as_html(self):
         if not self.id:
             raise Exception('Need a database id to display')            
@@ -110,15 +116,25 @@ class MultipleChoiceQuestion(Question):
         output.append(html.P(self.instructions,
                 **{'class': 'instructions'}))
         if self.stimulus:
-            output.append(html.P(self.stimulus, **{'class': 'stimulus'}))
+            output.append(html.P(self.stimulus, 
+                    **{'class': self._get_stimulus_class(self.stimulus)}))
             
         option_choices = []
         question_name = 'question_%d' % self.id
         for option in self.options.order_by('?'):
+            if scripts.scriptType(option.value) == scripts.Script.Ascii:
+                separator = html.BR()
+                option_class = 'option_choices_roman'
+            else:
+                separator = '&nbsp;' * 3
+                option_class = 'option_choices_cjk'
+            
             if option_choices:
-                option_choices.append(html.BR())
+                option_choices.append(separator)
+            
             option_choices.append(
-                    html.INPUT('&nbsp;' + option.value, type='radio',
+                    html.INPUT('&nbsp;' + html.SPAN(option.value,
+                            **{'class': option_class}), type='radio',
                             name=question_name, value=option.id)
                 )
         output.append(html.P(*option_choices, **{'class': 'option_choices'}))

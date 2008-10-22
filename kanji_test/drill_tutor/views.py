@@ -11,6 +11,8 @@ from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
+
+from cjktools import scripts
 from cjktools.scripts import containsScript, Script
 
 from kanji_test.plugins import plugin_helpers
@@ -48,7 +50,7 @@ def test_factories(request):
     query = request.POST['query']
     context['query'] = query
 
-    if not containsScript(Script.Kanji, query):
+    if not scripts.containsScript(scripts.Script.Kanji, query):
         context['error'] = 'Please enter a query containing kanji.'
         return render()
         
@@ -119,6 +121,18 @@ class AnsweredQuestion(object):
         if not hasattr(self, 'is_correct'):
             raise ValueError('answer was not one of the available options')
     
+    def _get_stimulus_class(self, stimulus):
+        if scripts.scriptType(stimulus) == scripts.Script.Ascii:
+            return 'stimulus_roman'
+        else:
+            return 'stimulus_cjk'
+    
+    def _get_option_class(self, option_value):
+        if scripts.scriptType(option_value) == scripts.Script.Ascii:
+            return 'option_choices_roman'
+        else:
+            return 'option_choices_cjk'
+    
     def as_html(self):
         output = []
         output.append(html.P(self.question.instructions,
@@ -132,7 +146,8 @@ class AnsweredQuestion(object):
 
         if self.question.stimulus:
             output.append(html.P(self.question.stimulus,
-                    **{'class': 'stimulus'}))
+                    **{'class': \
+                     self._get_stimulus_class(self.question.stimulus)}))
             
         option_choices = []
         question_name = 'question_%d' % self.question.id
@@ -145,7 +160,9 @@ class AnsweredQuestion(object):
                 attribs['checked'] = 'checked'
         
             option_choices.append(
-                    html.INPUT('&nbsp;' + option.value, **attribs)
+                    html.INPUT('&nbsp;' + html.SPAN(option.value,
+                            **{'class': self._get_option_class(option.value)}),
+                            **attribs)
                 )
 
             if option.is_correct:
