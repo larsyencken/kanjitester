@@ -3,10 +3,8 @@
 #  __init__.py
 #  kanji_test
 #  
-#  Created by Lars Yencken on 2008-09-29.
+#  Created by Lars Yencken on 2008-10-24.
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-"""
-A broad interface for test questions and their database management.
-"""
+"Plugins which provide error models."

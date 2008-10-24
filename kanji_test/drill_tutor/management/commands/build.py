@@ -15,7 +15,7 @@ from django.core.management.base import NoArgsCommand
 import consoleLog
 
 from kanji_test.lexicon import load_lexicon
-from kanji_test.plugins.visual_similarity import load_neighbours
+from kanji_test.user_model_plugins.visual_similarity import load_neighbours
 
 class Command(NoArgsCommand):
     help = "Builds all required static database tables."

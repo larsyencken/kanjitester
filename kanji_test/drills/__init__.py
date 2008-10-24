@@ -3,11 +3,13 @@
 #  __init__.py
 #  kanji_test
 #  
-#  Created by Lars Yencken on 2008-06-13.
-#  Copyright 2008-06-13 Lars Yencken. All rights reserved.
+#  Created by Lars Yencken on 2008-09-29.
+#  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-"""Plugins for the drill tutor application."""
+"""
+A broad interface for test questions and their database management.
+"""
 
 from kanji_test import settings
 
