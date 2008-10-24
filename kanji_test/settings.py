@@ -107,6 +107,7 @@ INSTALLED_APPS = (
     'kanji_test.plugins.visual_similarity',
     'kanji_test.util',
     'kanji_test.registration',
+    'kanji_test.user_model',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
@@ -120,6 +121,8 @@ INSTALLED_QUESTION_PLUGINS = (
     'kanji_test.plugins.visual_similarity.SimilarityWithMeaning',    
 )
 
+AUTH_PROFILE_MODULE = 'user_model.userprofile'
+
 N_DISTRACTORS = 5
 
 MAX_GRAPH_DEGREE = 20
@@ -129,6 +132,8 @@ N_ROWS_PER_INSERT = 10000
 DEFAULT_LANGUAGE_CODE = 'eng'
 
 ACCOUNT_ACTIVATION_DAYS = 15
+
+UPDATE_ALPHA = 0.2
 
 # When True, enables the debugging media view.
 DEPLOYED = False

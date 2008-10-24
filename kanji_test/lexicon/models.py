@@ -15,7 +15,8 @@ from cjktools.common import sopen
 from cjktools.resources import kanjidic
 from cjktools import scripts
 
-from kanji_test.util import probability, prob_models
+from kanji_test.util import probability
+from kanji_test.util import models as prob_models
 from kanji_test import settings
 
 #----------------------------------------------------------------------------#
