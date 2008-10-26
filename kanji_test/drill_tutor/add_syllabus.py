@@ -9,59 +9,67 @@
 # 
 
 import os, sys
+import re
 
 from cjktools.common import sopen
 from cjktools import scripts
+import consoleLog
 
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.drill_tutor import models as drilltutor_models
+from kanji_test.user_model import models as usermodel_models
 
-def add_syllabus(tag, filename):
+_log = consoleLog.default
+
+def add_syllabus(tag, word_file, kanji_file):
     """Adds the given syllabus to the database interactively."""
-    if drilltutor_models.Syllabus.objects.filter(tag=tag).count() > 0:
-        if not ask_yes_no("Overwrite existing syllabus tagged %s?" % tag):
-            return
-        print 'Deleting old syllabus'
-        drilltutor_models.Syllabus.objects.filter(tag=tag).delete()
+    _log.start('Adding syllabus %s' % tag, nSteps=4)
+
+    _log.log('Clearing any existing objects')    
+    usermodel_models.Syllabus.objects.filter(tag=tag).delete()
     
-    print 'Creating syllabus %s' % tag
-    syllabus = drilltutor_models.Syllabus(tag=tag)
+    _log.log('Creating new syllabus object')
+    syllabus = usermodel_models.Syllabus(tag=tag)
     syllabus.save()
     
-    print 'Parsing syllabus file'
-    i_stream = sopen(filename)
-    for line in i_stream:
-        if line.startswith('#'):
-            continue
-            
-        reading, surface, disambiguation = _parse_line(line)
+    _log.start('Parsing word list')
+    n_ok = 0
+    skipped = []
+    for reading, surface, disambiguation in SyllabusParser(word_file):
         if disambiguation:
-            print 'Skipping %s [%s]' % (reading, disambiguation)
+            skipped.append('%s [%s]' % (reading, disambiguation))
             continue
-        lexeme = _find_matching_lexeme(reading, surface)
+        lexeme = _find_matching_lexeme(reading, surface, skipped)
         if not lexeme:
             continue
-        partial_lexeme = drilltutor_models.PartialLexeme(
-                lexeme=lexeme)
-        partial_lexeme.save()
-        syllabus.partial_lexemes.add(partial_lexeme)
-        
-    i_stream.close()
+        partial_lexeme = syllabus.partiallexeme_set.create(lexeme=lexeme)
+        partial_lexeme.reading_set.add(lexeme.reading_set.get(reading=reading))
+        partial_lexeme.surface_set.add(lexeme.surface_set.get(surface=surface))
+        n_ok += 1
+    _log.log('%d ok, %d skipped' % (n_ok, len(skipped)))
+    _log.finish()
+    
+    _log.log('Parsing kanji list')
+    _log.finish()
 
-def _find_matching_lexeme(reading, surface=None):
+def _find_matching_lexeme(reading, surface=None, skipped=None):
     """Finds a uniquely matching lexeme for this specification."""
-    if not surface:
+    if surface is None:
         surface = reading
-
-    matches = set(
+    
+    if skipped is None:
+        skipped = []
+    
+    matches_a = set(
         [s.lexeme for s in lexicon_models.LexemeSurface.objects.filter(
                 surface=surface)]
-    ).intersection(
+    )
+    matches_b = set(
         [r.lexeme for r in lexicon_models.LexemeReading.objects.filter(
                 reading=reading)]
     )
+    matches = matches_a.intersection(matches_b)
     if not matches:
-        print u'No match for %s /%s/' % (surface or reading, surface)
+        skipped.append(u'%s /%s/' % (surface or reading, surface))
         return None
     (unique_match,) = list(matches)
     return unique_match
@@ -80,11 +88,13 @@ class SyllabusParser(object):
     
     def __iter__(self):
         for line in self.i_stream:
+            if line.startswith(u'#'):
+                continue
             line = line.rstrip()
             if u'・' in line:
                 yield self._parse_line(line.replace(u'・', ''))
                 yield self._parse_line(
-                        re.subn(u'・[^ \t]*', '', line, re.UNICODE))
+                        re.subn(u'・[^ \t]*', '', line, re.UNICODE)[0])
             else:
                 yield self._parse_line(line)        
     
@@ -94,24 +104,23 @@ class SyllabusParser(object):
         reading = parts.pop(0)
         surface = None
         disambiguation = None
-        reading_scripts = scripts.scriptTypes(reading)
         
-        if reading_scripts == set([scripts.Script.Katakana]):
-            surface = reading
-            reading = scripts.toHiragana(reading)
-        elif scripts.Script.Kanji in reading_scripts:
-            assert scripts.scriptTypes(reading) == \
-                    set([scripts.Script.Hiragana])
-            if len(parts) == 2:
-                surface = parts[0]
-                disambiguation = parts[1]
-            else:
-                last_part = parts[0]
-                if last_part.startswith(u'['):
-                    disambiguation = last_part
-                else:
-                    surface = last_part
-
+        if len(parts) == 2:
+            disambiguation = parts.pop()
+            surface = parts.pop()
+            return reading, surface, disambiguation
+        
+        if len(parts) == 1:
+            last_part = parts.pop()
+            if not last_part.startswith(u'['):
+                surface = last_part
+                return reading, surface, disambiguation
+            
+            disambiguation = last_part
+        
+        # By now we have no surface string    
+        surface = reading
+        reading = scripts.toHiragana(reading)
         return reading, surface, disambiguation
     
     def __del__(self):
@@ -120,16 +129,17 @@ class SyllabusParser(object):
 
 def main():
     try:
-        [tag, filename] = sys.argv[1:]
+        [tag, word_file, kanji_file] = sys.argv[1:]
     except ValueError:
-        print 'Usage: add_syllabus.py tag filename'
+        print 'Usage: add_syllabus.py tag wordlist kanjilist'
         return
-    
-    if not os.path.exists(filename):
-        print 'Error: file %s does not exist or is not readable' % filename
-        return
+
+    for filename in (word_file, kanji_file):
+        if not os.path.exists(filename):
+            print 'Error: file %s does not exist or is not readable' % filename
+            return
         
-    add_syllabus(tag, filename)
+    add_syllabus(tag, word_file, kanji_file)
 
 if __name__ == '__main__':
     main()

@@ -12,7 +12,7 @@
 from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
-from kanji_test.drills import models.api import models
+from kanji_test.drills import models
 
 class QuestionFactoryI(object):
     """An abstract interface for factories which build questions."""

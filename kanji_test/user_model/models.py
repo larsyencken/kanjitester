@@ -33,6 +33,7 @@ class UserProfile(models.Model):
 
 class PartialLexeme(models.Model):
     """A subset of an individual lexeme."""
+    syllabus = models.ForeignKey(Syllabus)
     lexeme = models.ForeignKey(lexicon_models.Lexeme,
             help_text="The word under consideration.")
     reading_set = models.ManyToManyField(lexicon_models.LexemeReading)
@@ -40,6 +41,8 @@ class PartialLexeme(models.Model):
     surface_set = models.ManyToManyField(lexicon_models.LexemeSurface)
     
     def __unicode__(self):
+        return '/'.join(s.surface for s in self.surface_set.all()) + ' ' + \
+            '[%s]' % '/'.join(r.reading for r in self.reading_set.all())
         return self.lexeme.surface_set.all()[0].surface
 
 class PartialKanji(models.Model):

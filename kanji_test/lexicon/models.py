@@ -37,6 +37,9 @@ class Lexeme(models.Model):
         return '/'.join(
                 s.surface for s in self.surface_set.order_by('surface')
             ) + ' [%d]' % self.id
+    
+    def __hash__(self):
+        return hash(self.id)
         
 class LexemeSurface(models.Model):
     """A surface rendering of the word."""

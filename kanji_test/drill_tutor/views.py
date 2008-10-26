@@ -15,9 +15,9 @@ from django.template import RequestContext
 from cjktools import scripts
 from cjktools.scripts import containsScript, Script
 
-from kanji_test import drill_questions
+from kanji_test import drills
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.drills import models.api import models as api_models
+from kanji_test.drills import models as api_models
 from kanji_test.util import html
 
 #----------------------------------------------------------------------------#
@@ -70,7 +70,7 @@ def test_factories(request):
 
     # Render questions for consumption
     questions = []
-    for plugin in drill_questions.load_plugins():
+    for plugin in drills.load_plugins():
         if getattr(plugin, supports_method):
             questions.append(getattr(plugin, method)(query))
     context['questions'] = questions
