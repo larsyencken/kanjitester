@@ -13,8 +13,8 @@ import itertools
 from cjktools import scripts
 from cjktools import sequences
 
-from kanji_test.plugins.api import models as api_models
-from kanji_test.plugins.api import factory
+from kanji_test.drills import models.api import models as api_models
+from kanji_test.drills import models.api import factory
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test import settings
 

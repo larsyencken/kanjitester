@@ -61,12 +61,10 @@ class ThresholdGraph(object):
 
     def __getitem__(self, label):
         heap = self._heaps.get(label)
-        if heap is None:
-            heap = self._heaps.setdefault(
-                    label,
-                    ThresholdLinkset(self._max_degree)
-                )
-        return heap
+        return heap or self._heaps.setdefault(
+                label,
+                ThresholdLinkset(self._max_degree)
+            )
     
     def labels(self):
         return self.heaps.labels()

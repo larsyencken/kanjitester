@@ -19,7 +19,7 @@ from cjktools.resources import kanjiList
 import consoleLog
 
 from kanji_test import settings
-from kanji_test.plugins.visual_similarity import models
+from kanji_test.drills import models
 import threshold_graph, metrics
 
 #----------------------------------------------------------------------------#

@@ -17,7 +17,7 @@ from cjktools.scripts import containsScript, Script
 
 from kanji_test import drill_questions
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.plugins.api import models as api_models
+from kanji_test.drills import models.api import models as api_models
 from kanji_test.util import html
 
 #----------------------------------------------------------------------------#

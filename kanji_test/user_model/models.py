@@ -13,10 +13,20 @@ from django.contrib.auth.models import User
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
 
+class Syllabus(models.Model):
+    tag = models.CharField(max_length=100, unique=True,
+        help_text="A unique name for this syllabus.")
+    
+    class Meta:
+        verbose_name_plural = 'syllabi'
+    
+    def __unicode__(self):
+        return self.tag
+
 class UserProfile(models.Model):
     """Basic model of the user's kanji knowledge and study goals."""
     user = models.ForeignKey(User, unique=True)
-    syllabus = models.ForeignKey('Syllabus')
+    syllabus = models.ForeignKey(Syllabus)
 
     def __unicode__(self):
         return u"UserProfile for %s" % user.username
@@ -33,23 +43,12 @@ class PartialLexeme(models.Model):
         return self.lexeme.surface_set.all()[0].surface
 
 class PartialKanji(models.Model):
+    syllabus = models.ForeignKey(Syllabus)
     kanji = models.ForeignKey(lexicon_models.Kanji,
             help_text='The kanji itself.')
     
     class Meta:
         verbose_name_plural = 'partial kanji'
-
-class Syllabus(models.Model):
-    tag = models.CharField(max_length=100, unique=True,
-        help_text="A unique name for this syllabus.")
-    partial_lexemes = models.ManyToManyField(PartialLexeme)
-    partial_kanji = models.ManyToManyField(PartialKanji)
-    
-    class Meta:
-        verbose_name_plural = 'syllabi'
-    
-    def __unicode__(self):
-        return self.tag
 
 #----------------------------------------------------------------------------#
 

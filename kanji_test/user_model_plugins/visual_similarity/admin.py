@@ -9,7 +9,7 @@
 
 from django.contrib import admin
 
-from kanji_test.plugins.visual_similarity import models
+from kanji_test.user_model_plugins.visual_similarity import models
 
 class GraphAdmin(admin.ModelAdmin):
     list_display = ('label', 'neighbour_label', 'weight')

@@ -9,7 +9,7 @@ media
 *.db
 *.so
 *.os
-plugins/visual_similarity/metrics/stroke.c
+kanji_test/user_model_plugins/visual_similarity/metrics/stroke.c
 .sconsign.dblite
 config.log
 build

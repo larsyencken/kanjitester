@@ -103,22 +103,26 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'kanji_test.drill_tutor',
     'kanji_test.lexicon',
-    'kanji_test.plugins.api',
-    'kanji_test.plugins.visual_similarity',
+    'kanji_test.drills',
     'kanji_test.util',
     'kanji_test.registration',
     'kanji_test.user_model',
+    'kanji_test.user_model_plugins.visual_similarity',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
-INSTALLED_QUESTION_PLUGINS = (
-    'kanji_test.plugins.basic.ReadingQuestionFactory',
-    'kanji_test.plugins.basic.SurfaceQuestionFactory',
-    'kanji_test.plugins.basic.GlossQuestionFactory',
-    'kanji_test.plugins.visual_similarity.SimilarityWithReading',
-    'kanji_test.plugins.visual_similarity.SimilarityWithMeaning',    
+DRILL_PLUGINS = (
+    'kanji_test.question_plugins.basic.ReadingQuestionFactory',
+    'kanji_test.question_plugins.basic.SurfaceQuestionFactory',
+    'kanji_test.question_plugins.basic.GlossQuestionFactory',
+    'kanji_test.question_plugins.visual_similarity.SimilarityWithReading',
+    'kanji_test.question_plugins.visual_similarity.SimilarityWithMeaning',    
+)
+
+USER_MODEL_PLUGINS = (
+    'kanji_test.user_model_plugins.visual_similarity.VisualSimilarity',
 )
 
 AUTH_PROFILE_MODULE = 'user_model.userprofile'
