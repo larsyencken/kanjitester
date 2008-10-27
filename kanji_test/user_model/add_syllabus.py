@@ -8,8 +8,9 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-import os, sys
+import os, sys, optparse
 import re
+import glob
 
 from cjktools.common import sopen
 from cjktools import scripts
@@ -17,11 +18,28 @@ import consoleLog
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
+from kanji_test import settings
 
 _log = consoleLog.default
+_syllabi_path = os.path.join(settings.DATA_DIR, 'syllabus')
 
-def add_syllabus(tag, word_file, kanji_file):
+def list_syllabi():
+    syllabi = []
+    glob_pattern = os.path.join(_syllabi_path, '*.words')
+    for word_filename in glob.glob(glob_pattern):
+        syllabus_path = os.path.splitext(word_filename)[0]
+        if os.path.exists(syllabus_path + '.chars'):
+            syllabi.append(os.path.basename(syllabus_path))
+
+    _log.start('Available syllabi', nSteps=len(syllabi))
+    for syllabus_name in syllabi:
+        _log.log(syllabus_name)
+    _log.finish()
+
+def add_syllabus(syllabus_name):
     """Adds the given syllabus to the database interactively."""
+    word_filename, char_filename = _check_syllabus_name(syllabus_name)
+    tag = syllabus_name.replace('_', ' ')
     _log.start('Adding syllabus %s' % tag, nSteps=4)
 
     _log.log('Clearing any existing objects')    
@@ -34,7 +52,7 @@ def add_syllabus(tag, word_file, kanji_file):
     _log.start('Parsing word list')
     n_ok = 0
     skipped = []
-    for reading, surface, disambiguation in SyllabusParser(word_file):
+    for reading, surface, disambiguation in SyllabusParser(word_filename):
         if disambiguation:
             skipped.append('%s [%s]' % (reading, disambiguation))
             continue
@@ -45,11 +63,27 @@ def add_syllabus(tag, word_file, kanji_file):
         partial_lexeme.reading_set.add(lexeme.reading_set.get(reading=reading))
         partial_lexeme.surface_set.add(lexeme.surface_set.get(surface=surface))
         n_ok += 1
-    _log.log('%d ok, %d skipped' % (n_ok, len(skipped)))
+    _log.log('%d ok, %d skipped (see skipped.log)' % (n_ok, len(skipped)))
     _log.finish()
+
+    o_stream = sopen('skipped.log', 'w')
+    for skipped_word in skipped:
+        print >> o_stream, skipped_word
+    o_stream.close()
     
     _log.log('Parsing kanji list')
     _log.finish()
+
+#----------------------------------------------------------------------------#
+
+def _check_syllabus_name(syllabus_name):
+    word_filename = os.path.join(_syllabi_path, syllabus_name + '.words')
+    char_filename = os.path.join(_syllabi_path, syllabus_name + '.chars')
+    if not os.path.exists(word_filename) or \
+            not os.path.exists(char_filename):
+        print >> sys.stderr, "Can't find syllabus matching %s" % syllabus_name
+        sys.exit(1)
+    return word_filename, char_filename
 
 def _find_matching_lexeme(reading, surface=None, skipped=None):
     """Finds a uniquely matching lexeme for this specification."""
@@ -126,20 +160,47 @@ class SyllabusParser(object):
     def __del__(self):
         self.i_stream.close()
         
+def _create_option_parser():
+    usage = \
+"""%prog [-la] [syllabus]
 
-def main():
-    try:
-        [tag, word_file, kanji_file] = sys.argv[1:]
-    except ValueError:
-        print 'Usage: add_syllabus.py tag wordlist kanjilist'
-        return
+Installs the priors for a syllabus. Use the -l option to check what's
+available, or -a to just install them all."""
 
-    for filename in (word_file, kanji_file):
-        if not os.path.exists(filename):
-            print 'Error: file %s does not exist or is not readable' % filename
-            return
-        
-    add_syllabus(tag, word_file, kanji_file)
+    parser = optparse.OptionParser(usage)
+
+    parser.add_option('--debug', action='store_true', dest='debug',
+            help='Enables debugging mode [False]')
+
+    parser.add_option('-l', '--list', action='store_true', dest='list_syllabi',
+            help='List the available syllabi.')
+
+    parser.add_option('-a', '--all', action='store_true', dest='all',
+            help='Install all available syllabi.')
+
+    return parser
+
+def main(argv):
+    parser = _create_option_parser()
+    (options, args) = parser.parse_args(argv)
+
+    if options.list_syllabi:
+        list_syllabi()
+
+    elif options.all:
+        add_all_syllabi()
+
+    elif len(args) == 1:
+        syllabus_name = args[0]
+        add_syllabus(syllabus_name)
+
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+    return
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
+
+# vim: ts=4 sw=4 sts=4 et tw=78:

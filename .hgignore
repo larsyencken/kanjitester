@@ -20,3 +20,4 @@ kanji_test.egg-info
 *.swp
 *.diff
 *.tmproj
+*.log
