@@ -132,9 +132,9 @@ def _store_lexemes(lexeme_nodes):
                 VALUES (%s, %s, %s)
             """, lexeme_sense_rows)
 
+    connection._commit()
     log.finish()
     return
-
 
 #----------------------------------------------------------------------------#
 
