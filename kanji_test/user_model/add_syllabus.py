@@ -61,7 +61,9 @@ def add_syllabus(syllabus_name):
             continue
         partial_lexeme = syllabus.partiallexeme_set.create(lexeme=lexeme)
         partial_lexeme.reading_set.add(lexeme.reading_set.get(reading=reading))
-        partial_lexeme.surface_set.add(lexeme.surface_set.get(surface=surface))
+        if surface:
+            partial_lexeme.surface_set.add(lexeme.surface_set.get(
+                    surface=surface))
         n_ok += 1
     _log.log('%d ok, %d skipped (see skipped.log)' % (n_ok, len(skipped)))
     _log.finish()
@@ -86,25 +88,32 @@ def _check_syllabus_name(syllabus_name):
     return word_filename, char_filename
 
 def _find_matching_lexeme(reading, surface=None, skipped=None):
-    """Finds a uniquely matching lexeme for this specification."""
-    if surface is None:
-        surface = reading
-    
+    """Finds a uniquely matching lexeme for this specification."""    
     if skipped is None:
         skipped = []
     
-    matches_a = set(
-        [s.lexeme for s in lexicon_models.LexemeSurface.objects.filter(
-                surface=surface)]
-    )
-    matches_b = set(
+    matches = set(
         [r.lexeme for r in lexicon_models.LexemeReading.objects.filter(
                 reading=reading)]
     )
-    matches = matches_a.intersection(matches_b)
-    if not matches:
-        skipped.append(u'%s /%s/' % (surface or reading, surface))
+    if surface:
+        matches = matches.intersection(
+                [s.lexeme for s in lexicon_models.LexemeSurface.objects.filter(
+                        surface=surface)]
+            )
+    if len(matches) == 0:
+        skipped.append(u'%s /%s/ (no match)' % (
+                surface or reading,
+                scripts.toHiragana(reading)
+            ))
         return None
+    elif len(matches) > 1:
+        skipped.append(u'%s /%s/ (too many matches)' % (
+                surface or reading,
+                scripts.toHiragana(reading)
+            ))
+        return None
+    
     (unique_match,) = list(matches)
     return unique_match
     
@@ -152,9 +161,7 @@ class SyllabusParser(object):
             
             disambiguation = last_part
         
-        # By now we have no surface string    
-        surface = reading
-        reading = scripts.toHiragana(reading)
+        # No surface string => kana entry
         return reading, surface, disambiguation
     
     def __del__(self):
