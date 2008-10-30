@@ -23,7 +23,7 @@ from kanji_test import settings
 _log = consoleLog.default
 _syllabi_path = os.path.join(settings.DATA_DIR, 'syllabus')
 
-def list_syllabi():
+def _fetch_syllabi():
     syllabi = []
     glob_pattern = os.path.join(_syllabi_path, '*.words')
     for word_filename in glob.glob(glob_pattern):
@@ -31,9 +31,20 @@ def list_syllabi():
         if os.path.exists(syllabus_path + '.chars'):
             syllabi.append(os.path.basename(syllabus_path))
 
+    return syllabi
+
+def list_syllabi():
+    syllabi = _fetch_syllabi()
     _log.start('Available syllabi', nSteps=len(syllabi))
     for syllabus_name in syllabi:
         _log.log(syllabus_name)
+    _log.finish()
+
+def add_all_syllabi():
+    syllabi = _fetch_syllabi()
+    _log.start('Adding all syllabi', nSteps=len(syllabi))
+    for syllabus_name in syllabi:
+        add_syllabus(syllabus_name)
     _log.finish()
 
 def add_syllabus(syllabus_name):
