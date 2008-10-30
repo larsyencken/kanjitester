@@ -62,7 +62,11 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
     if not (reading_list and sense_list):
         print "Warning: lexeme is missing crucial data"
         return
-    
+
+    # If we have no kanji, the kana becomes the surface form
+    if not surface_list:
+        surface_list = reading_list
+
     for surface in surface_list:
         lexeme_surface_stack.append((lexeme_id, surface))
     
