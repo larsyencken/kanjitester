@@ -53,10 +53,8 @@ def add_syllabus(syllabus_name):
     n_ok = 0
     skipped = []
     for reading, surface, disambiguation in SyllabusParser(word_filename):
-        if disambiguation:
-            skipped.append('%s [%s]' % (reading, disambiguation))
-            continue
-        lexeme = _find_matching_lexeme(reading, surface, skipped)
+        lexeme = _find_matching_lexeme(reading, surface, skipped,
+                disambiguation)
         if not lexeme:
             continue
         partial_lexeme = syllabus.partiallexeme_set.create(lexeme=lexeme)
@@ -69,6 +67,7 @@ def add_syllabus(syllabus_name):
     _log.finish()
 
     o_stream = sopen('skipped.log', 'w')
+    print >> o_stream, "# vim: set ts=20 noet sts=20:"
     for skipped_word in skipped:
         print >> o_stream, skipped_word
     o_stream.close()
@@ -87,7 +86,8 @@ def _check_syllabus_name(syllabus_name):
         sys.exit(1)
     return word_filename, char_filename
 
-def _find_matching_lexeme(reading, surface=None, skipped=None):
+def _find_matching_lexeme(reading, surface=None, skipped=None, 
+        disambiguation=None):
     """Finds a uniquely matching lexeme for this specification."""    
     if skipped is None:
         skipped = []
@@ -102,15 +102,17 @@ def _find_matching_lexeme(reading, surface=None, skipped=None):
                         surface=surface)]
             )
     if len(matches) == 0:
-        skipped.append(u'%s /%s/ (no match)' % (
-                surface or reading,
-                scripts.toHiragana(reading)
+        skipped.append(u'%s\t%s\t%s\tno match' % (
+                reading,
+                surface or '',
+                disambiguation or '',
             ))
         return None
     elif len(matches) > 1:
-        skipped.append(u'%s /%s/ (too many matches)' % (
-                surface or reading,
-                scripts.toHiragana(reading)
+        skipped.append(u'%s\t%s\t%s\ttoo many matches' % (
+                reading,
+                surface or '',
+                disambiguation or '',
             ))
         return None
     
@@ -150,18 +152,20 @@ class SyllabusParser(object):
         surface = None
         disambiguation = None
         
-        if len(parts) == 2:
-            disambiguation = parts.pop()
+        num_parts = len(parts)
+        if num_parts == 2:
+            disambiguation = parts.pop().strip('[]')
             surface = parts.pop()
-            return reading, surface, disambiguation
         
-        if len(parts) == 1:
+        elif num_parts == 1:
             last_part = parts.pop()
             if not last_part.startswith(u'['):
                 surface = last_part
                 return reading, surface, disambiguation
             
-            disambiguation = last_part
+            disambiguation = last_part.strip('[]')
+        elif num_parts != 0:
+            raise Exception('format error: bad number of parts')
         
         # No surface string => kana entry
         return reading, surface, disambiguation
