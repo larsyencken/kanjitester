@@ -134,6 +134,8 @@ class SyllabusParser(object):
             if line.startswith(u'#'):
                 continue
             line = line.rstrip()
+            if u'〜' in line:
+                line = line.replace(u'〜', u'')
             if u'・' in line:
                 yield self._parse_line(line.replace(u'・', ''))
                 yield self._parse_line(
