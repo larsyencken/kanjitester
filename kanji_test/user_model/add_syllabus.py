@@ -68,7 +68,8 @@ def add_syllabus(syllabus_name):
                 disambiguation)
         if not lexeme:
             continue
-        partial_lexeme = syllabus.partiallexeme_set.create(lexeme=lexeme)
+        partial_lexeme = syllabus.partiallexeme_set.get_or_create(
+                lexeme=lexeme)[0]
         partial_lexeme.reading_set.add(lexeme.reading_set.get(reading=reading))
         if surface:
             partial_lexeme.surface_set.add(lexeme.surface_set.get(

@@ -45,6 +45,9 @@ class PartialLexeme(models.Model):
             '[%s]' % '/'.join(r.reading for r in self.reading_set.all())
         return self.lexeme.surface_set.all()[0].surface
 
+    class Meta:
+        unique_together = (('syllabus', 'lexeme'),)
+
 class PartialKanji(models.Model):
     syllabus = models.ForeignKey(Syllabus)
     kanji = models.ForeignKey(lexicon_models.Kanji,
@@ -52,6 +55,7 @@ class PartialKanji(models.Model):
     
     class Meta:
         verbose_name_plural = 'partial kanji'
+        unique_together = (('syllabus', 'kanji'),)
 
 #----------------------------------------------------------------------------#
 
