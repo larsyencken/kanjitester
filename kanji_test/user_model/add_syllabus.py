@@ -20,18 +20,12 @@ from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
 from kanji_test import settings
 
+#----------------------------------------------------------------------------#
+
 _log = consoleLog.default
 _syllabi_path = os.path.join(settings.DATA_DIR, 'syllabus')
 
-def _fetch_syllabi():
-    syllabi = []
-    glob_pattern = os.path.join(_syllabi_path, '*.words')
-    for word_filename in glob.glob(glob_pattern):
-        syllabus_path = os.path.splitext(word_filename)[0]
-        if os.path.exists(syllabus_path + '.chars'):
-            syllabi.append(os.path.basename(syllabus_path))
-
-    return syllabi
+#----------------------------------------------------------------------------#
 
 def list_syllabi():
     syllabi = _fetch_syllabi()
@@ -51,7 +45,7 @@ def add_syllabus(syllabus_name):
     """Adds the given syllabus to the database interactively."""
     word_filename, char_filename = _check_syllabus_name(syllabus_name)
     tag = syllabus_name.replace('_', ' ')
-    _log.start('Adding syllabus %s' % tag, nSteps=4)
+    _log.start('Adding syllabus %s' % tag, nSteps=5)
 
     _log.log('Clearing any existing objects')    
     usermodel_models.Syllabus.objects.filter(tag=tag).delete()
@@ -71,9 +65,8 @@ def add_syllabus(syllabus_name):
         partial_lexeme = syllabus.partiallexeme_set.get_or_create(
                 lexeme=lexeme)[0]
         partial_lexeme.reading_set.add(lexeme.reading_set.get(reading=reading))
-        if surface:
-            partial_lexeme.surface_set.add(lexeme.surface_set.get(
-                    surface=surface))
+        if disambiguation:
+            partial_lexeme.sensenote_set.create(note=disambiguation)
         n_ok += 1
     _log.log('%d ok, %d skipped (see skipped.log)' % (n_ok, len(skipped)))
     _log.finish()
@@ -85,9 +78,32 @@ def add_syllabus(syllabus_name):
     o_stream.close()
     
     _log.log('Parsing kanji list')
+    i_stream = sopen(char_filename)
+    kanji_set = scripts.uniqueKanji(i_stream.read())
+    for kanji in kanji_set:
+        syllabus.partialkanji_set.create(kanji_id=kanji)
+    i_stream.close()
+
+    _log.log('Building lexeme surfaces from kanji')
+    for partial_lexeme in syllabus.partiallexeme_set.all():
+        for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
+            if scripts.uniqueKanji(lexeme_surface.surface).issubset(
+                    kanji_set):
+                partial_lexeme.surface_set.add(lexeme_surface)
+
     _log.finish()
 
 #----------------------------------------------------------------------------#
+
+def _fetch_syllabi():
+    syllabi = []
+    glob_pattern = os.path.join(_syllabi_path, '*.words')
+    for word_filename in glob.glob(glob_pattern):
+        syllabus_path = os.path.splitext(word_filename)[0]
+        if os.path.exists(syllabus_path + '.chars'):
+            syllabi.append(os.path.basename(syllabus_path))
+
+    return syllabi
 
 def _check_syllabus_name(syllabus_name):
     word_filename = os.path.join(_syllabi_path, syllabus_name + '.words')
@@ -131,10 +147,7 @@ def _find_matching_lexeme(reading, surface=None, skipped=None,
     (unique_match,) = list(matches)
     return unique_match
     
-def ask_yes_no(question):
-    """Asks a yes/no question, and return True if the answer is yes."""
-    answer = raw_input('%s [y] ' % question).strip()
-    return (not answer) or answer.startswith('y')
+#----------------------------------------------------------------------------#
 
 class SyllabusParser(object):
     """Parses files in the standard syllabus format."""
@@ -185,6 +198,8 @@ class SyllabusParser(object):
     def __del__(self):
         self.i_stream.close()
         
+#----------------------------------------------------------------------------#
+
 def _create_option_parser():
     usage = \
 """%prog [-la] [syllabus]

@@ -48,6 +48,14 @@ class PartialLexeme(models.Model):
     class Meta:
         unique_together = (('syllabus', 'lexeme'),)
 
+class SenseNote(models.Model):
+    """
+    Additional notes provided with the syllabus about which senses were
+    intended for a lexeme.
+    """
+    partial_lexeme = models.ForeignKey(PartialLexeme)
+    note = models.CharField(max_length=300)
+
 class PartialKanji(models.Model):
     syllabus = models.ForeignKey(Syllabus)
     kanji = models.ForeignKey(lexicon_models.Kanji,
