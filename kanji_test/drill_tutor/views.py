@@ -27,14 +27,14 @@ def index(request):
     if not request.user.is_authenticated():
         return welcome(request)
     
-    return render_to_response('drill_tutor_dashboard.html', {},
+    return render_to_response('drill_tutor/dashboard.html', {},
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
 
 def welcome(request):
     """An alternative to the dashboard for users who aren't logged in."""
-    return render_to_response('drill_tutor_welcome.html', {},
+    return render_to_response('drill_tutor/welcome.html', {},
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
@@ -42,7 +42,7 @@ def welcome(request):
 def test_factories(request):
     """Allows the user to generate questions from each factory."""
     context = {}
-    render = lambda: render_to_response("drill_tutor_test_factories.html",
+    render = lambda: render_to_response("drill_tutor/test_factories.html",
             context, context_instance=RequestContext(request))
     if request.method != 'POST' or 'query' not in request.POST:
         return render()
@@ -81,7 +81,7 @@ def test_factories(request):
 def test_answer_checking(request):
     """Checks the answers submitted from a query."""
     if request.method != 'POST':
-        return HttpResponseRedirect(reverse('drill_tutor_test'))
+        return HttpResponseRedirect(reverse('drilltutor_test'))
 
     answered_questions = []
     for key in request.POST.keys():
@@ -92,7 +92,7 @@ def test_answer_checking(request):
     
     context = {'has_answers': True}
     context['questions'] = answered_questions
-    return render_to_response("drill_tutor_test_factories.html", context,
+    return render_to_response("drill_tutor/test_factories.html", context,
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
