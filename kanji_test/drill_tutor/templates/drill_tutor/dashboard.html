@@ -8,4 +8,10 @@
   <h1>Dashboard</h1>
   
   <p>Here is where you'll be able to monitor your progress and start new drills.</p>
+
+  <ul>
+  {% if user.is_staff %}
+    <li><a href="{% url drilltutor_test %}">Test installed plugins</a></li>
+  {% endif %}
+  </ul>
 {% endblock %}
