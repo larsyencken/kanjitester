@@ -14,6 +14,7 @@ from xml.etree import cElementTree as ElementTree
 from django.db import connection
 from cjktools.common import sopen
 from cjktools.sequences import groupsOfNIter
+from cjktools import scripts
 import consoleLog
 from nltk.probability import FreqDist
 
@@ -68,7 +69,8 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
         surface_list = reading_list
 
     for surface in surface_list:
-        lexeme_surface_stack.append((lexeme_id, surface))
+        lexeme_surface_stack.append((lexeme_id, surface,
+                scripts.containsScript(scripts.Script.Kanji, surface)))
     
     for reading in reading_list:
         lexeme_reading_stack.append((lexeme_id, reading))
@@ -118,8 +120,9 @@ def _store_lexemes(lexeme_nodes):
     log.log('Storing to lexicon_lexemesurface')
     for lexeme_surface_rows in groupsOfNIter(max_rows, lexeme_surface_stack):
         cursor.executemany( """
-                INSERT INTO lexicon_lexemesurface (lexeme_id, surface)
-                VALUES (%s, %s)
+                INSERT INTO lexicon_lexemesurface (lexeme_id, surface,
+                    has_kanji)
+                VALUES (%s, %s, %s)
             """, lexeme_surface_rows)
 
     log.log('Storing to lexicon_lexemereading')

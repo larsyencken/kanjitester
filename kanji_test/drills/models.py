@@ -43,7 +43,7 @@ INSTRUCTIONS = {
     }
 
 class Question(models.Model):
-    pivot = models.CharField(max_length=3, db_index=True)
+    pivot = models.CharField(max_length=30, db_index=True)
     pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES)
     question_type = models.CharField(max_length=2, choices=QUESTION_TYPES)
     question_plugin = models.ForeignKey(QuestionPlugin)
@@ -154,7 +154,7 @@ class MultipleChoiceOption(models.Model):
     """A single option in a multiple choice question."""
     question = models.ForeignKey(MultipleChoiceQuestion,
             related_name='options')
-    value = models.CharField(max_length=100)
+    value = models.CharField(max_length=200)
     is_correct = models.BooleanField(default=False)
     
     class Meta:

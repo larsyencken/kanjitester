@@ -18,6 +18,8 @@ from cjktools.scripts import containsScript, Script
 from kanji_test import drills
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.drills import models as api_models
+from kanji_test.drills import plugin_api
+from kanji_test.user_model import models as usermodel_models
 from kanji_test.util import html
 
 #----------------------------------------------------------------------------#
@@ -42,37 +44,37 @@ def welcome(request):
 def test_factories(request):
     """Allows the user to generate questions from each factory."""
     context = {}
+    context['syllabi'] = usermodel_models.Syllabus.objects.all().order_by(
+            'tag')
     render = lambda: render_to_response("drill_tutor/test_factories.html",
             context, context_instance=RequestContext(request))
-    if request.method != 'POST' or 'query' not in request.POST:
-        return render()
-        
-    query = request.POST['query']
-    context['query'] = query
 
-    if not scripts.containsScript(scripts.Script.Kanji, query):
-        context['error'] = 'Please enter a query containing kanji.'
+    if request.method != 'POST' or 'syllabus_tag' not in request.POST:
         return render()
         
-    if len(query) > 1:
-        method = 'get_word_question'
-        supports_method = 'supports_words'
-        if lexicon_models.LexemeSurface.objects.filter(surface=query
-                ).count() != 1:
-            context['error'] = 'No unique match found.'
-            return render()
+    syllabus_tag = request.POST['syllabus_tag']
+    context['syllabus_tag'] = syllabus_tag
+    syllabus = usermodel_models.Syllabus.objects.get(tag=syllabus_tag)
+
+    query = request.POST.get('query')
+    context['query'] = query or ''
+
+    if query:
+        if len(query) > 1:
+            query_item = syllabus.partiallexeme_set.get(surface_set=query)
+        else:
+            query_item = syllabus.partialkanji_set.get(kanji__kanji=query)
     else:
-        method = 'get_kanji_question'
-        supports_method = 'supports_kanji'
-        if lexicon_models.Kanji.objects.filter(kanji=query).count() == 0:
-            context['error'] = 'No matching kanji found.'
-            return render()
+        query_item = syllabus.get_random_kanji_item()
 
     # Render questions for consumption
     questions = []
     for plugin in drills.load_plugins():
-        if getattr(plugin, supports_method):
-            questions.append(getattr(plugin, method)(query))
+        if plugin.supports_item(query_item):
+            try:
+                questions.append(plugin.get_question(query_item))
+            except plugin_api.UnsupportedItem:
+                continue
     context['questions'] = questions
     return render()
 
@@ -92,6 +94,8 @@ def test_answer_checking(request):
     
     context = {'has_answers': True}
     context['questions'] = answered_questions
+    context['syllabi'] = usermodel_models.Syllabus.objects.order_by('tag')
+    context['syllabus_tag'] = request.POST.get('syllabus_tag')
     return render_to_response("drill_tutor/test_factories.html", context,
             context_instance=RequestContext(request))
 
@@ -173,3 +177,5 @@ class AnsweredQuestion(object):
             
         output.append(html.P(*option_choices, **{'class': 'option_choices'}))
         return '\n'.join(output)
+
+#----------------------------------------------------------------------------#

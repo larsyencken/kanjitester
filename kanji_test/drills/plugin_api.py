@@ -13,6 +13,9 @@ from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
 from kanji_test.drills import models
+from kanji_test.user_model import models as usermodel_models
+
+class UnsupportedItem(Exception): pass
 
 class QuestionFactoryI(object):
     """An abstract interface for factories which build questions."""
@@ -30,21 +33,33 @@ class QuestionFactoryI(object):
                     supports_words=cls.supports_words,
                 )[0]
         return cls._question_plugin
-        
-    def get_word_question(self, word):
+
+    def get_question(self, syllabus_item):
+        "Fetches a question based on the given syllabus item."
+        if isinstance(syllabus_item, usermodel_models.PartialLexeme):
+            return self.get_word_question(syllabus_item)
+
+        elif isinstance(syllabus_item, usermodel_models.PartialKanji):
+            return self.get_kanji_question(syllabus_item)
+
+        else:
+            raise ValueError('bad syllabus item %s' % syllabus_item)
+
+    def supports_item(self, syllabus_item):
+        if isinstance(syllabus_item, usermodel_models.PartialLexeme):
+            return self.supports_words
+        elif isinstance(syllabus_item, usermodel_models.PartialKanji):
+            return self.supports_kanji
+        else:
+            raise ValueError('bad syllabus item %s' % syllabus_item)
+
+    def get_word_question(self, partial_lexeme):
         """Constructs and returns a new question based on the given word."""
         raise NotYetImplementedError
 
-    def get_kanji_question(self, kanji):
+    def get_kanji_question(self, partial_kanji):
         """Constructs and returns a new question based on the given kanji."""
         raise NotYetImplementedError
-
-    def is_valid_word(self, word):
-        return isinstance(word, (unicode, str)) and len(word) >= 1
-    
-    def is_valid_kanji(self, kanji):
-        return len(kanji) == 1 and \
-                scripts.scriptType(kanji) == scripts.Script.Kanji
 
 class MultipleChoiceFactoryI(QuestionFactoryI):
     """An abstract factory for multiple choice questions."""

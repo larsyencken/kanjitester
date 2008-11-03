@@ -7,8 +7,11 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
+import random
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
@@ -22,6 +25,38 @@ class Syllabus(models.Model):
     
     def __unicode__(self):
         return self.tag
+
+    def get_random_item(self):
+        "Returns a random item from this syllabus, either kanji or lexeme."
+        if random.random() < self._get_word_proportion():
+            return self.partiallexeme_set.order_by('?')[0]
+        else:
+            return self.partialkanji_set.order_by('?')[0]
+
+    def get_random_kanji_item(self):
+        if random.random() < self._get_kanji_word_proportion():
+            return self.partiallexeme_set.filter(
+                    surface_set__has_kanji=True).order_by('?')[0]
+        else:
+            return self.partialkanji_set.order_by('?')[0]
+
+    def _get_word_proportion(self):
+        "Determine the raw proportion of syllabus items which are words."
+        if not hasattr(self, '_cached_word_prop'):
+            n_words = self.partiallexeme_set.count()
+            n_kanji = self.partialkanji_set.count()
+            self._cached_word_prop = float(n_words) / (n_words + n_kanji)
+        
+        return self._cached_word_prop
+
+    def _get_kanji_word_proportion(self):
+        if not hasattr(self, '_cached_kanji_word_prop'):
+            n_words = self.partiallexeme_set.filter(
+                    surface_set__has_kanji=True).count()
+            n_kanji = self.partialkanji_set.count()
+            self._cached_kanji_word_prop = float(n_words) / (n_words + n_kanji)
+
+        return self._cached_kanji_word_prop
 
 class UserProfile(models.Model):
     """Basic model of the user's kanji knowledge and study goals."""
@@ -44,6 +79,26 @@ class PartialLexeme(models.Model):
         return '/'.join(s.surface for s in self.surface_set.all()) + ' ' + \
             '[%s]' % '/'.join(r.reading for r in self.reading_set.all())
         return self.lexeme.surface_set.all()[0].surface
+
+    def random_surface():
+        def fget(self):
+            try:
+                return self.surface_set.all().order_by('?')[0].surface
+            except IndexError:
+                raise ObjectDoesNotExist
+        return locals()
+    random_surface = property(**random_surface())
+
+    def random_kanji_surface():
+        "Returns a random surface for this lexeme containing kanji."
+        def fget(self):
+            try:
+                return self.surface_set.filter(has_kanji=True).order_by(
+                    '?')[0].surface
+            except IndexError:
+                raise ObjectDoesNotExist
+        return locals()
+    random_kanji_surface = property(**random_kanji_surface())
 
     class Meta:
         unique_together = (('syllabus', 'lexeme'),)

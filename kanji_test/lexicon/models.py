@@ -46,6 +46,7 @@ class LexemeSurface(models.Model):
     lexeme = models.ForeignKey(Lexeme, related_name='surface_set')
     surface = models.CharField(max_length=60, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
+    has_kanji = models.BooleanField()
 
     @staticmethod
     def sample():
