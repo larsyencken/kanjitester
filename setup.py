@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  setup.py
@@ -12,6 +13,7 @@ Build script for the kanji_test project.
 """
 
 from setuptools import setup, find_packages, Extension
+from os import path
 
 setup(
         name='kanji_test',
@@ -24,8 +26,10 @@ setup(
 
         packages=find_packages(),
         ext_modules=[Extension(
-                'kanji_test/plugins/visual_similarity/metrics/stroke',
-                ['kanji_test/plugins/visual_similarity/metrics/stroke.pyx'],
+                path.join('kanji_test', 'user_model_plugins',
+                    'visual_similarity', 'metrics', 'stroke'),
+                [path.join('kanji_test', 'user_model_plugins',
+                    'visual_similarity', 'metrics', 'stroke.pyx')]
             )],
     )
 
