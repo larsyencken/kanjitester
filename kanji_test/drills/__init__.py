@@ -18,7 +18,7 @@ def load_plugins():
     Load all the plugins listed in the settings file.
     """
     plugins = []
-    for plugin_path in settings.INSTALLED_QUESTION_PLUGINS:
+    for plugin_path in settings.DRILL_PLUGINS:
         import_path = plugin_path.split('.')
         plugin_class_name = import_path.pop()
         module = __import__('.'.join(import_path))

@@ -14,13 +14,13 @@ from cjktools import scripts
 from cjktools import sequences
 
 from kanji_test.drills import models as api_models
-from kanji_test.drills import models.api import factory
+from kanji_test.drills import plugin_api
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test import settings
 
 #----------------------------------------------------------------------------#
 
-class ReadingQuestionFactory(factory.MultipleChoiceFactoryI):
+class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     "Distractor readings are randomly sampled."
     question_type = 'pr'
     supports_kanji = True
@@ -81,7 +81,7 @@ class ReadingQuestionFactory(factory.MultipleChoiceFactoryI):
 
 #----------------------------------------------------------------------------#
 
-class SurfaceQuestionFactory(factory.MultipleChoiceFactoryI):
+class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """
     Distractors are sampled randomly from the surface distribution.
     """
@@ -130,7 +130,7 @@ class SurfaceQuestionFactory(factory.MultipleChoiceFactoryI):
 
 #----------------------------------------------------------------------------#
 
-class GlossQuestionFactory(factory.MultipleChoiceFactoryI):
+class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """Distractor glosses are sampled randomly."""
     supports_kanji = True
     supports_words = True
