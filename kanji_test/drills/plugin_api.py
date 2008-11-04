@@ -34,13 +34,13 @@ class QuestionFactoryI(object):
                 )[0]
         return cls._question_plugin
 
-    def get_question(self, syllabus_item):
+    def get_question(self, syllabus_item, user):
         "Fetches a question based on the given syllabus item."
         if isinstance(syllabus_item, usermodel_models.PartialLexeme):
-            return self.get_word_question(syllabus_item)
+            return self.get_word_question(syllabus_item, user)
 
         elif isinstance(syllabus_item, usermodel_models.PartialKanji):
-            return self.get_kanji_question(syllabus_item)
+            return self.get_kanji_question(syllabus_item, user)
 
         else:
             raise ValueError('bad syllabus item %s' % syllabus_item)
@@ -53,11 +53,11 @@ class QuestionFactoryI(object):
         else:
             raise ValueError('bad syllabus item %s' % syllabus_item)
 
-    def get_word_question(self, partial_lexeme):
+    def get_word_question(self, partial_lexeme, user):
         """Constructs and returns a new question based on the given word."""
         raise NotYetImplementedError
 
-    def get_kanji_question(self, partial_kanji):
+    def get_kanji_question(self, partial_kanji, user):
         """Constructs and returns a new question based on the given kanji."""
         raise NotYetImplementedError
 

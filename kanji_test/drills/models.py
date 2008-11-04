@@ -143,6 +143,14 @@ class MultipleChoiceQuestion(Question):
     def add_options(self, distractor_values, answer):
         if answer in distractor_values:
             raise ValueError('answer included in distractor set')
+
+        if len(filter(None, distractor_values)) < len(distractor_values) or \
+                not answer:
+            raise ValueError('all option values must be non-empty')
+
+        if len(set(distractor_values + [answer])) < len(distractor_values) + 1:
+            raise ValueError('all option values must be unique')
+
         for option_value in distractor_values:
             self.options.create(
                     value=option_value,

@@ -28,7 +28,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_kanji = True
     supports_words = True
 
-    def get_word_question(self, partial_lexeme):
+    def get_word_question(self, partial_lexeme, user):
         try:
             surface = partial_lexeme.random_kanji_surface
         except ObjectDoesNotExist:
@@ -55,7 +55,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, answer)
         return question
             
-    def get_kanji_question(self, partial_kanji):
+    def get_kanji_question(self, partial_kanji, user):
         real_readings = [r.reading for r in \
                 partial_kanji.kanji.reading_set.all()]
         distractor_values = list(itertools.islice(
@@ -74,6 +74,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     
     def _random_reading_iter(self, length, real_reading_set):
         """Returns a random iterator over kanji readings."""
+        previous_set = real_reading_set.copy()
         while True:
             reading_parts = []
             for i in xrange(length):
@@ -81,7 +82,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                         lexicon_models.KanjiReadingProb.sample().symbol
                     )
             reading = ''.join(reading_parts)
-            if reading not in real_reading_set:
+            if reading not in previous_set:
                 yield reading
 
 #----------------------------------------------------------------------------#
@@ -94,7 +95,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_words = True
     supports_kanji = True
     
-    def get_kanji_question(self, partial_kanji):
+    def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         kanji = kanji_row.kanji
         distractor_set = set()
@@ -111,7 +112,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, kanji)
         return question
         
-    def get_word_question(self, partial_lexeme):
+    def get_word_question(self, partial_lexeme, user):
         lexeme = partial_lexeme.lexeme
         try:
             surface = partial_lexeme.random_kanji_surface
@@ -147,7 +148,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_words = True
     question_type = 'pg'
 
-    def get_kanji_question(self, partial_kanji):
+    def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         answer = kanji_row.gloss
         distractor_values = set()
@@ -164,7 +165,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, answer)
         return question
     
-    def get_word_question(self, partial_lexeme):
+    def get_word_question(self, partial_lexeme, user):
         try:
             surface = partial_lexeme.random_surface
         except ObjectDoesNotExist:

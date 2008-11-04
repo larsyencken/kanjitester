@@ -11,6 +11,7 @@ from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
+from django.contrib.auth.decorators import login_required
 
 from cjktools import scripts
 from cjktools.scripts import containsScript, Script
@@ -41,6 +42,7 @@ def welcome(request):
 
 #----------------------------------------------------------------------------#
 
+@login_required
 def test_factories(request):
     """Allows the user to generate questions from each factory."""
     context = {}
@@ -72,7 +74,7 @@ def test_factories(request):
     for plugin in drills.load_plugins():
         if plugin.supports_item(query_item):
             try:
-                questions.append(plugin.get_question(query_item))
+                questions.append(plugin.get_question(query_item, request.user))
             except plugin_api.UnsupportedItem:
                 continue
     context['questions'] = questions
@@ -80,6 +82,7 @@ def test_factories(request):
 
 #----------------------------------------------------------------------------#
 
+@login_required
 def test_answer_checking(request):
     """Checks the answers submitted from a query."""
     if request.method != 'POST':
