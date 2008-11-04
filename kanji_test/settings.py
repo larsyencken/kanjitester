@@ -117,8 +117,6 @@ DRILL_PLUGINS = (
     'kanji_test.question_plugins.basic.ReadingQuestionFactory',
     'kanji_test.question_plugins.basic.SurfaceQuestionFactory',
     'kanji_test.question_plugins.basic.GlossQuestionFactory',
-#    'kanji_test.question_plugins.visual_similarity.SimilarityWithReading',
-#    'kanji_test.question_plugins.visual_similarity.SimilarityWithMeaning',    
 )
 
 USER_MODEL_PLUGINS = (
