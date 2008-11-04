@@ -16,6 +16,7 @@ import consoleLog
 
 from kanji_test.lexicon import load_lexicon
 from kanji_test.user_model import plugin_api
+from kanji_test.user_model import add_syllabus
 
 class Command(NoArgsCommand):
     help = "Builds all required static database tables."
@@ -24,6 +25,7 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         consoleLog.default.start('Building kanji_test', nSteps=2)
         load_lexicon.load_lexicon()
+        add_syllabus.add_all_syllabi()
         consoleLog.default.finish()
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
