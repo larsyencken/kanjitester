@@ -18,6 +18,7 @@ import consoleLog
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
+from kanji_test.user_model import plugin_api
 from kanji_test import settings
 
 #----------------------------------------------------------------------------#
@@ -34,18 +35,18 @@ def list_syllabi():
         _log.log(syllabus_name)
     _log.finish()
 
-def add_all_syllabi():
+def add_all_syllabi(force=False):
     syllabi = _fetch_syllabi()
     _log.start('Adding all syllabi', nSteps=len(syllabi))
     for syllabus_name in syllabi:
-        add_syllabus(syllabus_name)
+        add_syllabus(syllabus_name, force=force)
     _log.finish()
 
-def add_syllabus(syllabus_name):
+def add_syllabus(syllabus_name, force=False):
     """Adds the given syllabus to the database interactively."""
     word_filename, char_filename = _check_syllabus_name(syllabus_name)
     tag = syllabus_name.replace('_', ' ')
-    _log.start('Adding syllabus %s' % tag, nSteps=5)
+    _log.start('Adding syllabus %s' % tag, nSteps=6)
 
     _log.log('Clearing any existing objects')    
     usermodel_models.Syllabus.objects.filter(tag=tag).delete()
@@ -90,6 +91,10 @@ def add_syllabus(syllabus_name):
             if scripts.uniqueKanji(lexeme_surface.surface).issubset(
                     kanji_set):
                 partial_lexeme.surface_set.add(lexeme_surface)
+
+    _log.start('Adding error models')
+    plugin_api.load_priors(syllabus, force=force)
+    _log.finish()
 
     _log.finish()
 
@@ -218,6 +223,9 @@ available, or -a to just install them all."""
     parser.add_option('-a', '--all', action='store_true', dest='all',
             help='Install all available syllabi.')
 
+    parser.add_option('-f', '--force', action='store_true', dest='force',
+            help='Overwrite any existing data.')
+
     return parser
 
 def main(argv):
@@ -228,11 +236,11 @@ def main(argv):
         list_syllabi()
 
     elif options.all:
-        add_all_syllabi()
+        add_all_syllabi(force=bool(options.force))
 
     elif len(args) == 1:
         syllabus_name = args[0]
-        add_syllabus(syllabus_name)
+        add_syllabus(syllabus_name, force=bool(options.force))
 
     else:
         parser.print_help()

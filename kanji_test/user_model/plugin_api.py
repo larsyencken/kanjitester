@@ -48,7 +48,7 @@ def load_plugins():
     
     return plugin_classes
 
-def load_priors(syllabus):
+def load_priors(syllabus, force=False):
     "Loads the prior distributions represented by each plugin."
     log = consoleLog.default
     log.start('Loading prior distributions', nSteps=2)
@@ -59,8 +59,8 @@ def load_priors(syllabus):
     log.start('Initialising prior distributions', nSteps=len(plugins))
     for plugin_class in plugins:
         plugin_obj = plugin_class()
-        
-        plugin_obj.init_priors(syllabus)
+        plugin_obj.init_priors(syllabus, force=False)
     log.finish()
 
     log.finish()
+
