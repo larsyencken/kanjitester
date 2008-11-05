@@ -11,7 +11,3 @@ from django.contrib import admin
 
 from kanji_test.user_model_plugins.visual_similarity import models
 
-class GraphAdmin(admin.ModelAdmin):
-    list_display = ('label', 'neighbour_label', 'weight')
-
-admin.site.register(models.SimilarityEdge, GraphAdmin)

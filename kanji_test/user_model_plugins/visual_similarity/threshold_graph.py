@@ -54,7 +54,8 @@ class ThresholdGraph(object):
 
     def connect(self, label_a, label_b, weight):
         self[label_a].add(label_b, weight)
-        self[label_b].add(label_a, weight)
+        if label_a != label_b:
+            self[label_b].add(label_a, weight)
         self._n_links += 1
         self._sum += weight
         self._sum_squared += weight * weight
@@ -68,12 +69,3 @@ class ThresholdGraph(object):
     
     def labels(self):
         return self.heaps.labels()
-    
-    def store(self, edge_class):
-        "Stores the graph to the database."
-        edge_class.objects.all().delete()
-        for label, edge_seq in self._heaps.iteritems():
-            for weight, neighbour_label in edge_seq:
-                edge = edge_class(label=label, neighbour_label=neighbour_label,
-                        weight=weight)
-                edge.save()
