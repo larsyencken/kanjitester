@@ -15,7 +15,7 @@ from cjktools import sequences
 from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.drills import models as api_models
-from kanji_test.drills import plugin_api
+from kanji_test.drills import plugin_api, support
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
 from kanji_test import settings
@@ -74,7 +74,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     
     def _random_reading_iter(self, length, real_reading_set):
         """Returns a random iterator over kanji readings."""
-        previous_set = real_reading_set.copy()
+        previous_set = set(real_reading_set)
         while True:
             reading_parts = []
             for i in xrange(length):
@@ -84,32 +84,27 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             reading = ''.join(reading_parts)
             if reading not in previous_set:
                 yield reading
+                previous_set.add(reading)
 
 #----------------------------------------------------------------------------#
 
 class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
-    """
-    Distractors are sampled randomly from the surface distribution.
-    """
+    "Distractors sampled randomly from a naive surface distribution."
     question_type = 'gp'
     supports_words = True
     supports_kanji = True
-    
+
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         kanji = kanji_row.kanji
-        distractor_set = set()
-        while len(distractor_set) < settings.N_DISTRACTORS:
-            random_kanji = lexicon_models.KanjiProb.sample().symbol
-            if random_kanji != kanji:
-                distractor_set.add(random_kanji)
-        distractor_values = list(distractor_set)
+        distractors = support.build_kanji_options(kanji,
+                lambda kanji: self._sample_kanji(kanji, user))
         question = self.build_question(
-                pivot=partial_kanji.kanji.kanji,
+                pivot=kanji,
                 pivot_type='k',
                 stimulus=kanji_row.gloss,
             )
-        question.add_options(distractor_values, kanji)
+        question.add_options(distractors, kanji)
         return question
         
     def get_word_question(self, partial_lexeme, user):
@@ -122,16 +117,8 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         language = lexicon_models.Language.get_default()
         # XXX assuming the first sense is the most frequent
         gloss = lexeme.sense_set.filter(language=language)[0].gloss
-        distractor_chars = map(list, [surface] * settings.N_DISTRACTORS)
-        for j in xrange(len(surface)):
-            if scripts.scriptType(surface[j]) != scripts.Script.Kanji:
-                continue
-            
-            for i in xrange(settings.N_DISTRACTORS):
-                distractor_chars[i][j] = lexicon_models.KanjiProb.sample(
-                        ).symbol
-        
-        distractors = [''.join(distractor) for distractor in distractor_chars]
+        distractors = support.build_kanji_options(surface,
+                lambda kanji: self._sample_kanji(kanji, user))
         question = self.build_question(
                 pivot=surface,
                 pivot_type='w',
@@ -140,6 +127,15 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractors, surface)
         return question
 
+    def _sample_kanji(self, kanji, user):
+        if not hasattr(self, '_kanji_set'):
+            self._kanji_set = [row.kanji for row in \
+                    lexicon_models.Kanji.objects.filter(
+                        partialkanji__syllabus__userprofile__user=user)
+                ]
+
+        return random.choice(self._kanji_set)
+    
 #----------------------------------------------------------------------------#
 
 class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
@@ -174,6 +170,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         word_row = partial_lexeme.lexeme
         answer = word_row.random_sense.gloss
         distractor_values = set()
+        exclude_set = set(s.gloss for s in word_row.sense_set.all())
         while len(distractor_values) < settings.N_DISTRACTORS:
             # Find a random gloss by sampling a random surface and taking
             # its gloss. Only surfaces containing kanji are eligible.
@@ -181,9 +178,10 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             if random_surface != answer and \
                     scripts.containsScript(scripts.Script.Kanji,
                             random_surface.surface):
-                distractor_values.add(
-                        random_surface.lexeme.random_sense.gloss
-                    )
+                gloss = random_surface.lexeme.random_sense.gloss
+                if gloss not in exclude_set:
+                    distractor_values.add(gloss)
+
         distractor_values = list(distractor_values)
         question = self.build_question(
                 pivot=surface,
@@ -192,3 +190,4 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             )
         question.add_options(distractor_values, answer)
         return question
+

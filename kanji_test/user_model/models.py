@@ -64,7 +64,7 @@ class UserProfile(models.Model):
     syllabus = models.ForeignKey(Syllabus)
 
     def __unicode__(self):
-        return u"UserProfile for %s" % user.username
+        return u"UserProfile for %s" % self.user.username
 
 class PartialLexeme(models.Model):
     """A subset of an individual lexeme."""
@@ -155,21 +155,31 @@ class ErrorDist(models.Model):
         unique_together = (('user', 'tag'),)
         verbose_name = 'error distribution'
         verbose_name_plural = 'error distributions'
+
+    def __unicode__(self):
+        return '%s: %s' % (self.user.username, self.tag)
         
     @classmethod
     def init_from_priors(cls, user):
         """Initialise user copies of prior dists."""
+        user.errordist_set.all().delete()
         prior_dists = PriorDist.objects.filter(
                 syllabus=user.get_profile().syllabus)
         for prior_dist in prior_dists:
             user_dist = user.errordist_set.create(tag=prior_dist.tag)
             for prior_pdf in prior_dist.density.all():
-                user_dist.density.create(pdf=prior_pdf.pdf, cdf=prior_pdf.cdf,
-                        is_correct=prior_pdf.is_correct)
+                user_dist.density.create(
+                        pdf=prior_pdf.pdf,
+                        cdf=prior_pdf.cdf,
+                        condition=prior_pdf.condition,
+                        symbol=prior_pdf.symbol,
+                        is_correct=prior_pdf.is_correct,
+                    )
 
-    @classmethod
-    def sample(cls):
-        raise Exception('not supported')
+    def sample(self, condition):
+        target_cdf = random.random()
+        return self.density.filter(condition=condition,
+                cdf__gte=target_cdf).order_by('cdf')[0]
 
     @classmethod
     def from_dist(cls):

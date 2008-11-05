@@ -15,6 +15,7 @@ import glob
 from cjktools.common import sopen
 from cjktools import scripts
 import consoleLog
+from django.contrib.auth import models as auth_models
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
@@ -97,6 +98,11 @@ def add_syllabus(syllabus_name, force=False):
     _log.finish()
 
     _log.finish()
+
+def add_per_user_models(username):
+    _log.log('Initializing error models for user %s' % username)
+    user = auth_models.User.objects.get(username=username)
+    usermodel_models.ErrorDist.init_from_priors(user)
 
 #----------------------------------------------------------------------------#
 
@@ -226,6 +232,9 @@ available, or -a to just install them all."""
     parser.add_option('-f', '--force', action='store_true', dest='force',
             help='Overwrite any existing data.')
 
+    parser.add_option('-u', '--user', action='store', dest='user',
+            help='Manually initialise error distributions for a user.')
+
     return parser
 
 def main(argv):
@@ -234,6 +243,9 @@ def main(argv):
 
     if options.list_syllabi:
         list_syllabi()
+
+    elif options.user:
+        add_per_user_models(options.user)
 
     elif options.all:
         add_all_syllabi(force=bool(options.force))
