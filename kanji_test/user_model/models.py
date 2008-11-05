@@ -132,6 +132,9 @@ class PriorDist(models.Model):
         verbose_name = 'prior distribution'
         verbose_name_plural = 'prior distributions'
 
+    def __unicode__(self):
+        return self.tag
+
 class PriorPdf(util_models.CondProb):
     "Individual densities for a prior distribution."
     dist = models.ForeignKey(PriorDist, related_name='density')
