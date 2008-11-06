@@ -27,7 +27,7 @@ admin.site.register(models.Lexeme)
 class LexemeSurfaceAdmin(admin.ModelAdmin):
     list_display = ('lexeme', 'surface', 'priority_codes')
     search_fields = ('surface',)
-    list_filter = ('has_kanji',)
+    list_filter = ('has_kanji', 'in_lexicon')
 admin.site.register(models.LexemeSurface, LexemeSurfaceAdmin)
 
 class LexemeReadingAdmin(admin.ModelAdmin):

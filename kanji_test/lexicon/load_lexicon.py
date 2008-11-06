@@ -23,8 +23,6 @@ from kanji_test import settings
 
 log = consoleLog.default
 _jmdict_path = path.join(settings.DATA_DIR, 'JMdict.gz')
-_word_dist_path = path.join(settings.DATA_DIR, 'corpus',
-        'jp_word_corpus_counts.gz')
 
 #----------------------------------------------------------------------------#
 
@@ -68,9 +66,14 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
     if not surface_list:
         surface_list = reading_list
 
+    in_lexicon = True # All these surfaces are from the original lexicon
     for surface in surface_list:
-        lexeme_surface_stack.append((lexeme_id, surface,
-                scripts.containsScript(scripts.Script.Kanji, surface)))
+        lexeme_surface_stack.append((
+                lexeme_id,
+                surface,
+                scripts.containsScript(scripts.Script.Kanji, surface),
+                in_lexicon,
+            ))
     
     for reading in reading_list:
         lexeme_reading_stack.append((lexeme_id, reading))
@@ -121,8 +124,8 @@ def _store_lexemes(lexeme_nodes):
     for lexeme_surface_rows in groupsOfNIter(max_rows, lexeme_surface_stack):
         cursor.executemany( """
                 INSERT INTO lexicon_lexemesurface (lexeme_id, surface,
-                    has_kanji)
-                VALUES (%s, %s, %s)
+                    has_kanji, in_lexicon)
+                VALUES (%s, %s, %s, %s)
             """, lexeme_surface_rows)
 
     log.log('Storing to lexicon_lexemereading')

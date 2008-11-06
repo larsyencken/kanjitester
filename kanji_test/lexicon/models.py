@@ -45,8 +45,12 @@ class LexemeSurface(models.Model):
     """A surface rendering of the word."""
     lexeme = models.ForeignKey(Lexeme, related_name='surface_set')
     surface = models.CharField(max_length=60, db_index=True)
-    priority_codes = models.CharField(blank=True, max_length=60, null=True)
-    has_kanji = models.BooleanField()
+    priority_codes = models.CharField(blank=True, max_length=60, null=True,
+            help_text='Any annotations the original dictionary provided')
+    has_kanji = models.BooleanField(
+            help_text='Does this entry contain any kanji characters?')
+    in_lexicon = models.BooleanField(default=True,
+            help_text='Is this part of the original lexicon?')
 
     @staticmethod
     def sample():

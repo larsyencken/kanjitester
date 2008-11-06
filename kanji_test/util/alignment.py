@@ -11,6 +11,8 @@
 Resouces for parsing and utilising alignments.
 """
 
+from itertools import izip
+
 class FormatError(Exception): pass
 
 _gp_sep = u':'
@@ -36,6 +38,15 @@ class Alignment(object):
 
     def __len__(self):
         return len(self.g_segs)
+
+    def __iter__(self):
+        for item in izip(self.g_segs, self.p_segs):
+            yield item
+
+    def __unicode__(self):
+        return ' '.join(
+                [_seg_sep.join(self.g_segs), _seg_sep.join(self.p_segs)],
+            )
     
     @classmethod
     def from_line(cls, line):
