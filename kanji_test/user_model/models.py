@@ -115,6 +115,12 @@ class PartialKanji(models.Model):
     syllabus = models.ForeignKey(Syllabus)
     kanji = models.ForeignKey(lexicon_models.Kanji,
             help_text='The kanji itself.')
+    reading_set = models.ManyToManyField(lexicon_models.KanjiReading,
+            help_text='The readings in this syllabus.')
+
+    def n_readings(self):
+        return self.reading_set.count()
+    n_readings = property(n_readings)
     
     class Meta:
         verbose_name_plural = 'partial kanji'

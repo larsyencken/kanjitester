@@ -19,7 +19,7 @@ class SenseNoteAdmin(admin.ModelAdmin):
     list_display = ('partial_lexeme', 'note')
 
 class PartialKanjiAdmin(admin.ModelAdmin):
-    list_display = ('kanji', 'syllabus')
+    list_display = ('kanji', 'syllabus', 'n_readings')
     list_filter = ('syllabus',)
 
 class PriorDistAdmin(admin.ModelAdmin):

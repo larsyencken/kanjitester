@@ -14,18 +14,21 @@ import glob
 
 from cjktools.common import sopen
 from cjktools import scripts
+from cjktools import alternations
 import consoleLog
 from django.contrib.auth import models as auth_models
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_model import plugin_api
+from kanji_test.util.alignment import Alignment
 from kanji_test import settings
 
 #----------------------------------------------------------------------------#
 
 _log = consoleLog.default
 _syllabi_path = os.path.join(settings.DATA_DIR, 'syllabus')
+_required_extensions = ('.words', '.chars', '.aligned')
 
 #----------------------------------------------------------------------------#
 
@@ -45,9 +48,13 @@ def add_all_syllabi(force=False):
 
 def add_syllabus(syllabus_name, force=False):
     """Adds the given syllabus to the database interactively."""
-    word_filename, char_filename = _check_syllabus_name(syllabus_name)
+    syllabus_path = _check_syllabus_name(syllabus_name)
+    word_file = syllabus_path + '.words'
+    char_file = syllabus_path + '.chars'
+    aligned_file = syllabus_path + '.aligned'
+
     tag = syllabus_name.replace('_', ' ')
-    _log.start('Adding syllabus %s' % tag, nSteps=6)
+    _log.start('Adding syllabus %s' % tag)
 
     _log.log('Clearing any existing objects')    
     usermodel_models.Syllabus.objects.filter(tag=tag).delete()
@@ -56,10 +63,10 @@ def add_syllabus(syllabus_name, force=False):
     syllabus = usermodel_models.Syllabus(tag=tag)
     syllabus.save()
     
-    _log.start('Parsing word list')
+    _log.start('Parsing word list', nSteps=1)
     n_ok = 0
     skipped = []
-    for reading, surface, disambiguation in SyllabusParser(word_filename):
+    for reading, surface, disambiguation in SyllabusParser(word_file):
         lexeme = _find_matching_lexeme(reading, surface, skipped,
                 disambiguation)
         if not lexeme:
@@ -80,11 +87,13 @@ def add_syllabus(syllabus_name, force=False):
     o_stream.close()
     
     _log.log('Parsing kanji list')
-    i_stream = sopen(char_filename)
+    i_stream = sopen(char_file)
     kanji_set = scripts.uniqueKanji(i_stream.read())
     for kanji in kanji_set:
         syllabus.partialkanji_set.create(kanji_id=kanji)
     i_stream.close()
+
+    _load_kanji_readings(aligned_file, syllabus)
 
     _log.log('Building lexeme surfaces from kanji')
     for partial_lexeme in syllabus.partiallexeme_set.all():
@@ -108,22 +117,25 @@ def add_per_user_models(username):
 
 def _fetch_syllabi():
     syllabi = []
-    glob_pattern = os.path.join(_syllabi_path, '*.words')
+    glob_pattern = os.path.join(_syllabi_path, '*' + _required_extensions[0])
     for word_filename in glob.glob(glob_pattern):
         syllabus_path = os.path.splitext(word_filename)[0]
-        if os.path.exists(syllabus_path + '.chars'):
+        for extension in _required_extensions:
+            if not os.path.exists(syllabus_path + extension):
+                break
+        else:
             syllabi.append(os.path.basename(syllabus_path))
 
     return syllabi
 
 def _check_syllabus_name(syllabus_name):
-    word_filename = os.path.join(_syllabi_path, syllabus_name + '.words')
-    char_filename = os.path.join(_syllabi_path, syllabus_name + '.chars')
-    if not os.path.exists(word_filename) or \
-            not os.path.exists(char_filename):
-        print >> sys.stderr, "Can't find syllabus matching %s" % syllabus_name
-        sys.exit(1)
-    return word_filename, char_filename
+    syllabus_path = os.path.join(_syllabi_path, syllabus_name)
+    for extension in ('.words', '.chars', '.aligned'):
+        syllabus_file = syllabus_path + extension
+        if not os.path.exists(syllabus_file):
+            print >> sys.stderr, "Can't find syllabus file %s" % syllabus_file
+            sys.exit(1)
+    return syllabus_path
 
 def _find_matching_lexeme(reading, surface=None, skipped=None, 
         disambiguation=None):
@@ -209,6 +221,54 @@ class SyllabusParser(object):
     def __del__(self):
         self.i_stream.close()
         
+#----------------------------------------------------------------------------#
+
+def _load_kanji_readings(aligned_file, syllabus):
+    _log.start('Loading kanji readings', nSteps=2)
+    _log.log('Parsing alignments')
+    i_stream = sopen(aligned_file)
+    kanji_script = scripts.Script.Kanji
+    readings = {}
+    for line in i_stream:
+        alignment = Alignment.from_line(line)
+        alignment_len = len(alignment)
+        for i, (g_seg, p_seg) in enumerate(zip(alignment.g_segs,
+                    alignment.p_segs)):
+            if len(g_seg) > 1 or scripts.scriptType(g_seg) != kanji_script:
+                continue
+            reading_set = readings.setdefault(g_seg, set())
+            reading_set.add(p_seg)
+
+            has_left_context = i > 0
+            has_right_context = i < alignment_len - 1
+            extra_variants = alternations.canonicalSegmentForms(p_seg,
+                    leftContext=has_left_context,
+                    rightContext=has_right_context)
+            reading_set.update(extra_variants)
+
+    i_stream.close()
+
+    _log.start('Matching with known readings', nSteps=1)
+    n_kanji = 0
+    n_fallback = 0
+    for partial_kanji in syllabus.partialkanji_set.all():
+        n_kanji += 1
+        partial_kanji.reading_set = partial_kanji.kanji.reading_set.filter(
+                reading__in=readings[partial_kanji.kanji.kanji])
+        # Fall back to the single most frequent reading
+        if partial_kanji.reading_set.count() == 0:
+            n_fallback += 1
+            best_reading = lexicon_models.KanjiReadingCondProb.objects.filter(
+                    condition=partial_kanji.kanji.kanji
+                ).order_by('-pdf')[0].symbol
+            partial_kanji.reading_set.add(partial_kanji.kanji.reading_set.get(
+                    reading=best_reading))
+    _log.log('%d kanji, %d/%d matched/fallback' % (
+            n_kanji, n_kanji - n_fallback, n_fallback))
+    _log.finish()
+
+    _log.finish()
+
 #----------------------------------------------------------------------------#
 
 def _create_option_parser():
