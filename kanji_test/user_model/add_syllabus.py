@@ -160,6 +160,64 @@ def _find_matching_lexeme(reading, surface=None, skipped=None,
 #----------------------------------------------------------------------------#
 
 def _load_word_list(word_file, alignments, syllabus):
+    _parse_word_list(word_file, syllabus)
+    _determine_word_surfaces(alignments, syllabus)
+
+#----------------------------------------------------------------------------#
+
+def _determine_word_surfaces(alignments, syllabus):
+    _log.start('Building lexeme surfaces from kanji', nSteps=2)
+    _log.start('Adding reduced surfaces where needed', nSteps=1)
+    n_reduced = 0
+    kanji_set = set(o.kanji for o in lexicon_models.Kanji.objects.filter(
+            partialkanji__syllabus=syllabus))
+    for alignment in alignments:
+        if not scripts.containsScript(scripts.Script.Kanji,
+                alignment.grapheme):
+            continue
+
+        partial_lexeme = syllabus.partiallexeme_set.filter(
+                lexeme__reading_set__reading=alignment.phoneme
+            ).get(
+                lexeme__surface_set__surface=alignment.grapheme
+            )
+        lexeme_surface = partial_lexeme.lexeme.surface_set.get(
+                surface=alignment.grapheme)
+        reduced_surface = _maybe_reduce(alignment, kanji_set)
+        if reduced_surface == lexeme_surface.surface:
+            partial_lexeme.surface_set.add(lexeme_surface)
+        else:
+            # XXX Removed because of bug [305]
+            # Add a reduced surface to the lexicon
+            print 'Want to add %s to lexeme %d' % (reduced_surface,
+                    partial_lexeme.lexeme.id)
+            continue
+#            n_reduced += 1
+#            new_surface, created = lexeme.surface_set.get_or_create(
+#                    surface=reduced_surface,
+#                    has_kanji=scripts.containsScript(scripts.Script.Kanji,
+#                            reduced_surface),
+#                )
+#            if created:
+#                new_surface.in_lexicon = False
+#                new_surface.save()
+#            partial_lexeme.surface_set.add(new_surface)
+    _log.log('%d reduced surfaces' % n_reduced)
+
+    _log.start('Adding existing surfaces')
+    for partial_lexeme in syllabus.partiallexeme_set.all():
+        if partial_lexeme.surface_set.count() == 0:
+            for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
+                if scripts.uniqueKanji(lexeme_surface.surface).issubset(
+                        kanji_set):
+                    partial_lexeme.surface_set.add(lexeme_surface)
+    _log.finish()
+
+    return
+
+#----------------------------------------------------------------------------#
+
+def _parse_word_list(word_file, syllabus):
     _log.start('Parsing word list', nSteps=1)
     n_ok = 0
     skipped = []
@@ -185,51 +243,6 @@ def _load_word_list(word_file, alignments, syllabus):
     for skipped_word in skipped:
         print >> o_stream, skipped_word
     o_stream.close()
-
-    _log.start('Building lexeme surfaces from kanji', nSteps=2)
-    _log.start('Adding reduced surfaces where needed', nSteps=1)
-    n_reduced = 0
-    kanji_set = set(o.kanji for o in lexicon_models.Kanji.objects.filter(
-            partialkanji__syllabus=syllabus))
-    for alignment in alignments:
-        if not scripts.containsScript(scripts.Script.Kanji,
-                alignment.grapheme):
-            continue
-
-        partial_lexeme = syllabus.partiallexeme_set.filter(
-                lexeme__reading_set__reading=alignment.phoneme
-            ).get(
-                lexeme__surface_set__surface=alignment.grapheme
-            )
-        lexeme_surface = partial_lexeme.lexeme.surface_set.get(
-                surface=alignment.grapheme)
-        reduced_surface = _maybe_reduce(alignment, kanji_set)
-        if reduced_surface == lexeme_surface.surface:
-            partial_lexeme.surface_set.add(lexeme_surface)
-        else:
-            # Add a reduced surface to the lexicon
-            n_reduced += 1
-            new_surface, created = lexeme.surface_set.get_or_create(
-                    surface=reduced_surface,
-                    has_kanji=scripts.containsScript(scripts.Script.Kanji,
-                            reduced_surface),
-                )
-            if created:
-                new_surface.in_lexicon = False
-                new_surface.save()
-            partial_lexeme.surface_set.add(new_surface)
-    _log.log('%d reduced surfaces' % n_reduced)
-
-    _log.start('Adding existing surfaces')
-    for partial_lexeme in syllabus.partiallexeme_set.all():
-        if partial_lexeme.surface_set.count() == 0:
-            for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
-                if scripts.uniqueKanji(lexeme_surface.surface).issubset(
-                        kanji_set):
-                    partial_lexeme.surface_set.add(lexeme_surface)
-    _log.finish()
-
-    return
 
 #----------------------------------------------------------------------------#
 
