@@ -52,6 +52,9 @@ class LexemeSurface(models.Model):
     in_lexicon = models.BooleanField(default=True,
             help_text='Is this part of the original lexicon?')
 
+    class Meta:
+        unique_together = (('lexeme', 'surface'),)
+
     @staticmethod
     def sample():
         while True:
@@ -72,6 +75,9 @@ class LexemeReading(models.Model):
     lexeme = models.ForeignKey(Lexeme, related_name='reading_set')
     reading = models.CharField(max_length=60, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
+
+    class Meta:
+        unique_together = (('lexeme', 'reading'),)
     
 class Language(models.Model):
     """A human language."""
@@ -91,6 +97,12 @@ class LexemeSense(models.Model):
     lexeme = models.ForeignKey(Lexeme, related_name='sense_set')
     language = models.ForeignKey(Language)
     gloss = models.CharField(max_length=500)
+
+    class Meta:
+        # XXX Uniqueness constraint doesn't work due in mysql due to length of
+        #   gloss field.
+        #unique_together = (('lexeme', 'gloss'),)
+        pass
 
     def __unicode__(self):
         return u'%s [%s]' % (self.gloss, self.language.code)

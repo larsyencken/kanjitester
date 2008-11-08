@@ -52,8 +52,8 @@ def load_lexicon(filename=_jmdict_path):
 
 def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
         lexeme_sense_stack, lexeme_reading_stack):
-    surface_list = [n.find('keb').text for n in \
-            lexeme_node.findall('k_ele')]
+    surface_set = set(n.find('keb').text.upper() for n in \
+            lexeme_node.findall('k_ele'))
     reading_list = [n.find('reb').text for n in \
             lexeme_node.findall('r_ele')]
     sense_list = lexeme_node.findall('sense')
@@ -63,14 +63,14 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
         return
 
     # If we have no kanji, the kana becomes the surface form
-    if not surface_list:
-        surface_list = reading_list
+    if not surface_set:
+        surface_set = set(reading_list)
 
     in_lexicon = True # All these surfaces are from the original lexicon
-    for surface in surface_list:
+    for surface in sorted(surface_set):
         lexeme_surface_stack.append((
                 lexeme_id,
-                surface,
+                surface.upper(),
                 scripts.containsScript(scripts.Script.Kanji, surface),
                 in_lexicon,
             ))
