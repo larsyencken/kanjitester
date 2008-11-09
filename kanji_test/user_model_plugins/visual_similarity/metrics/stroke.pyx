@@ -92,20 +92,20 @@ cdef edit_distance(s_py, t_py):
         raise ValueError, "stroke sequences too long"
 
     # Copy s_py to s
-    for i from 0 <= i < s_len:
+    for 0 <= i < s_len:
         table[i][0] = i
         s[i] = s_py[i]
     table[s_len][0] = s_len
 
     # Copy t_py to t
-    for j from 0 <= j < t_len:
+    for 0 <= j < t_len:
         table[0][j] = j
         t[j] = t_py[j]
     table[0][t_len] = t_len
 
     # Perform edit distance
-    for i from 1 <= i <= s_len:
-        for j from 1 <= j <= t_len:
+    for 1 <= i <= s_len:
+        for 1 <= j <= t_len:
             if s[i-1] == t[j-1]:
                 cost = 0
             else:
