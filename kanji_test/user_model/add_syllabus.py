@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#doctest !/usr/bin/env python
 # -*- coding: utf-8 -*-
 # 
 #  add_syllabus.py
@@ -188,10 +188,8 @@ def _determine_word_surfaces(alignments, syllabus):
             partial_lexeme.surface_set.add(lexeme_surface)
         else:
             # XXX Removed because of bug [305]
-            # Add a reduced surface to the lexicon
-            print 'Want to add %s to lexeme %d' % (reduced_surface,
-                    partial_lexeme.lexeme.id)
             continue
+            # Add a reduced surface to the lexicon
 #            n_reduced += 1
 #            new_surface, created = lexeme.surface_set.get_or_create(
 #                    surface=reduced_surface,
