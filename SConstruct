@@ -81,7 +81,7 @@ else:
 # Configure the environment.
 env = checkLibraries(env)
 
-pyxbuild = Builder(action='pyrexc -o $TARGET $SOURCE')
+pyxbuild = Builder(action='cython -o $TARGET $SOURCE')
 env.Append(BUILDERS={'Pyrex': pyxbuild})
 
 #----------------------------------------------------------------------------#
