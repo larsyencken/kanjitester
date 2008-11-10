@@ -119,6 +119,13 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
                 result.inc(symbol, cond_dist[symbol])
         return result
 
+    def itercounts(self):
+        "Returns an iterator over (condition, symbol, count) pairs."
+        for condition in self.conditions():
+            cond_dist = self[condition]
+            for symbol in cond_dist.samples():
+                yield condition, symbol, cond_dist[symbol]
+
 class UnsupportedMethodError(Exception):
     pass
 

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-#----------------------------------------------------------------------------#
-# test_readingModel.py
-# Lars Yencken <lars.yencken@gmail.com>
-# vim: ts=4 sw=4 sts=4 et tw=78:
-# Mon May 21 17:19:27 2007
-#
-#----------------------------------------------------------------------------# 
+# 
+#  test_reading_model.py
+#  reading_alt
+#  
+#  Created by Lars Yencken on 2007-05-21.
+#  Copyright 2008 Lars Yencken. All rights reserved.
+# 
 
 import unittest
 from reading_model import *

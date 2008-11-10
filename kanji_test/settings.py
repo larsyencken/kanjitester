@@ -128,22 +128,27 @@ USER_MODEL_PLUGINS = (
     'kanji_test.user_model_plugins.visual_similarity.VisualSimilarity',
 )
 
+# auth
 AUTH_PROFILE_MODULE = 'user_model.userprofile'
 
+# drills; question_plugins
 N_DISTRACTORS = 5
 
+# visual_similarity
 MAX_GRAPH_DEGREE = 20
 
+# reading_alt
+ALTERNATION_ALPHA = 0.5
+VOWEL_LENGTH_ALPHA = 0.05
+PALATALIZATION_ALPHA = 0.05
 MAX_READING_LENGTH = 30
-
 UTF8_BYTES_PER_CHAR = 3 # For cjk chars
 
-N_ROWS_PER_INSERT = 10000
-
-DEFAULT_LANGUAGE_CODE = 'eng'
-
+# registration
 ACCOUNT_ACTIVATION_DAYS = 15
 
+N_ROWS_PER_INSERT = 10000
+DEFAULT_LANGUAGE_CODE = 'eng'
 UPDATE_ALPHA = 0.2
 
 # When True, enables the debugging media view.

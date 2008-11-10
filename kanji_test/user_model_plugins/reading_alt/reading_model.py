@@ -28,6 +28,9 @@ _reading_counts_map_file = join(settings.DATA_DIR, 'corpus',
 
 #----------------------------------------------------------------------------#
 
+if not (0 <= settings.ALTERNATION_ALPHA <= 1):
+    raise ValueError("Bad value for alternation alpha")
+
 class VoicingAndGeminationModel(object):
     "A reading model giving P(r|k) = aP_freq(r|k) + (1-a)P(r|r*)P(r*|k)."
 
@@ -65,12 +68,12 @@ class VoicingAndGeminationModel(object):
         alpha = settings.ALTERNATION_ALPHA
         assert 0 <= alpha <= 1
         try:
-            rawProb = self.raw_freq_dist.prob(grapheme, alt_reading)
+            rawProb = self.raw_freq_dist[grapheme].freq(alt_reading)
         except KeyError:
             rawProb = 0.0
 
-        normalizedProb = self.normalized_freq_dist.prob(grapheme, reading)
-        alternationProb = self.alternation_dist.prob(reading, alt_reading)
+        normalizedProb = self.normalized_freq_dist[grapheme].freq(reading)
+        alternationProb = self.alternation_dist[reading].freq(alt_reading)
 
         result = alpha*rawProb + (1-alpha)*normalizedProb*alternationProb
 

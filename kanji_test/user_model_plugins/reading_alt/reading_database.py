@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # 
 #  readingDatabase.py
-#  foks
+#  reading_alt
 #  
 #  Created by Lars Yencken on 2007-07-05.
 #  Copyright 2007-2008 Lars Yencken. All rights reserved.
@@ -19,21 +19,23 @@ from cjktools.progressBar import withProgress
 from cjktools.sequences import groupsOfN
 from cjktools.resources import kanjidic
 import consoleLog
+from checksum.models import Checksum
 
 from kanji_test.user_model_plugins.hierarchy.tree import TreeNode
 
-from reading_model import VoicingAndGeminationModel
-from alternation_model import VowelLengthModel, PalatalizationModel
+import reading_model
+import alternation_model
 
 #----------------------------------------------------------------------------#
 
-dependencies = []
+_dependencies = [__file__, reading_model, alternation_model]
 
 _alternation_models = [
-    ('voicing and gemination', 's', VoicingAndGeminationModel),
-    ('vowel length', 'v', VowelLengthModel),
-    ('palatalization', 'p', PalatalizationModel),
+    ('voicing and gemination', 's', reading_model.VoicingAndGeminationModel),
+    ('vowel length', 'v', alternation_model.VowelLengthModel),
+    ('palatalization', 'p', alternation_model.PalatalizationModel),
 ]
+
 
 log = consoleLog.default
 
@@ -49,17 +51,21 @@ class ReadingDatabase(object):
     #------------------------------------------------------------------------#
 
     @classmethod
-    def build(cls):
+    def build(cls, kanji_set):
         """
         Build the tables needed to generate search results at runtime. These
         tables describe readings and reading alternations for each kanji which
         might be searched for.
         """
         log.start('Building reading tables')
+        if not Checksum.needs_update('reading_alt', _dependencies,
+                ['lexicon']):
+            log.finish('Already up-to-date')
+            return
 
-        log.log('Detecting unique kanji ', newLine=False)
-        sys.stdout.flush()
-        kanji_set = cls._get_lookup_kanji()
+#        log.log('Detecting unique kanji ', newLine=False)
+#        sys.stdout.flush()
+#        kanji_set = cls._get_lookup_kanji()
 
         alt_tree = cls._build_alternation_tree(kanji_set)
 
@@ -68,28 +74,12 @@ class ReadingDatabase(object):
         log.log('Storing readings per kanji')
         cls._store_kanji_readings(alt_tree)
         cls._prune_kanji_readings()
+        
+        Checksum.store('reading_alt', _dependencies)
         log.finish()
 
     #------------------------------------------------------------------------#
     # PRIVATE METHODS
-    #------------------------------------------------------------------------#
-
-    @staticmethod
-    def _get_lookup_kanji():
-        """
-        Fetches the set of all kanji that require readings for lookup of
-        words using FOKS.
-        """
-        unique_kanji = scripts.uniqueKanji
-        kanji_set = set()
-        cursor = connection.cursor()
-        cursor.execute('SELECT word FROM lexicon_word')
-        for (word,) in withProgress(cursor.fetchall(), 100):
-            kanji_set.update(unique_kanji(word))
-        cursor.close()
-
-        return kanji_set
-
     #------------------------------------------------------------------------#
 
     @classmethod
@@ -111,7 +101,7 @@ class ReadingDatabase(object):
         for kanji_node in root_node.children.values():
             kanji = kanji_node.label
             if kanji in kjdic:
-                for reading in kjdic[kanji].all_readings:
+                for reading in kjdic[kanji].allReadings:
                     kanji_node.add_child(AltTreeNode(reading, 'b'))
 
         log.start('Adding alternation models', nSteps=len(_alternation_models))
@@ -121,7 +111,7 @@ class ReadingDatabase(object):
         for model_name, model_code, model_class in _alternation_models:
             log.log(pattern % model_name, newLine=False)
             sys.stdout.flush()
-            model_obj = model_class.get_cached()
+            model_obj = model_class()
             cls._add_alternation_model(model_obj, model_code, root_node,
                 first=(i==0))
             i += 1
@@ -185,15 +175,15 @@ class ReadingDatabase(object):
 
         # Insert them to the database.
         cursor = connection.cursor()
-        cursor.execute('DELETE FROM lexicon_kanjireading')
-        cursor.execute('DELETE FROM lexicon_readingalternation')
+        cursor.execute('DELETE FROM reading_alt_kanjireading')
+        cursor.execute('DELETE FROM reading_alt_readingalternation')
         max_per_run = 10000
         all_results = iter_results(root_node)
 
         for results in groupsOfN(max_per_run, all_results):
             cursor.executemany(
                     """
-                    INSERT INTO lexicon_readingalternation 
+                    INSERT INTO reading_alt_readingalternation 
                     (value, code, probability, left_visit, right_visit)
                     VALUES (%s, %s, %s, %s, %s)
                     """,
@@ -265,18 +255,19 @@ class ReadingDatabase(object):
         max_per_insert = 10000
         all_results = iter_results(alt_tree)
         cursor = connection.cursor()
-        cursor.execute('DELETE FROM lexicon_kanjireading')
+        cursor.execute('DELETE FROM reading_alt_kanjireading')
 
         for results in groupsOfN(max_per_insert, all_results):
             cursor.executemany(
                     """
-                    INSERT INTO lexicon_kanjireading
+                    INSERT INTO reading_alt_kanjireading
                     (kanji, reading, alternations, probability,
                         reading_alternation_id)
                     VALUES (%s, %s, %s, %s, %s)
                     """,
                     results
                 )
+            cursor.execute('COMMIT')
 
         cursor.close()
 
@@ -290,18 +281,21 @@ class ReadingDatabase(object):
         cursor = connection.cursor()
         cursor.execute(
                 """
-                SELECT id FROM lexicon_kanjireading AS A
-                WHERE A.probability != (
-                    SELECT MAX(B.probability) FROM lexicon_kanjireading AS B
-                    WHERE A.kanji = B.kanji AND A.reading = B.reading
-                )
+                SELECT id
+                    FROM reading_alt_kanjireading AS A
+                    WHERE A.probability != (
+                        SELECT MAX(B.probability)
+                            FROM reading_alt_kanjireading AS B
+                            WHERE A.kanji = B.kanji AND A.reading = B.reading
+                    )
                 """
             )
         ids = cursor.fetchall()
         cursor.executemany(
-                """DELETE FROM lexicon_kanjireading WHERE id = %s""",
+                """DELETE FROM reading_alt_kanjireading WHERE id = %s""",
                 ids
         )
+        cursor.execute('COMMIT')
         return
 
     #------------------------------------------------------------------------#

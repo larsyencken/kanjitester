@@ -129,6 +129,9 @@ class SimpleAlternationModel(AlternationModelI):
 
 #----------------------------------------------------------------------------#
 
+if not (0 <= settings.VOWEL_LENGTH_ALPHA <= 1):
+    raise ValueError('Bad value for vowel length alpha')
+
 class VowelLengthModel(SimpleAlternationModel):
     """
     An alternation model for vowel length.
