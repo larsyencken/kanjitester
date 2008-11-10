@@ -155,7 +155,8 @@ class KanjiReadingCondProb(prob_models.CondProb):
     A conditional frequency distribution over kanji readings.
     
     >>> KanjiReadingCondProb.initialise()
-    >>> KanjiReadingCondProb.objects.filter(condition=unicode('日')).count()
+    >>> KanjiReadingCondProb.objects.filter(
+    ...     condition=unicode('日', 'utf8')).count()
     45
     """
     _freq_dist_file = path.join(settings.DATA_DIR, 'corpus',
