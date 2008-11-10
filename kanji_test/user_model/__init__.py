@@ -10,3 +10,7 @@
 """
 All aspects of user proficiency and error modeling.
 """
+
+def build():
+    import add_syllabus
+    add_syllabus.add_all_syllabi()

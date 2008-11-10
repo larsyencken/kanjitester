@@ -17,6 +17,7 @@ from cjktools import scripts
 from cjktools import alternations
 import consoleLog
 from django.contrib.auth import models as auth_models
+from checksum.models import Checksum
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
@@ -45,9 +46,15 @@ def list_syllabi():
 
 def add_all_syllabi(force=False):
     syllabi = _fetch_syllabi()
+    dependencies = _deps_from_syllabi(syllabi)
     _log.start('Adding all syllabi', nSteps=len(syllabi))
+    if not Checksum.needs_update('syllabi', dependencies, ['lexicon']):
+        _log.finish('Already up-to-date')
+        return
+        
     for syllabus_name in syllabi:
         add_syllabus(syllabus_name, force=force)
+    Checksum.store('syllabi', dependencies)
     _log.finish()
 
 #----------------------------------------------------------------------------#
@@ -105,6 +112,16 @@ def _fetch_syllabi():
             syllabi.append(os.path.basename(syllabus_path))
 
     return syllabi
+
+def _deps_from_syllabi(syllabi):
+    "Returns a list of build dependencies given the syllabi names."
+    dependencies = [__file__]
+    for syllabus_name in syllabi:
+        syllabus_path = _check_syllabus_name(syllabus_name)
+        for extension in _required_extensions:    
+            dependencies.append(syllabus_path + extension)
+
+    return dependencies
 
 def _load_alignments(aligned_file):
     i_stream = sopen(aligned_file)
@@ -318,7 +335,8 @@ def _load_kanji_list(char_file, alignments, syllabus):
     i_stream = sopen(char_file)
     kanji_set = scripts.uniqueKanji(i_stream.read())
     for kanji in kanji_set:
-        syllabus.partialkanji_set.create(kanji_id=kanji)
+        syllabus.partialkanji_set.create(
+                kanji=lexicon_models.Kanji.objects.get(kanji=kanji))
     i_stream.close()
 
     _log.start('Loading kanji readings', nSteps=2)
