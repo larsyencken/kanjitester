@@ -111,6 +111,7 @@ INSTALLED_APPS = (
     'kanji_test.user_model_plugins.visual_similarity',
     'kanji_test.user_model_plugins.hierarchy',
     'kanji_test.user_model_plugins.reading_alt',
+    'checksum',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'

@@ -17,23 +17,30 @@ from cjktools.sequences import groupsOfNIter
 from cjktools import scripts
 import consoleLog
 from nltk.probability import FreqDist
+from checksum.models import Checksum
 
 from kanji_test.lexicon import models
 from kanji_test import settings
 
 log = consoleLog.default
 _jmdict_path = path.join(settings.DATA_DIR, 'JMdict.gz')
+_dependencies = [__file__, models]
+_checksum_tag = 'lexicon'
 
 #----------------------------------------------------------------------------#
 
 def load_lexicon(filename=_jmdict_path):
     " Reloads the lexicon into the database."
-    log.start('Rebuilding the lexicon', nSteps=3)
-    
+    log.start('Rebuilding the lexicon', nSteps=5)
+    if not Checksum.needs_update(_checksum_tag, _dependencies + [filename]):
+        log.finish('Already up-to-date')
+        return
+
     log.log('Loading probability distributions')
     models.initialise()
     
     log.start('Loading JMdict', nSteps=2)
+    _clear_lexicon()
     models.Lexeme.objects.all().delete()
     log.log('Reading from %s' % path.basename(filename))
     iStream = sopen(filename, 'r', 'byte')
@@ -45,8 +52,25 @@ def load_lexicon(filename=_jmdict_path):
     log.finish()
     
     _store_lexemes(tree.getchildren())
+
+    log.log('Storing checksum')
+    Checksum.store(_checksum_tag, _dependencies + [filename])
     
     log.finish()
+
+#----------------------------------------------------------------------------#
+
+def _clear_lexicon():
+    cursor = connection.cursor()
+    tables = [
+            'lexicon_lexemesurface',
+            'lexicon_lexemesense',
+            'lexicon_lexemereading',
+        ]
+    for table_name in tables:
+        cursor.execute('DELETE FROM %s' % table_name)
+        cursor.execute('COMMIT')
+    return
 
 #----------------------------------------------------------------------------#
 
