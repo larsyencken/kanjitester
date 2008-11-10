@@ -108,6 +108,9 @@ INSTALLED_APPS = (
     'kanji_test.registration',
     'kanji_test.user_model',
     'kanji_test.user_model_plugins.visual_similarity',
+    'kanji_test.user_model_plugins.visual_similarity',
+    'kanji_test.user_model_plugins.hierarchy',
+    'kanji_test.user_model_plugins.reading_alt',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
@@ -129,6 +132,10 @@ AUTH_PROFILE_MODULE = 'user_model.userprofile'
 N_DISTRACTORS = 5
 
 MAX_GRAPH_DEGREE = 20
+
+MAX_READING_LENGTH = 30
+
+UTF8_BYTES_PER_CHAR = 3 # For cjk chars
 
 N_ROWS_PER_INSERT = 10000
 
