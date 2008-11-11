@@ -24,6 +24,7 @@ from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_model import plugin_api
 from kanji_test.util.alignment import Alignment
 from kanji_test import settings
+from kanji_test.user_model import plugin_api
 
 #----------------------------------------------------------------------------#
 
@@ -115,7 +116,7 @@ def _fetch_syllabi():
 
 def _deps_from_syllabi(syllabi):
     "Returns a list of build dependencies given the syllabi names."
-    dependencies = [__file__]
+    dependencies = [__file__, plugin_api]
     for syllabus_name in syllabi:
         syllabus_path = _check_syllabus_name(syllabus_name)
         for extension in _required_extensions:    

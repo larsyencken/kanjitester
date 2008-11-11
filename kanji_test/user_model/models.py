@@ -133,7 +133,7 @@ class PriorDist(models.Model):
     "A syllabus-specific prior distribution."
     syllabus = models.ForeignKey(Syllabus)
     tag = models.CharField(max_length=100)
-    
+
     class Meta:
         unique_together = (('syllabus', 'tag'),)
         verbose_name = 'prior distribution'
@@ -141,6 +141,9 @@ class PriorDist(models.Model):
 
     def __unicode__(self):
         return self.tag
+
+    def get_accuracy(self):
+        return mean(o['pdf'] for o in self.density.values('pdf'))
 
 class PriorPdf(util_models.CondProb):
     "Individual densities for a prior distribution."
@@ -157,6 +160,10 @@ class ErrorDist(models.Model):
     "A user-specific prior disribution."
     user = models.ForeignKey(User, unique=True)
     tag = models.CharField(max_length=100, unique=True)
+
+    def prior_dist(self):
+        return PriorDist.objects.get(tag=self.tag)
+    prior_dist = property(prior_dist)
 
     class Meta:
         unique_together = (('user', 'tag'),)
@@ -189,7 +196,15 @@ class ErrorDist(models.Model):
                 cdf__gte=target_cdf).order_by('cdf')[0]
 
     def get_accuracy(self):
-        return mean(o.pdf for o in self.density.filter(is_correct=True))
+        return mean(o['pdf'] for o in self.density.filter(
+                is_correct=True).values('pdf'))
+
+    def get_normalized_accuracy(self):
+        prior_accuracy = self.prior_dist.get_accuracy()
+        user_accuracy = self.get_accuracy()
+        norm_accuracy = (user_accuracy - prior_accuracy) / \
+                (1.0 - prior_accuracy)
+        return (norm_accuracy > 0.0 and norm_accuracy or 0.0)
 
     @classmethod
     def from_dist(cls):
