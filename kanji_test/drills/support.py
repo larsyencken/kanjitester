@@ -30,7 +30,7 @@ def build_kanji_options(item, sample_method, exclude_set=None):
             if scriptType(char) == Script.Kanji:
                 result.append(sample_method(char))
             else:
-                result.append(kanji_source)
+                result.append(char)
         result = u''.join(result)
         if result not in exclude_set:
             distractors.append(result)
