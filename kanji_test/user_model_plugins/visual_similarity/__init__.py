@@ -90,5 +90,6 @@ class VisualSimilarity(plugin_api.UserModelPlugin):
                         symbol=neighbour_label,
                         pdf=pdf,
                         cdf=cdf,
+                        is_correct=(label == neighbour_label),
                     )
 
