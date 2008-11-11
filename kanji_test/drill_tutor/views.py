@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
+from django import forms
 
 from cjktools import scripts
 from cjktools.scripts import containsScript, Script
@@ -21,21 +22,27 @@ from kanji_test.lexicon import models as lexicon_models
 from kanji_test.drills import models as api_models
 from kanji_test.drills import plugin_api
 from kanji_test.user_model import models as usermodel_models
+from kanji_test.user_model import add_syllabus
 from kanji_test.util import html
 
 #----------------------------------------------------------------------------#
 
-def index(request):
-    """Render the dashboard interface."""
-    if not request.user.is_authenticated():
-        return welcome(request)
-    
-    return render_to_response('drill_tutor/dashboard.html', {},
-            context_instance=RequestContext(request))
+def profile_required(view_method):
+    """Indicates that a user profile is required for the given view."""
+    def maybe_redirect(request):
+        user = request.user
+        if not user.is_authenticated():
+            return welcome(request, referrer=request.path)
+        
+        if user.userprofile_set.count() == 0:
+            return create_profile(request, referrer=request.path)
+        
+        return view_method(request)
+    return maybe_redirect
 
 #----------------------------------------------------------------------------#
 
-def welcome(request):
+def welcome(request, referrer=None):
     """An alternative to the dashboard for users who aren't logged in."""
     return render_to_response('drill_tutor/welcome.html', {},
             context_instance=RequestContext(request))
@@ -43,6 +50,44 @@ def welcome(request):
 #----------------------------------------------------------------------------#
 
 @login_required
+def create_profile(request, referrer=None):
+    ProfileForm = _get_profile_form()
+    if request.method == 'POST':
+        form = ProfileForm(request.POST)
+        if form.is_valid():
+            syllabus = usermodel_models.Syllabus.objects.get(
+                    tag=form.cleaned_data['syllabus'])
+            profile = usermodel_models.UserProfile(user=request.user,
+                    syllabus=syllabus)
+            profile.save()
+            add_syllabus.add_per_user_models(request.user.username)
+            return HttpResponseRedirect(referrer or
+                    reverse('drilltutor_dashboard'))
+    else:
+        form = ProfileForm()
+    
+    return render_to_response('drill_tutor/create_profile.html',
+            {'form': form}, context_instance=RequestContext(request))
+
+def _get_profile_form():
+    syllabus_choices = [(o['tag'], o['tag']) for o in \
+            usermodel_models.Syllabus.objects.all().values('tag')]
+    class ProfileForm(forms.Form):
+        syllabus = forms.ChoiceField(required=True, choices=syllabus_choices)
+
+    return ProfileForm
+
+#----------------------------------------------------------------------------#
+
+@profile_required
+def dashboard(request):
+    """Render the dashboard interface."""    
+    return render_to_response('drill_tutor/dashboard.html', {},
+            context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+
+@profile_required
 def test_factories(request):
     """Allows the user to generate questions from each factory."""
     context = {}
@@ -82,7 +127,7 @@ def test_factories(request):
 
 #----------------------------------------------------------------------------#
 
-@login_required
+@profile_required
 def test_answer_checking(request):
     """Checks the answers submitted from a query."""
     if request.method != 'POST':

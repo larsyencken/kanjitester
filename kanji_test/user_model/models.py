@@ -12,6 +12,7 @@ import random
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from cjktools.stats import mean
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
@@ -186,6 +187,9 @@ class ErrorDist(models.Model):
         target_cdf = random.random()
         return self.density.filter(condition=condition,
                 cdf__gte=target_cdf).order_by('cdf')[0]
+
+    def get_accuracy(self):
+        return mean(o.pdf for o in self.density.filter(is_correct=True))
 
     @classmethod
     def from_dist(cls):

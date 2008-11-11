@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Create a profile
+{% endblock %}
+
+{% block content %}
+  <h1>Create a profile</h1>
+  
+  <p>Before practising your kanji knowledge, we need to know a little bit about you. Please choose the syllabus you're aiming at.</p>
+  
+  <form method="POST">
+  <table>
+  {{form}}
+  <td colspan="2" style="text-align:right">
+    <input type="submit" value="Save" />
+  </td>
+  </table>
+  </form>
+{% endblock %}

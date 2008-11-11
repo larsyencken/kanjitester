@@ -10,7 +10,7 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('drill_tutor.views',
-    url(r'^$', 'index', name='drilltutor_dashboard'),
+    url(r'^$', 'dashboard', name='drilltutor_dashboard'),
     url(r'^test/$', 'test_factories', name="drilltutor_test"),
     url(r'^check/$', 'test_answer_checking', name='drilltutor_answers'),
 )
