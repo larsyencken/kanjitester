@@ -32,8 +32,12 @@ def create_profile(request):
         if form.is_valid():
             syllabus = usermodel_models.Syllabus.objects.get(
                     tag=form.cleaned_data['syllabus'])
-            profile = models.UserProfile(user=request.user,
-                    syllabus=syllabus)
+            profile = models.UserProfile(
+                    user=request.user,
+                    syllabus=syllabus,
+                    first_language=form.cleaned_data['first_language'],
+                    second_languages=form.cleaned_data['second_languages'],
+                )
             profile.save()
             add_syllabus.add_per_user_models(request.user.username)
             return HttpResponseRedirect(reverse('drilltutor_dashboard'))
@@ -47,7 +51,12 @@ def _get_profile_form():
     syllabus_choices = [(o['tag'], o['tag']) for o in \
             usermodel_models.Syllabus.objects.all().values('tag')]
     class ProfileForm(forms.Form):
-        syllabus = forms.ChoiceField(required=True, choices=syllabus_choices)
+        syllabus = forms.ChoiceField(required=True, choices=syllabus_choices,
+                help_text="The syllabus you would like to study.")
+        first_language = forms.CharField(max_length=100, required=True,
+                help_text="Your first language (native or mother tongue).")
+        second_languages = forms.CharField(max_length=200, required=False,
+                help_text="Any extra languages other than Japanese which you have studied.")
 
     return ProfileForm
 

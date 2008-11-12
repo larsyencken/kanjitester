@@ -20,6 +20,8 @@ class UserProfile(models.Model):
     """Basic model of the user's kanji knowledge and study goals."""
     user = models.ForeignKey(User, unique=True)
     syllabus = models.ForeignKey(Syllabus)
+    first_language = models.CharField(max_length=100)
+    second_languages = models.CharField(max_length=200, null=True, blank=True)
 
     def __unicode__(self):
         return u"UserProfile for %s" % self.user.username
