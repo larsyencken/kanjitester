@@ -31,9 +31,6 @@ class PriorPdfAdmin(admin.ModelAdmin):
     list_filter = ('dist',)
     search_fields = ('condition',)
 
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'syllabus')
-
 class ErrorPdfAdmin(admin.ModelAdmin):
     list_display = ('dist', 'condition', 'symbol', 'pdf', 'cdf')
     search_fields = ('dist__user__username',)
@@ -43,7 +40,6 @@ class ErrorDistAdmin(admin.ModelAdmin):
     list_filter = ('tag',)
     search_fields = ('user__username',)
 
-admin.site.register(models.UserProfile, UserProfileAdmin)
 admin.site.register(models.PartialLexeme, PartialLexemeAdmin)
 admin.site.register(models.PartialKanji, PartialKanjiAdmin)
 admin.site.register(models.Syllabus)

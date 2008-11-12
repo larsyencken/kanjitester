@@ -16,18 +16,19 @@ admin.autodiscover()
 
 base_patterns = ('',
         (r'^admin/(.*)', admin.site.root),
-        (r'^accounts/', include('registration.urls')),
+        (r'^accounts/', include('kanji_test.registration.urls')),
     )
 
 # Optional media view for debugging and testing.
 if not settings.DEPLOYED:
     base_patterns += (
-            url(r'^media/', 'views.media', name='media'),
+            url(r'^media/', 'kanji_test.views.media', name='media'),
         )
 
 # Add the default pages.
 base_patterns += (
-        (r'', include('drill_tutor.urls')),
+        (r'', include('kanji_test.drill_tutor.urls')),
+        (r'^profile/', include('kanji_test.user_profile.urls')),
     )
 
 urlpatterns = patterns(*base_patterns)

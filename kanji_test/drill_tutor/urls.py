@@ -11,6 +11,7 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('drill_tutor.views',
     url(r'^$', 'dashboard', name='drilltutor_dashboard'),
+    url(r'^welcome/$', 'welcome', name='drilltutor_welcome'),
     url(r'^test/$', 'test_factories', name="drilltutor_test"),
     url(r'^check/$', 'test_answer_checking', name='drilltutor_answers'),
 )

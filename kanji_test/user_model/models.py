@@ -59,14 +59,6 @@ class Syllabus(models.Model):
 
         return self._cached_kanji_word_prop
 
-class UserProfile(models.Model):
-    """Basic model of the user's kanji knowledge and study goals."""
-    user = models.ForeignKey(User, unique=True)
-    syllabus = models.ForeignKey(Syllabus)
-
-    def __unicode__(self):
-        return u"UserProfile for %s" % self.user.username
-
 class PartialLexeme(models.Model):
     """A subset of an individual lexeme."""
     syllabus = models.ForeignKey(Syllabus)

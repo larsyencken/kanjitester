@@ -111,6 +111,7 @@ INSTALLED_APPS = (
     'kanji_test.user_model_plugins.visual_similarity',
     'kanji_test.user_model_plugins.hierarchy',
     'kanji_test.user_model_plugins.reading_alt',
+    'kanji_test.user_profile',
     'checksum',
 )
 
@@ -129,7 +130,7 @@ USER_MODEL_PLUGINS = (
 )
 
 # auth
-AUTH_PROFILE_MODULE = 'user_model.userprofile'
+AUTH_PROFILE_MODULE = 'user_profile.userprofile'
 
 # drills; question_plugins
 N_DISTRACTORS = 5
