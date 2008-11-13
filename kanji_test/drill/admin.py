@@ -9,7 +9,7 @@
 
 from django.contrib import admin
 
-from kanji_test.drills import models
+from kanji_test.drill import models
 from kanji_test import settings
 
 class OptionInline(admin.StackedInline):

@@ -12,7 +12,7 @@
 from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
-from kanji_test.drills import models
+from kanji_test.drill import models
 from kanji_test.user_model import models as usermodel_models
 
 class UnsupportedItem(Exception): pass

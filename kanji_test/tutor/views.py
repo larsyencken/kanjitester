@@ -15,10 +15,9 @@ from django.template import RequestContext
 from cjktools import scripts
 from cjktools.scripts import containsScript, Script
 
-from kanji_test import drills
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.drills import models as api_models
-from kanji_test.drills import plugin_api
+from kanji_test.drill import models as api_models
+from kanji_test.drill import plugin_api, load_plugins
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
 from kanji_test.util import html
@@ -27,7 +26,7 @@ from kanji_test.util import html
 
 def welcome(request):
     """An alternative to the dashboard for users who aren't logged in."""
-    return render_to_response('drill_tutor/welcome.html', {},
+    return render_to_response('tutor/welcome.html', {},
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
@@ -35,7 +34,7 @@ def welcome(request):
 @profile_required
 def dashboard(request):
     """Render the dashboard interface."""    
-    return render_to_response('drill_tutor/dashboard.html', {},
+    return render_to_response('tutor/dashboard.html', {},
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
@@ -46,7 +45,7 @@ def test_factories(request):
     context = {}
     context['syllabi'] = usermodel_models.Syllabus.objects.all().order_by(
             'tag')
-    render = lambda: render_to_response("drill_tutor/test_factories.html",
+    render = lambda: render_to_response("tutor/test_factories.html",
             context, context_instance=RequestContext(request))
 
     if request.method != 'POST' or 'syllabus_tag' not in request.POST:
@@ -69,7 +68,7 @@ def test_factories(request):
 
     # Render questions for consumption
     questions = []
-    for plugin in drills.load_plugins():
+    for plugin in load_plugins():
         if plugin.supports_item(query_item):
             try:
                 questions.append(plugin.get_question(query_item, request.user))
@@ -84,7 +83,7 @@ def test_factories(request):
 def test_answer_checking(request):
     """Checks the answers submitted from a query."""
     if request.method != 'POST':
-        return HttpResponseRedirect(reverse('drilltutor_test'))
+        return HttpResponseRedirect(reverse('tutor_test'))
 
     answered_questions = []
     for key in request.POST.keys():
@@ -97,7 +96,7 @@ def test_answer_checking(request):
     context['questions'] = answered_questions
     context['syllabi'] = usermodel_models.Syllabus.objects.order_by('tag')
     context['syllabus_tag'] = request.POST.get('syllabus_tag')
-    return render_to_response("drill_tutor/test_factories.html", context,
+    return render_to_response("tutor/test_factories.html", context,
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#

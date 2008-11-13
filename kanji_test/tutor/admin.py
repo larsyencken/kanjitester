@@ -9,5 +9,6 @@
 
 from django.contrib import admin
 
-from kanji_test.drill_tutor import models
+from kanji_test.tutor import models
+
 

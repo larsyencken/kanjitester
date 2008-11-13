@@ -27,7 +27,7 @@ if not settings.DEPLOYED:
 
 # Add the default pages.
 base_patterns += (
-        (r'', include('kanji_test.drill_tutor.urls')),
+        (r'', include('kanji_test.tutor.urls')),
         (r'^profile/', include('kanji_test.user_profile.urls')),
     )
 

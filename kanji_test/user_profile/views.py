@@ -40,7 +40,7 @@ def create_profile(request):
                 )
             profile.save()
             add_syllabus.add_per_user_models(request.user.username)
-            return HttpResponseRedirect(reverse('drilltutor_dashboard'))
+            return HttpResponseRedirect(reverse('tutor_dashboard'))
     else:
         form = ProfileForm()
     

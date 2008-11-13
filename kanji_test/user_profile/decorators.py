@@ -18,7 +18,7 @@ def profile_required(view_method):
     def maybe_redirect(request):
         user = request.user
         if not user.is_authenticated():
-            return HttpResponseRedirect(reverse("drilltutor_welcome")) 
+            return HttpResponseRedirect(reverse("tutor_welcome")) 
 
         if user.userprofile_set.count() == 0:
             return HttpResponseRedirect(reverse("userprofile_profile"))

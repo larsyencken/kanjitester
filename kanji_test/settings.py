@@ -101,9 +101,9 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'kanji_test.drill_tutor',
+    'kanji_test.tutor',
     'kanji_test.lexicon',
-    'kanji_test.drills',
+    'kanji_test.drill',
     'kanji_test.util',
     'kanji_test.registration',
     'kanji_test.user_model',
@@ -132,7 +132,7 @@ USER_MODEL_PLUGINS = (
 # auth
 AUTH_PROFILE_MODULE = 'user_profile.userprofile'
 
-# drills; question_plugins
+# drill; drill_plugins
 N_DISTRACTORS = 5
 
 # visual_similarity
