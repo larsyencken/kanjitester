@@ -119,10 +119,10 @@ TEST_DATABASE_CHARSET = 'utf8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
 DRILL_PLUGINS = (
-    'kanji_test.question_plugins.basic.ReadingQuestionFactory',
-    'kanji_test.question_plugins.basic.SurfaceQuestionFactory',
-    'kanji_test.question_plugins.basic.GlossQuestionFactory',
-    'kanji_test.question_plugins.error_dist.KanjiSimilarityDrills',
+    'kanji_test.drill_plugins.basic.ReadingQuestionFactory',
+    'kanji_test.drill_plugins.basic.SurfaceQuestionFactory',
+    'kanji_test.drill_plugins.basic.GlossQuestionFactory',
+    'kanji_test.drill_plugins.error_dist.KanjiSimilarityDrills',
 )
 
 USER_MODEL_PLUGINS = (
