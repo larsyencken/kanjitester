@@ -134,6 +134,8 @@ AUTH_PROFILE_MODULE = 'user_profile.userprofile'
 
 # drill; drill_plugins
 N_DISTRACTORS = 5
+QUESTIONS_PER_SET = 10
+QUESTIONS_PER_PAGE = 5
 
 # visual_similarity
 MAX_GRAPH_DEGREE = 20

@@ -32,6 +32,7 @@ class KanjiSimilarityDrills(plugin_api.MultipleChoiceFactoryI):
     question_type = 'gp'
     supports_words = True
     supports_kanji = True
+    requires_kanji = True
     required_dist = "kanji' | kanji"
     
     def get_kanji_question(self, partial_kanji, user):

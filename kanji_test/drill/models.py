@@ -7,12 +7,17 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
+import random
+
 from django.db import models
 from django.contrib.auth import models as auth_models
+from django.conf import settings
+from django import forms
 from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
 from kanji_test.util import html
+from kanji_test.drill import widgets
 
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -109,37 +114,6 @@ class MultipleChoiceQuestion(Question):
         else:
             return 'stimulus_cjk'
         
-    def as_html(self):
-        if not self.id:
-            raise Exception('Need a database id to display')            
-        output = []
-        output.append(html.P(self.instructions,
-                **{'class': 'instructions'}))
-        if self.stimulus:
-            output.append(html.P(self.stimulus, 
-                    **{'class': self._get_stimulus_class(self.stimulus)}))
-            
-        option_choices = []
-        question_name = 'question_%d' % self.id
-        for option in self.options.order_by('?'):
-            if scripts.scriptType(option.value) == scripts.Script.Ascii:
-                separator = html.BR()
-                option_class = 'option_choices_roman'
-            else:
-                separator = '&nbsp;' * 3
-                option_class = 'option_choices_cjk'
-            
-            if option_choices:
-                option_choices.append(separator)
-            
-            option_choices.append(
-                    html.INPUT('&nbsp;' + html.SPAN(option.value,
-                            **{'class': option_class}), type='radio',
-                            name=question_name, value=option.id)
-                )
-        output.append(html.P(*option_choices, **{'class': 'option_choices'}))
-        return '\n'.join(output)
-
     def add_options(self, distractor_values, answer):
         if answer in distractor_values:
             raise ValueError('answer included in distractor set')
@@ -187,3 +161,73 @@ class MultipleChoiceResponse(Response):
         
     def is_correct(self):
         return self.option.is_correct
+
+class TestSet(models.Model):
+    user = models.ForeignKey(auth_models.User)
+    questions = models.ManyToManyField(MultipleChoiceQuestion)
+    responses = models.ManyToManyField(MultipleChoiceResponse)
+    random_seed = models.IntegerField()
+
+    def ordered_questions(self):
+        question_list = list(self.questions.order_by('id'))
+        random.seed(self.random_seed)
+        random.shuffle(question_list)
+        return question_list
+    ordered_questions = property(ordered_questions)
+
+    def ordered_responses(self):
+        response_list = lits(self.responses.order_by('question__id'))
+        if self.questions.count() != len(response_list):
+            raise ValueError("need full coverage")
+        random.seed(self.random_seed)
+        random.shuffle(response_list)
+        return response_list
+    ordered_responses = property(ordered_responses)
+
+    def get_coverage(self):
+        return float(self.responses.count()) / self.questions.count()
+
+    def get_accuracy(self):
+        return float(self.responses.filter(option__is_correct=True).count())/\
+                self.questions.count()
+
+    @staticmethod
+    def from_user(user):
+        test_set = TestSet(user=user, random_seed=random.randrange(0, 2**30))
+        test_set.save()
+
+        from kanji_test.drill import load_plugins
+        question_plugins = load_plugins()
+        items = user.get_profile().syllabus.get_random_items(
+                settings.QUESTIONS_PER_SET)
+        questions = []
+        for item in items:
+            has_kanji = item.has_kanji()
+            available_plugins = [p for p in question_plugins if \
+                    p.requires_kanji == has_kanji]
+            chosen_plugin = random.choice(available_plugins)
+            questions.append(chosen_plugin.get_question(item, user))
+
+        test_set.questions = questions
+        return test_set
+
+    def to_form(self):
+        "Return a form version of this test set."
+        questions = self.ordered_questions
+
+        class TestForm(forms.Form):
+            def __init__(self, *args, **kwargs):
+                super(TestForm, self).__init__(*args, **kwargs)
+                for question in questions:
+                    self.fields['question_%d' % question.id] = \
+                        forms.ChoiceField(
+                                choices=tuple([
+                                    (str(opt.id), str(opt.value))\
+                                    for opt in question.options.all()
+                                ]),
+                                widget=widgets.MCSelect,
+                                help_text=question.instructions,
+                                label=question.stimulus,
+                            )
+
+        return TestForm

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Test {{syllabus.tag}} knowledge
+{% endblock %}
+
+{% block content %}
+<h1>Testing</h1>
+<form method="POST">
+<input type="hidden" name="test_set_id" value="{{test_set.id}}">
+<table>
+{{form}}
+</table>
+<input type="Submit" value="Check answers">
+</form>
+{% endblock %}

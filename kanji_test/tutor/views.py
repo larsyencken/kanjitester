@@ -7,6 +7,8 @@
 #  Copyright 2008-06-13 Lars Yencken. All rights reserved.
 # 
 
+import math
+
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
@@ -16,7 +18,7 @@ from cjktools import scripts
 from cjktools.scripts import containsScript, Script
 
 from kanji_test.lexicon import models as lexicon_models
-from kanji_test.drill import models as api_models
+from kanji_test.drill import models as drill_models
 from kanji_test.drill import plugin_api, load_plugins
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
@@ -35,6 +37,32 @@ def welcome(request):
 def dashboard(request):
     """Render the dashboard interface."""    
     return render_to_response('tutor/dashboard.html', {},
+            context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+
+@profile_required
+def test_user(request):
+    """Run a test for the user."""
+    context = {'syllabus': request.user.get_profile().syllabus}
+    if not 'test_set_id' in request.REQUEST:
+        test_set = drill_models.TestSet.from_user(request.user)
+    else:
+        test_set_id = int(request.REQUEST['test_set_id'])
+        test_set = drill_models.TestSet.objects.get(pk=test_set_id)
+    context['test_set'] = test_set
+
+    TestSetForm = test_set.to_form()
+    if request.method == 'post':
+        form = TestSetForm(request.POST)
+        if form.is_valid():
+            # XXX Check answers
+            pass
+    else:
+        form = TestSetForm()
+    context['form'] = form
+
+    return render_to_response('tutor/test_set.html', context,
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
@@ -104,7 +132,7 @@ def test_answer_checking(request):
 class AnsweredQuestion(object):
     """A question and its answer from a user"""
     def __init__(self, question_id, answer_id):
-        self.question = api_models.MultipleChoiceQuestion.objects.get(
+        self.question = drill_models.MultipleChoiceQuestion.objects.get(
                 id=question_id)
         for attrib in ('question_type', 'pivot_type', 'pivot', 
                 'question_plugin'):

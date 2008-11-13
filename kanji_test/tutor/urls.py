@@ -12,6 +12,7 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('tutor.views',
     url(r'^$', 'dashboard', name='tutor_dashboard'),
     url(r'^welcome/$', 'welcome', name='tutor_welcome'),
-    url(r'^test/$', 'test_factories', name="tutor_test"),
-    url(r'^check/$', 'test_answer_checking', name='tutor_answers'),
+    url(r'^test/$', 'test_user', name='tutor_testuser'),
+    url(r'^debug_test/$', 'test_factories', name="tutor_test"),
+    url(r'^debug_check/$', 'test_answer_checking', name='tutor_answers'),
 )

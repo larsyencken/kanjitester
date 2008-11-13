@@ -9,9 +9,15 @@
   
   <p>Here is where you'll be able to monitor your progress and start new drills.</p>
 
+  <h2>Actions</h2>
   <ul>
-  {% if user.is_staff %}
-    <li><a href="{% url tutor_test %}">Test installed plugins</a></li>
-  {% endif %}
+    <li><a href="{% url tutor_testuser %}">Take a test</a></li>
   </ul>
+
+  {% if user.is_staff %}
+  <h2>Debugging panel</h2>
+  <ul>
+    <li><a href="{% url tutor_test %}">Test installed plugins</a></li>
+  </ul>
+  {% endif %}
 {% endblock %}

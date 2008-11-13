@@ -25,6 +25,7 @@ from kanji_test import settings
 class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     "Distractor readings are randomly sampled."
     question_type = 'pr'
+    requires_kanji = True
     supports_kanji = True
     supports_words = True
 
@@ -91,6 +92,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
 class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     "Distractors sampled randomly from a naive surface distribution."
     question_type = 'gp'
+    requires_kanji = True
     supports_words = True
     supports_kanji = True
 
@@ -142,6 +144,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """Distractor glosses are sampled randomly."""
     supports_kanji = True
     supports_words = True
+    requires_kanji = False
     question_type = 'pg'
 
     def get_kanji_question(self, partial_kanji, user):
@@ -165,7 +168,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         try:
             surface = partial_lexeme.random_surface
         except ObjectDoesNotExist:
-            raise plugin_api.UnsupportedItem(partial_lexeme)
+            surface = partial_lexeme.random_reading
 
         word_row = partial_lexeme.lexeme
         answer = word_row.random_sense.gloss

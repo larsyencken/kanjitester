@@ -34,6 +34,27 @@ class Syllabus(models.Model):
         else:
             return self.partialkanji_set.order_by('?')[0]
 
+    def get_random_items(self, n):
+        if n < 1:
+            raise ValueError(n)
+        n_words = 0
+        n_kanji = 0
+        word_proportion = self._get_word_proportion()
+        for i in xrange(n):
+            if random.random() < word_proportion:
+                n_words += 1
+            else:
+                n_kanji += 1
+
+        items = []
+        if n_words > 0:
+            items.extend(self.partiallexeme_set.order_by('?')[:n_words])
+
+        if n_kanji > 0:
+            items.extend(self.partialkanji_set.order_by('?')[:n_kanji])
+
+        return items
+
     def get_random_kanji_item(self):
         if random.random() < self._get_kanji_word_proportion():
             return self.partiallexeme_set.filter(
@@ -73,25 +94,28 @@ class PartialLexeme(models.Model):
             '[%s]' % '/'.join(r.reading for r in self.reading_set.all())
         return self.lexeme.surface_set.all()[0].surface
 
-    def random_surface():
-        def fget(self):
-            try:
-                return self.surface_set.all().order_by('?')[0].surface
-            except IndexError:
-                raise ObjectDoesNotExist
-        return locals()
-    random_surface = property(**random_surface())
+    def has_kanji(self):
+        "Does this item have a kanji surface?"
+        return self.surface_set.filter(has_kanji=True).count() > 0
 
-    def random_kanji_surface():
-        "Returns a random surface for this lexeme containing kanji."
-        def fget(self):
-            try:
-                return self.surface_set.filter(has_kanji=True).order_by(
-                    '?')[0].surface
-            except IndexError:
-                raise ObjectDoesNotExist
-        return locals()
-    random_kanji_surface = property(**random_kanji_surface())
+    def random_surface(self):
+        try:
+            return self.surface_set.all().order_by('?')[0].surface
+        except IndexError:
+            raise ObjectDoesNotExist
+    random_surface = property(random_surface)
+
+    def random_reading(self):
+        return self.reading_set.order_by('?')[0].reading
+    random_reading = property(random_reading)
+
+    def random_kanji_surface(self):
+        try:
+            return self.surface_set.filter(has_kanji=True).order_by(
+                '?')[0].surface
+        except IndexError:
+            raise ObjectDoesNotExist
+    random_kanji_surface = property(random_kanji_surface)
 
     class Meta:
         unique_together = (('syllabus', 'lexeme'),)
@@ -114,6 +138,10 @@ class PartialKanji(models.Model):
     def n_readings(self):
         return self.reading_set.count()
     n_readings = property(n_readings)
+
+    def has_kanji(self):
+        "Does this item have a kanji surface? Always."
+        return True
     
     class Meta:
         verbose_name_plural = 'partial kanji'
