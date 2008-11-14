@@ -13,11 +13,11 @@ from django.db import models
 from django.contrib.auth import models as auth_models
 from django.conf import settings
 from django import forms
+from django.utils.safestring import mark_safe
 from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
 from kanji_test.util import html
-from kanji_test.drill import widgets
 
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -225,9 +225,24 @@ class TestSet(models.Model):
                                     (str(opt.id), str(opt.value))\
                                     for opt in question.options.all()
                                 ]),
-                                widget=widgets.MCSelect,
+                                widget=forms.RadioSelect,
                                 help_text=question.instructions,
                                 label=question.stimulus,
                             )
 
+            def as_table(self, *args, **kwargs):
+                return mark_safe(super(TestForm, self)._html_output(
+                        # normal row
+                        """<tr><td><div class="instructions">%(help_text)s</div>%(errors)s<div class="stimulus_cjk">%(label)s</div><div class="mc_select">%(field)s</div>""",
+#                        u'<tr><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
+                        # error row
+                        u'<tr><td colspan="2">%s</td></tr>',
+                        # row ender
+                        '</td></tr>', 
+                        # help text html
+                        u'%s', 
+                        False
+                    ).replace(':', ''))
+
         return TestForm
+

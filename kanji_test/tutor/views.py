@@ -61,6 +61,7 @@ def test_user(request):
     else:
         form = TestSetForm()
     context['form'] = form
+    context['syllabus'] = request.user.get_profile().syllabus
 
     return render_to_response('tutor/test_set.html', context,
             context_instance=RequestContext(request))

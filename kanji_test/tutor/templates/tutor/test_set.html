@@ -4,13 +4,19 @@
   Test {{syllabus.tag}} knowledge
 {% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{media_url}}css/tutor.css" type="text/css"
+  charset="utf-8">
+{% endblock %}
+
 {% block content %}
-<h1>Testing</h1>
+<h1>Testing {{syllabus.tag}}</h1>
+<p>Please answer the following questions.</p>
 <form method="POST">
-<input type="hidden" name="test_set_id" value="{{test_set.id}}">
-<table>
-{{form}}
-</table>
-<input type="Submit" value="Check answers">
+  <input type="hidden" name="test_set_id" value="{{test_set.id}}">
+  <table class="test_set">
+  {{form}}
+  </table>
+  <input type="Submit" value="Check answers">
 </form>
 {% endblock %}
