@@ -68,12 +68,12 @@ def test_user(request):
 #----------------------------------------------------------------------------#
 
 @profile_required
-def test_factories(request):
+def debug_test(request):
     """Allows the user to generate questions from each factory."""
     context = {}
     context['syllabi'] = usermodel_models.Syllabus.objects.all().order_by(
             'tag')
-    render = lambda: render_to_response("tutor/test_factories.html",
+    render = lambda: render_to_response("tutor/debug_test.html",
             context, context_instance=RequestContext(request))
 
     if request.method != 'POST' or 'syllabus_tag' not in request.POST:
@@ -99,7 +99,11 @@ def test_factories(request):
     for plugin in load_plugins():
         if plugin.supports_item(query_item):
             try:
-                questions.append(plugin.get_question(query_item, request.user))
+                question = questions.append(plugin.get_question(query_item,
+                        request.user))
+                assert isinstance(question,
+                        drill_models.MultipleChoiceQuestion)
+                questions.append(question)
             except plugin_api.UnsupportedItem:
                 continue
     context['questions'] = questions
@@ -108,10 +112,10 @@ def test_factories(request):
 #----------------------------------------------------------------------------#
 
 @profile_required
-def test_answer_checking(request):
-    """Checks the answers submitted from a query."""
+def debug_check(request):
+    """Checks the answers submitted from a debug test query."""
     if request.method != 'POST':
-        return HttpResponseRedirect(reverse('tutor_test'))
+        return HttpResponseRedirect(reverse('tutor_debugtest'))
 
     answered_questions = []
     for key in request.POST.keys():
@@ -124,7 +128,7 @@ def test_answer_checking(request):
     context['questions'] = answered_questions
     context['syllabi'] = usermodel_models.Syllabus.objects.order_by('tag')
     context['syllabus_tag'] = request.POST.get('syllabus_tag')
-    return render_to_response("tutor/test_factories.html", context,
+    return render_to_response("tutor/debug_test.html", context,
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#

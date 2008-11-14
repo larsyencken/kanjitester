@@ -15,7 +15,7 @@ Test question factories
 
 <h2>Generate a test question</h2>
 <p>Use the following form to generate a test question.</p>
-<form method="POST" action="{% url tutor_test %}">
+<form method="POST" action="{% url tutor_debugtest %}">
 <table>
   <tr>
     <th style="vertical-align:middle !important">Syllabus</th>
@@ -51,7 +51,7 @@ Test question factories
 {% if questions %}
 <h2>Questions</h2>
 <p>Found {{questions|length}} question{{questions|pluralize}}.</p>
-<form method="POST" action="{% url tutor_answers %}">
+<form method="POST" action="{% url tutor_debugcheck %}">
 <input type="hidden" name="query" value="{{query}}">
 <input type="hidden" name="syllabus_tag" value="{{syllabus_tag}}">
 <table>
