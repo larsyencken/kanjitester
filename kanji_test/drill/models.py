@@ -199,14 +199,13 @@ class TestSet(models.Model):
     accuracy = property(get_accuracy)
 
     @staticmethod
-    def from_user(user):
+    def from_user(user, n_questions=settings.QUESTIONS_PER_SET):
         test_set = TestSet(user=user, random_seed=random.randrange(0, 2**30))
         test_set.save()
 
         from kanji_test.drill import load_plugins
         question_plugins = load_plugins()
-        items = user.get_profile().syllabus.get_random_items(
-                settings.QUESTIONS_PER_SET)
+        items = user.get_profile().syllabus.get_random_items(n_questions)
         questions = []
         for item in items:
             has_kanji = item.has_kanji()

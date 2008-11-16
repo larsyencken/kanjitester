@@ -9,10 +9,23 @@
   
   <p>Here is where you'll be able to monitor your progress and start new drills.</p>
 
+  <h2>Progress in {{user.get_profile.syllabus.tag}}</h2>
+  {% if have_stats %}
+  {% else %}
+    <p>No statistics yet. Take a test to get some results.</p>
+  {% endif %}
+
   <h2>Actions</h2>
-  <ul>
-    <li><a href="{% url tutor_testuser %}">Take a test</a></li>
-  </ul>
+  <form method="POST" action="{% url tutor_testuser %}">
+  <input type="submit" value="Take a test">
+  (with 
+  <select name="n_questions">
+    <option value="10" selected="selected">10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+  </select> questions)
+  </form>
 
   {% if user.is_staff %}
   <h2>Debugging panel</h2>
