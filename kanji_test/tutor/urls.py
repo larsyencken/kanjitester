@@ -13,6 +13,4 @@ urlpatterns = patterns('tutor.views',
     url(r'^$', 'dashboard', name='tutor_dashboard'),
     url(r'^welcome/$', 'welcome', name='tutor_welcome'),
     url(r'^test/$', 'test_user', name='tutor_testuser'),
-    url(r'^debug_test/$', 'debug_test', name='tutor_debugtest'),
-    url(r'^debug_check/$', 'debug_check', name='tutor_debugcheck'),
 )

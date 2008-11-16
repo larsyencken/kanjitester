@@ -28,9 +28,9 @@
   </form>
 
   {% if user.is_staff %}
-  <h2>Debugging panel</h2>
-  <ul>
-    <li><a href="{% url tutor_debugtest %}">Test installed plugins</a></li>
-  </ul>
+  <h2>Admin panel</h2>
+  <form action="/admin/" method="GET">
+  <input type="submit" value="Admin interface">
+  </form>
   {% endif %}
 {% endblock %}
