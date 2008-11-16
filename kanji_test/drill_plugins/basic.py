@@ -29,7 +29,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_kanji = True
     supports_words = True
 
-    def get_word_question(self, partial_lexeme, user):
+    def get_word_question(self, partial_lexeme, _user):
         try:
             surface = partial_lexeme.random_kanji_surface
         except ObjectDoesNotExist:
@@ -56,7 +56,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, answer)
         return question
             
-    def get_kanji_question(self, partial_kanji, user):
+    def get_kanji_question(self, partial_kanji, _user):
         real_readings = [r.reading for r in \
                 partial_kanji.kanji.reading_set.all()]
         distractor_values = list(itertools.islice(
@@ -129,7 +129,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractors, surface)
         return question
 
-    def _sample_kanji(self, kanji, user):
+    def _sample_kanji(self, _kanji, user):
         if not hasattr(self, '_kanji_set'):
             self._kanji_set = [row.kanji for row in \
                     lexicon_models.Kanji.objects.filter(
@@ -147,7 +147,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = False
     question_type = 'pg'
 
-    def get_kanji_question(self, partial_kanji, user):
+    def get_kanji_question(self, partial_kanji, _user):
         kanji_row = partial_kanji.kanji
         answer = kanji_row.gloss
         distractor_values = set()
@@ -171,7 +171,10 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             surface = partial_lexeme.random_reading
 
         word_row = partial_lexeme.lexeme
-        answer = word_row.random_sense.gloss
+        
+        # Use only the first sense
+        answer = word_row.first_sense.gloss
+
         distractor_values = set()
         exclude_set = set(s.gloss for s in word_row.sense_set.all())
         while len(distractor_values) < settings.N_DISTRACTORS:
@@ -181,7 +184,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             if random_surface != answer and \
                     scripts.containsScript(scripts.Script.Kanji,
                             random_surface.surface):
-                gloss = random_surface.lexeme.random_sense.gloss
+                gloss = random_surface.lexeme.first_sense.gloss
                 if gloss not in exclude_set:
                     distractor_values.add(gloss)
 

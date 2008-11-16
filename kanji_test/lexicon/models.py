@@ -32,6 +32,10 @@ class Lexeme(models.Model):
         results = list(self.default_sense_set)
         return random.choice(results)
     random_sense = property(_get_random_sense)
+    
+    def first_sense(self):
+        return self.default_sense_set.order_by('id')[0]
+    first_sense = property(first_sense)
         
     def __unicode__(self):
         return '/'.join(

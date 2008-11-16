@@ -71,3 +71,36 @@ def test_user(request):
 
 #----------------------------------------------------------------------------#
 
+@profile_required
+def study(request):
+    """Study the mistakes made in a test set."""
+    context = {}
+    if request.method != 'POST' or 'test_set_id' not in request.POST:
+        raise Http404
+        
+    syllabus = request.user.get_profile().syllabus
+    
+    test_set_id = int(request.POST['test_set_id'])
+    test_set = drill_models.TestSet.objects.get(id=test_set_id)
+    failed_questions = test_set.questions.all().filter(
+            options__is_correct=False)
+    
+    failed_kanji = failed_questions.filter(pivot_type='k')
+    kanji_set = set(o['pivot'] for o in failed_kanji.values('pivot'))
+    failed_lexemes = failed_questions.filter(pivot_type='w')
+    surface_set = set(o['pivot'] for o in failed_lexemes.values('pivot'))
+    
+    partial_kanji = usermodel_models.PartialKanji.objects.filter(
+            syllabus=syllabus).filter(kanji__in=kanji_set)
+    lexeme_set = set(o['lexeme_id'] for o in \
+            usermodel_models.PartialLexeme.objects.filter(
+            syllabus=syllabus).filter(surface_set__surface__in=surface_set
+            ).values('lexeme_id'))
+    partial_lexemes = usermodel_models.PartialLexeme.objects.filter(
+            syllabus=syllabus).filter(lexeme__id__in=lexeme_set)
+
+    context['partial_kanji'] = partial_kanji
+    context['partial_lexemes'] = partial_lexemes
+    
+    return render_to_response('tutor/study.html', context,
+            context_instance=RequestContext(request))

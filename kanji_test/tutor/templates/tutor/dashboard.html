@@ -11,7 +11,7 @@
   </p>
 
   <h2>Progress on {{user.get_profile.syllabus.tag}}</h2>
-  {% ifequal stats.n_questions 0 %}
+  {% if not stats.has_questions %}
     <p>No statistics yet. Take a test to get some results.</p>
   {% else %}
     <p>You have taken {{stats.n_tests}} test{{stats.n_tests|pluralize}} so far.</p>
@@ -32,7 +32,7 @@
       </tr>
       </tbody>
     </table>
-  {% endifequal %}
+  {% endif %}
 
   <h2>Actions</h2>
   <form method="POST" action="{% url tutor_testuser %}">

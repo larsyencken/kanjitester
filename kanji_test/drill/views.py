@@ -66,6 +66,7 @@ class TestSetForm(forms.Form):
                 )
 
         self.test_set.end_time = datetime.datetime.now()
+        self.test_set.save()
 
         # Determine user score on test
         n_correct = 0

@@ -14,12 +14,16 @@ Methods for accessing user performance statistics.
 from kanji_test.drill import models
 
 def get_stats(user):
-    stats = {}
+    "Returns a dictionary of user statistics, or None if none are available."
+    stats = {'has_questions': True}
     stats['n_tests'] = models.TestSet.objects.filter(user=user).count()
 
     responses = models.MultipleChoiceResponse.objects.filter(user=user)
     stats['long_run'] = _check_stats(responses)
-
+    
+    if stats['long_run']['n_questions'] == 0:
+        return {'has_questions': False}
+    
     most_recent = models.TestSet.get_latest(user).responses.all()
 
     stats['most_recent'] = _check_stats(most_recent)

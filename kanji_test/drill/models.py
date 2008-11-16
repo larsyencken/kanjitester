@@ -51,7 +51,7 @@ class Question(models.Model):
     pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES)
     question_type = models.CharField(max_length=2, choices=QUESTION_TYPES)
     question_plugin = models.ForeignKey(QuestionPlugin)
-
+    
     def pivot_type_verbose():
         def fget(self):
             return [vd for (d, vd) in PIVOT_TYPES if d == self.pivot_type][0]
