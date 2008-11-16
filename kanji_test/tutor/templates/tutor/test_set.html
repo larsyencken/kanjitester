@@ -11,12 +11,37 @@
 
 {% block content %}
 <h1>Testing {{syllabus.tag}}</h1>
-<p>Please answer the following questions.</p>
+{% if form.has_answers %}
+  <p class="score">Your score: {{form.n_correct}}/{{form.n_questions}}</p>
+  <form method="POST" class="navigation">
+    <input type="hidden" name="test_set_id" value="{{test_set.id}}">
+    <input type="hidden" name="action" value="study">
+    <input type="submit" value="Study mistakes">
+  </form>
+  <form method="GET" action="{% url tutor_dashboard %}" class="navigation">
+    <input type="submit" value="Back to dashboard">
+  </form>
+{% else %}
+  <p>Please answer the following questions.</p>
+{% endif %}
 <form method="POST">
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
+  <input type="hidden" name="action" value="test">
   <table class="test_set">
   {{form}}
   </table>
+{% if form.has_answers %}
+</form>
+<form method="POST" class="navigation">
+  <input type="hidden" name="test_set_id" value="{{test_set.id}}">
+  <input type="hidden" name="action" value="study">
+  <input type="submit" value="Study mistakes">
+</form>
+<form method="GET" action="{% url tutor_dashboard %}" class="navigation">
+  <input type="submit" value="Back to dashboard">
+</form>
+{% else %}
   <input type="Submit" value="Check answers">
 </form>
+{% endif %}
 {% endblock %}

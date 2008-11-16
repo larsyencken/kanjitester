@@ -7,8 +7,6 @@
 #  Copyright 2008-06-13 Lars Yencken. All rights reserved.
 # 
 
-import math
-
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
@@ -20,6 +18,7 @@ from cjktools.scripts import containsScript, Script
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.drill import models as drill_models
 from kanji_test.drill import plugin_api, load_plugins
+from kanji_test.drill.views import TestSetForm
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
 from kanji_test.util import html
@@ -52,14 +51,10 @@ def test_user(request):
         test_set = drill_models.TestSet.objects.get(pk=test_set_id)
     context['test_set'] = test_set
 
-    TestSetForm = test_set.to_form()
-    if request.method == 'post':
-        form = TestSetForm(request.POST)
-        if form.is_valid():
-            # XXX Check answers
-            pass
+    if request.method == 'POST':
+        form = TestSetForm(test_set, request.POST)
     else:
-        form = TestSetForm()
+        form = TestSetForm(test_set)
     context['form'] = form
     context['syllabus'] = request.user.get_profile().syllabus
 

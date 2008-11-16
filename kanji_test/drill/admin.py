@@ -29,3 +29,24 @@ class QuestionPluginAdmin(admin.ModelAdmin):
     list_filter = ('supports_kanji', 'supports_words')
 
 admin.site.register(models.QuestionPlugin, QuestionPluginAdmin)
+
+admin.site.register(models.Question)
+admin.site.register(models.Response)
+
+class MultipleChoiceResponseAdmin(admin.ModelAdmin):
+    list_display = ('user', 'question', 'option', 'timestamp')
+    list_filter = ('timestamp',)
+
+admin.site.register(models.MultipleChoiceResponse, MultipleChoiceResponseAdmin)
+
+class MultipleChoiceOptionAdmin(admin.ModelAdmin):
+    list_display = ('question', 'value', 'is_correct')
+    list_filter = ('is_correct',)
+
+admin.site.register(models.MultipleChoiceOption, MultipleChoiceOptionAdmin)
+
+class TestSetAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'accuracy')
+
+admin.site.register(models.TestSet, TestSetAdmin)
+
