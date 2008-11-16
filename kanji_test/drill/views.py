@@ -8,6 +8,7 @@
 #
 
 import re
+import datetime
 
 from django import forms
 from django.utils.safestring import mark_safe
@@ -63,6 +64,8 @@ class TestSetForm(forms.Form):
                     question_id=question_id,
                     user_id=self.test_set.user_id,
                 )
+
+        self.test_set.end_time = datetime.datetime.now()
 
         # Determine user score on test
         n_correct = 0

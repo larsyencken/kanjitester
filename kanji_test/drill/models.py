@@ -166,6 +166,12 @@ class TestSet(models.Model):
     questions = models.ManyToManyField(MultipleChoiceQuestion)
     responses = models.ManyToManyField(MultipleChoiceResponse)
     random_seed = models.IntegerField()
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(blank=True, null=True)
+
+    @staticmethod
+    def get_latest(user):
+        return TestSet.objects.filter(user=user).order_by('-end_time')[0]
 
     def ordered_questions(self):
         question_list = list(self.questions.order_by('id'))

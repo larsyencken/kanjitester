@@ -7,13 +7,32 @@
 {% block content %}
   <h1>Dashboard</h1>
   
-  <p>Here is where you'll be able to monitor your progress and start new drills.</p>
+  <p>Here is where you'll be able to monitor your progress and take new tests.
+  </p>
 
-  <h2>Progress in {{user.get_profile.syllabus.tag}}</h2>
-  {% if have_stats %}
-  {% else %}
+  <h2>Progress on {{user.get_profile.syllabus.tag}}</h2>
+  {% ifequal stats.n_questions 0 %}
     <p>No statistics yet. Take a test to get some results.</p>
-  {% endif %}
+  {% else %}
+    <p>You have taken {{stats.n_tests}} test{{stats.n_tests|pluralize}} so far.</p>
+    <table>
+      <thead>
+        <th>&nbsp;</th><th>Long run</th><th>Most recent test</th>
+      </thead>
+      <tbody>
+      <tr>
+        <th># of questions</th>
+        <td>{{stats.long_run.n_questions}}</td>
+        <td>{{stats.most_recent.n_questions}}</td>
+      </tr>
+      <tr>
+        <th>Accuracy</th>
+        <td>{{stats.long_run.pc_correct|floatformat:1}}%</td>
+        <td>{{stats.most_recent.pc_correct|floatformat:1}}%</td>
+      </tr>
+      </tbody>
+    </table>
+  {% endifequal %}
 
   <h2>Actions</h2>
   <form method="POST" action="{% url tutor_testuser %}">

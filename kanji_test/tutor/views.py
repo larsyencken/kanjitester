@@ -18,7 +18,7 @@ from cjktools.scripts import containsScript, Script
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.drill import models as drill_models
-from kanji_test.drill import plugin_api, load_plugins
+from kanji_test.drill import plugin_api, load_plugins, stats
 from kanji_test.drill.views import TestSetForm
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
@@ -36,7 +36,9 @@ def welcome(request):
 @profile_required
 def dashboard(request):
     """Render the dashboard interface."""    
-    return render_to_response('tutor/dashboard.html', {},
+    context = {}
+    context['stats'] = stats.get_stats(request.user)
+    return render_to_response('tutor/dashboard.html', context,
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
