@@ -44,9 +44,15 @@
         {% for partial_lexeme in partial_lexemes %}
         <tr>
           <td>
-            {% for lexeme_surface in partial_lexeme.surface_set.all %}
-              {{lexeme_surface.surface}}{% if not forloop.last %}, {% endif %}
-            {% endfor %}
+            {% if partial_lexeme.surface_set.all %}
+              {% for lexeme_surface in partial_lexeme.surface_set.all %}
+                {{lexeme_surface.surface}}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            {% else %}
+              {% for lexeme_reading in partial_lexeme.reading_set.all %}
+                {{lexeme_reading.reading}}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            {% endif %}
           </td>
           <td>
             {% for lexeme_reading in partial_lexeme.reading_set.all %}

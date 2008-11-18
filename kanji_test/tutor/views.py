@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
 from django.conf import settings
+from django.db.models import Q
 
 from cjktools import scripts
 from cjktools.scripts import containsScript, Script
@@ -82,19 +83,29 @@ def study(request):
     
     test_set_id = int(request.POST['test_set_id'])
     test_set = drill_models.TestSet.objects.get(id=test_set_id)
-    failed_questions = test_set.questions.all().filter(
-            options__is_correct=False)
-    
+    failed_responses = test_set.responses.filter(option__is_correct=False)
+    failed_questions = test_set.questions.filter(
+            response__in=failed_responses)
+
     failed_kanji = failed_questions.filter(pivot_type='k')
     kanji_set = set(o['pivot'] for o in failed_kanji.values('pivot'))
     failed_lexemes = failed_questions.filter(pivot_type='w')
     surface_set = set(o['pivot'] for o in failed_lexemes.values('pivot'))
-    
+    kanji_script = scripts.Script.Kanji
+    reading_set = set(s for s in surface_set if not scripts.containsScript(
+            kanji_script, s))
+    surface_set = surface_set.difference(reading_set)
+
     partial_kanji = usermodel_models.PartialKanji.objects.filter(
             syllabus=syllabus).filter(kanji__in=kanji_set)
+
+    # Note that some lexemes have no surfaces, so we have to query their
+    # readings too.
     lexeme_set = set(o['lexeme_id'] for o in \
             usermodel_models.PartialLexeme.objects.filter(
-            syllabus=syllabus).filter(surface_set__surface__in=surface_set
+            syllabus=syllabus).filter(
+                    Q(surface_set__surface__in=surface_set) | 
+                    Q(reading_set__reading__in=reading_set)
             ).values('lexeme_id'))
     partial_lexemes = usermodel_models.PartialLexeme.objects.filter(
             syllabus=syllabus).filter(lexeme__id__in=lexeme_set)
