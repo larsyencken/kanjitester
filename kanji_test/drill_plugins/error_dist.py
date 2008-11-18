@@ -33,12 +33,12 @@ class KanjiSimilarityDrills(plugin_api.MultipleChoiceFactoryI):
     supports_words = True
     supports_kanji = True
     requires_kanji = True
-    required_dist = "kanji' | kanji"
+    uses_dist = "kanji' | kanji"
     
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
-                tag=self.required_dist)
+                tag=self.uses_dist)
         kanji = kanji_row.kanji
         sample_kanji = lambda char: error_dist.sample(char).symbol
         distractors = support.build_kanji_options(kanji, sample_kanji)
@@ -58,7 +58,7 @@ class KanjiSimilarityDrills(plugin_api.MultipleChoiceFactoryI):
             raise plugin_api.UnsupportedItem(partial_lexeme)
 
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
-                tag=self.required_dist)
+                tag=self.uses_dist)
         language = lexicon_models.Language.get_default()
         # XXX assuming the first sense is the most frequent
         gloss = lexeme.sense_set.filter(language=language)[0].gloss

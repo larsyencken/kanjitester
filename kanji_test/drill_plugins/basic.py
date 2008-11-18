@@ -28,6 +28,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = True
     supports_kanji = True
     supports_words = True
+    uses_dist = None
 
     def get_word_question(self, partial_lexeme, _user):
         try:
@@ -95,6 +96,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = True
     supports_words = True
     supports_kanji = True
+    uses_dist = None
 
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
@@ -146,6 +148,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_words = True
     requires_kanji = False
     question_type = 'pg'
+    uses_dist = None
 
     def get_kanji_question(self, partial_kanji, _user):
         kanji_row = partial_kanji.kanji

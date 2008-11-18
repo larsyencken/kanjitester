@@ -49,16 +49,49 @@ class TestSetForm(forms.Form):
     def _save_responses(self):
         "Saves the user's responses to the test set questions."
         assert self.is_valid()
+        chosen_option_ids, question_ids, user_responses = \
+                self._record_responses()
+        options = self._score_responses(question_ids, user_responses)
+        self._update_error_models(options, chosen_option_ids)
+        return
 
-        # Record user responses
+    def _update_error_models(self, options, chosen_option_ids):
+        option_map = {}
+        for option in options:
+            option_list = option_map.get(option.question_id)
+            if option_list:
+                option_list.append(option)
+            else:
+                option_map[option.question_id] = [option]
+
+        user = self.test_set.user
+        for question_id, question_options in option_map.iteritems():
+            (chosen_option,) = [o for o in question_options if o.id in \
+                    chosen_option_ids]
+            question = chosen_option.question
+            condition = question.pivot
+            uses_dist = question.question_plugin.uses_dist
+            if uses_dist:
+                option_values = [o.value for o in question_options]
+                error_dist = user.errordist_set.get(tag=uses_dist)
+                error_dist.update(condition, chosen_option.value,
+                        option_values)
+
+        return
+
+    def _record_responses(self):
         self.test_set.responses.all().delete()
-        option_ids = []
+        chosen_option_ids = set()
+        question_ids = []
+        user_responses = {}
         for key, value in self.cleaned_data.iteritems():
             if not key.startswith('question_'):
                 continue
             option_id = int(value)
-            option_ids.append(option_id)
+            chosen_option_ids.add(option_id)
             question_id = int(key.split('_')[1])
+            question_ids.append(question_id)
+            user_responses[question_id] = option_id
             self.test_set.responses.create(
                     option_id=option_id,
                     question_id=question_id,
@@ -67,22 +100,25 @@ class TestSetForm(forms.Form):
 
         self.test_set.end_time = datetime.datetime.now()
         self.test_set.save()
+        return chosen_option_ids, question_ids, user_responses
 
-        # Determine user score on test
+    def _score_responses(self, question_ids, user_responses):
         n_correct = 0
         n_questions = 0
-        options = models.MultipleChoiceOption.objects.in_bulk(option_ids
-                ).values()
+        options = models.MultipleChoiceOption.objects.filter(
+                question__id__in=question_ids)
+        response_options = set(user_responses.values())
         for option in options:
+            if option.id not in response_options:
+                continue
             question_key = 'question_%d' % option.question_id
             self.fields[question_key].is_correct = option.is_correct
             if option.is_correct:
                 n_correct += 1
             n_questions += 1
-
         self.n_correct = n_correct
         self.n_questions = n_questions
-        return
+        return options
 
     def as_table(self):
         "Returns an html table representation of this test set."

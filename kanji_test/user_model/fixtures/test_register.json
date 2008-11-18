@@ -6,5 +6,5 @@
 {"pk": 2, "model": "user_model.priorpdf", "fields": {"dist": 1, "symbol": "cat", "condition": "land", "cdf": 0.6, "pdf": 0.3}},
 {"pk": 3, "model": "user_model.priorpdf", "fields": {"dist": 1, "symbol": "kangaroo", "condition": "land", "cdf": 0.9, "pdf": 0.3}},
 {"pk": 4, "model": "user_model.priorpdf", "fields": {"dist": 1, "symbol": "koala", "condition": "land", "cdf": 1.0, "pdf": 0.1}},
-{"pk": 4, "model": "user_model.priorpdf", "fields": {"dist": 1, "symbol": "fish", "condition": "sea", "cdf": 1.0, "pdf": 1.0}}
+{"pk": 5, "model": "user_model.priorpdf", "fields": {"dist": 1, "symbol": "fish", "condition": "sea", "cdf": 1.0, "pdf": 1.0}}
 ]

@@ -16,7 +16,7 @@ import random
 from django.db import models, connection
 from cjktools.sequences import groupsOfN
 
-from kanji_test.settings import N_ROWS_PER_INSERT, UPDATE_ALPHA
+from kanji_test.settings import N_ROWS_PER_INSERT
 
 class ProbI(models.Model):
     """A probabilty distribution."""

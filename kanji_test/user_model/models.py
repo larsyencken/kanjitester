@@ -12,6 +12,7 @@ import random
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 from cjktools.stats import mean
 
 from kanji_test.lexicon import models as lexicon_models
@@ -154,6 +155,10 @@ class PriorDist(models.Model):
     syllabus = models.ForeignKey(Syllabus)
     tag = models.CharField(max_length=100)
 
+    def update(self, user, condition, answer, option_set):
+        return ErrorDist.objects.get(user=user, tag=tag).update(
+                condition, answer, option_set)
+
     class Meta:
         unique_together = (('syllabus', 'tag'),)
         verbose_name = 'prior distribution'
@@ -192,7 +197,7 @@ class ErrorDist(models.Model):
 
     def __unicode__(self):
         return '%s: %s' % (self.user.username, self.tag)
-        
+
     @classmethod
     def init_from_priors(cls, user):
         """Initialise user copies of prior dists."""
@@ -230,6 +235,31 @@ class ErrorDist(models.Model):
     def from_dist(cls):
         raise Exception('not supported')
 
+    def update(self, condition, symbol, symbol_set):
+        query = self.density.filter(condition=condition)
+        whole_dist = ProbDist(query)
+
+        sub_dist = ProbDist(query.filter(symbol__in=symbol_set))
+        assert sub_dist
+        m = max(v for (s, v) in sub_dist.iteritems() if s != symbol) + \
+                settings.UPDATE_EPSILON
+
+        if sub_dist[symbol] >= m:
+            # Nothing to say here.
+            return
+
+        # Increase the likelihood of seeing the symbol
+        sub_dist[symbol] = m
+        sub_dist.normalise()
+
+        sub_dist_mass = sum(map(whole_dist.__getitem__, sub_dist.keys()))
+        for s in sub_dist:
+            whole_dist[s] = sub_dist[s] * sub_dist_mass
+
+        assert abs(sum(whole_dist.values()) - 1.0) < 1e-6
+        whole_dist.save_to(self.density, condition=condition)
+        return
+
 class ErrorPdf(util_models.CondProb):
     dist = models.ForeignKey(ErrorDist, related_name='density')
     is_correct = models.BooleanField(default=False)
@@ -262,3 +292,28 @@ class ErrorPdf(util_models.CondProb):
     def from_dist(cls):
         raise Exception('not supported')
 
+class ProbDist(dict):
+    def __init__(self, query_set):
+        for row in query_set.values('symbol', 'pdf'):
+            self[row['symbol']] = row['pdf']
+
+        self.normalise()
+
+    def normalise(self):
+        total = sum(self.itervalues())
+        for key in self:
+            self[key] /= total
+
+    def save_to(self, manager, **kwargs):
+        manager.filter(**kwargs).delete()
+        cdf = 0.0
+        for symbol, pdf in self.iteritems():
+            row_kwargs = {}
+            row_kwargs.update(kwargs)
+            cdf += pdf
+            row_kwargs['cdf'] = cdf
+            row_kwargs['pdf'] = pdf
+            row_kwargs['symbol'] = symbol
+            manager.create(**row_kwargs)
+
+        return

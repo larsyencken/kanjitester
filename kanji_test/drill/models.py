@@ -17,12 +17,14 @@ from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
 
 from kanji_test.util import html
+from kanji_test.user_model import models as usermodel_models
 
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField()
     supports_kanji = models.BooleanField()
     supports_words = models.BooleanField()
+    uses_dist = models.CharField(max_length=100, null=True, blank=True)
     
     def __unicode__(self):
         return self.name
@@ -36,7 +38,7 @@ QUESTION_TYPES = (
         ('rp', 'from reading determine pivot'),
         ('gp', 'from gloss determine pivot'),
         ('pg', 'from pivot determine gloss'),
-        ('pr', 'from pivot determine reading')
+        ('pr', 'from pivot determine reading'),
     )
 
 INSTRUCTIONS = {

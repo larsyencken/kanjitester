@@ -1,0 +1,10 @@
+[{"pk": 1, "model": "user_model.syllabus", "fields": {"tag": "dummy"}},
+{"pk": 1, "model": "auth.user", "fields": {"username": "dummy", "first_name": "", "last_name": "", "is_active": 1, "is_superuser": 1, "is_staff": 1, "last_login": "2008-11-17 16:31:03", "groups": [], "user_permissions": [], "password": "", "email": "", "date_joined": "2008-11-17 16:31:00"}},
+{"pk": 1, "model": "user_profile.userprofile", "fields": {"syllabus": 1, "first_language": "English", "user": 1}},
+{"pk": 1, "model": "user_model.errordist", "fields": {"tag": "dummy", "user": 1}},
+{"pk": 1, "model": "user_model.errorpdf", "fields": {"dist": 1, "symbol": "dog", "condition": "land", "cdf": 0.3, "pdf": 0.3}},
+{"pk": 2, "model": "user_model.errorpdf", "fields": {"dist": 1, "symbol": "cat", "condition": "land", "cdf": 0.6, "pdf": 0.3}},
+{"pk": 3, "model": "user_model.errorpdf", "fields": {"dist": 1, "symbol": "kangaroo", "condition": "land", "cdf": 0.9, "pdf": 0.3}},
+{"pk": 4, "model": "user_model.errorpdf", "fields": {"dist": 1, "symbol": "koala", "condition": "land", "cdf": 1.0, "pdf": 0.1}},
+{"pk": 5, "model": "user_model.errorpdf", "fields": {"dist": 1, "symbol": "fish", "condition": "sea", "cdf": 1.0, "pdf": 1.0}}
+]

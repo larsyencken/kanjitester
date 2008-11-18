@@ -26,5 +26,21 @@ class RegistrationTest(TestCase):
             self.assertEqual(prior_row.cdf, error_row.cdf)
             self.assertEqual(prior_row.pdf, error_row.pdf)
 
-# vim: ts=4 sw=4 sts=4 et tw=78:
+class UpdateTest(TestCase):
+    fixtures = ['test_update']
+    def test_update(self):
+        user = auth_models.User.objects.get(username="dummy")
+        error_dist = models.ErrorDist.objects.get(user=user, tag="dummy")
+        error_dist.update("land", "kangaroo", ["cat", "kangaroo", "koala"])
+        self.assertAlmostEqual(error_dist.density.get(condition="land",
+                symbol="kangaroo").pdf, 0.36666667)
+        self.assertAlmostEqual(error_dist.density.get(condition="land",
+                symbol="cat").pdf, 0.25)
+        self.assertAlmostEqual(error_dist.density.get(condition="land",
+                symbol="koala").pdf, 0.08333333) 
+        self.assertAlmostEqual(error_dist.density.get(condition="land",
+                symbol="dog").pdf, 0.3) 
+        self.assertAlmostEqual(error_dist.density.get(condition="sea",
+                symbol="fish").pdf, 1.0) 
 
+# vim: ts=4 sw=4 sts=4 et tw=78:

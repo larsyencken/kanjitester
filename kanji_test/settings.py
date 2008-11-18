@@ -152,7 +152,7 @@ ACCOUNT_ACTIVATION_DAYS = 15
 
 N_ROWS_PER_INSERT = 10000
 DEFAULT_LANGUAGE_CODE = 'eng'
-UPDATE_ALPHA = 0.2
+UPDATE_EPSILON = 0.2
 
 # When True, enables the debugging media view.
 DEPLOYED = False
