@@ -1,0 +1,90 @@
+%
+%  modelling.tex
+% 
+%  Created by Lars Yencken on 18-11-2008.
+%  Copyright 2008 Lars Yencken. All rights reserved.
+%
+
+\documentclass[11pt,a4paper]{article}
+
+% Header material (fold)
+
+% Required packages (fold)
+\usepackage{url,latexsym,hyperref,graphicx,amssymb,amsmath} 
+\usepackage{xspace} 
+\usepackage{fullpage}
+%\usepackage{pdfsync}
+
+% XeTeX specific
+\usepackage{fontspec} 
+\usepackage{xunicode}
+\setmainfont[
+  Mapping=tex-text,
+  SmallCapsFont={LMRoman10-CapsRegular},
+]{ACaslonPro-Regular}
+\setmonofont{Andale Mono}
+% Required packages (end)
+
+% Header material (end)
+
+\title{{\fontspec{ACaslonPro-Bold} Kanji Tester: Error Modelling}} 
+\author{\href{mailto:lljy@csse.unimelb.edu.au}{Lars Yencken}}
+
+\begin{document}
+\maketitle
+
+\section*{\fontspec{ACaslonPro-Bold}Prior distributions}
+
+Here we will document the error distributions used.
+
+\subsection*{\fontspec{ACaslonPro-Bold}$(\text{kanji}' | \text{kanji})$}
+
+Given a frequency distribution $\Pr(K)$ and a similarity measure $s: K \times
+K \rightarrow [0, 1]$, we can calculate the error distribution:
+\[
+\Pr(K'|K) = \frac{\Pr(K')s(K', K)}{\alpha}
+\]
+where $\alpha$ is a normalisation constant.
+
+\subsection*{\fontspec{ACaslonPro-Bold}$(\text{reading}' | \text{reading}, \text{kanji})$}
+
+Describe FOKS reading model.
+
+\section*{\fontspec{ACaslonPro-Bold}Update rule}
+
+First we start with some basic definitions:
+
+\begin{eqnarray*}
+O & = & \text{the finite set of options available for a question}\\
+D & = & \text{the options displayed to the user, $D = d_1 \dots d_n$,
+    $D \subset O$}\\
+c & = & \text{the option the user picks}\\
+\end{eqnarray*}
+
+We displayed a random subset $D$ of possible options $O$ to the user, and they
+chose option $c$ as their answer. $\Pr(c|D)$ is known from our prior
+distribution. We wish to determine the posterior value for $\Pr'(c)$.
+We base our update rule on the constraint:
+
+\[
+\forall_{\{i:d_i \ne c\}} \Pr(c|D) \ge \Pr(d_i|D) + \epsilon
+\]
+
+That is, the user chose $c$ because it was better than any other option by a
+margin of $\epsilon$. Our update rule simply enforces this margin of
+$\epsilon$ in the posterior distribution $(C|D)$ used in the next iteration.
+
+\begin{enumerate}
+  \item Let $m = \max_{\{i: d_i \ne c\}} \Pr(d_i|D) + \epsilon$
+  \item Define the posterior distribution $(C|D)$ as follows:
+  \begin{itemize}
+    \item $\Pr'(d_i|D) = \Pr(d_i|D)$ if $d_i \ne c$
+    \item $\Pr'(c|D) = \max\{\Pr(c|D), m\}$
+    \item Normalise $(C|D)$ such that $\sum_i \Pr'(d_i|D) = 1$
+  \end{itemize}
+  \item Retain $\Pr'(D) = \Pr(D)$\footnote{The evidences gives us no reason to
+    increase or decrease the overall likelihood of $D$.}
+  \item Set $\Pr'(d_i) = \Pr'(d_i|D)\Pr'(D)$
+\end{enumerate}
+
+\end{document}
