@@ -1,0 +1,22 @@
+digraph G
+{
+    drill -> user_model;
+    drill -> util;
+    lexicon -> util;
+    lexicon -> checksum;
+    tutor -> drill;
+    tutor -> user_model;
+    tutor -> util;
+    tutor -> user_profile;
+    tutor -> auth;
+    util -> nltk;
+    user_model -> visual_similarity;
+    user_model -> reading_alt;
+    user_model -> checksum;
+    reading_alt -> hierarchy;
+    user_model -> lexicon;
+    user_model -> util;
+    user_profile -> user_model;
+    user_profile -> util;
+    user_profile -> auth;
+}
