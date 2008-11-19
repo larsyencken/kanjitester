@@ -11,12 +11,14 @@
 A broad interface for test questions and their database management.
 """
 
-from kanji_test import settings
+from kanji_test import util as _requires_util
+from kanji_test import user_model as _requires_user_model
 
 def load_plugins():
     """
     Load all the plugins listed in the settings file.
     """
+    from kanji_test import settings
     plugins = []
     for plugin_path in settings.DRILL_PLUGINS:
         import_path = plugin_path.split('.')

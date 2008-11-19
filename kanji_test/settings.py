@@ -108,7 +108,6 @@ INSTALLED_APPS = (
     'kanji_test.registration',
     'kanji_test.user_model',
     'kanji_test.user_model_plugins.visual_similarity',
-    'kanji_test.user_model_plugins.visual_similarity',
     'kanji_test.user_model_plugins.hierarchy',
     'kanji_test.user_model_plugins.reading_alt',
     'kanji_test.user_profile',

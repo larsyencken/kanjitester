@@ -11,7 +11,10 @@
 An application which provides basic and exact lexical access.
 """
 
-import load_lexicon
+# Dependencies
+from kanji_test import util as _requires_util
+import checksum as _requires_checksum
 
 def build():
+    import load_lexicon
     load_lexicon.load_lexicon()

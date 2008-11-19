@@ -12,5 +12,9 @@ Basic workflow for user profiles, including initialising profiles and updating
 them as needed.
 """
 
+# Dependencies
+from kanji_test import util as _requires_util
+from kanji_test import user_model as _requires_user_model
+
 # vim: ts=4 sw=4 sts=4 et tw=78:
 
