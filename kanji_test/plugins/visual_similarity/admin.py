@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # 
-#  __init__.py
+#  admin.py
 #  kanji_test
 #  
-#  Created by Lars Yencken on 2008-10-24.
+#  Created by Lars Yencken on 2008-09-16.
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-"Plugins which provide error models."
+from django.contrib import admin
+

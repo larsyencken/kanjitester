@@ -107,9 +107,9 @@ INSTALLED_APPS = (
     'kanji_test.util',
     'kanji_test.registration',
     'kanji_test.user_model',
-    'kanji_test.user_model_plugins.visual_similarity',
-    'kanji_test.user_model_plugins.hierarchy',
-    'kanji_test.user_model_plugins.reading_alt',
+    'kanji_test.plugins.visual_similarity',
+    'kanji_test.plugins.reading_alt',
+    'kanji_test.plugins.reading_alt.hierarchy',
     'kanji_test.user_profile',
     'checksum',
 )
@@ -118,14 +118,14 @@ TEST_DATABASE_CHARSET = 'utf8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
 DRILL_PLUGINS = (
-    'kanji_test.drill_plugins.basic.ReadingQuestionFactory',
-    'kanji_test.drill_plugins.basic.SurfaceQuestionFactory',
-    'kanji_test.drill_plugins.basic.GlossQuestionFactory',
-    'kanji_test.drill_plugins.error_dist.KanjiSimilarityDrills',
+    'kanji_test.plugins.basic_drills.ReadingQuestionFactory',
+    'kanji_test.plugins.basic_drills.SurfaceQuestionFactory',
+    'kanji_test.plugins.basic_drills.GlossQuestionFactory',
+    'kanji_test.plugins.visual_similarity.VisualSimilarityDrills',
 )
 
 USER_MODEL_PLUGINS = (
-    'kanji_test.user_model_plugins.visual_similarity.VisualSimilarity',
+    'kanji_test.plugins.visual_similarity.VisualSimilarity',
 )
 
 # auth

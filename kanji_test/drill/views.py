@@ -52,31 +52,6 @@ class TestSetForm(forms.Form):
         chosen_option_ids, question_ids, user_responses = \
                 self._record_responses()
         options = self._score_responses(question_ids, user_responses)
-        self._update_error_models(options, chosen_option_ids)
-        return
-
-    def _update_error_models(self, options, chosen_option_ids):
-        option_map = {}
-        for option in options:
-            option_list = option_map.get(option.question_id)
-            if option_list:
-                option_list.append(option)
-            else:
-                option_map[option.question_id] = [option]
-
-        user = self.test_set.user
-        for question_id, question_options in option_map.iteritems():
-            (chosen_option,) = [o for o in question_options if o.id in \
-                    chosen_option_ids]
-            question = chosen_option.question
-            condition = question.pivot
-            uses_dist = question.question_plugin.uses_dist
-            if uses_dist:
-                option_values = [o.value for o in question_options]
-                error_dist = user.errordist_set.get(tag=uses_dist)
-                error_dist.update(condition, chosen_option.value,
-                        option_values)
-
         return
 
     def _record_responses(self):

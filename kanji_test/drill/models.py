@@ -18,6 +18,7 @@ from cjktools import scripts
 
 from kanji_test.util import html
 from kanji_test.user_model import models as usermodel_models
+from kanji_test.user_model import plugin_api
 
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -28,6 +29,14 @@ class QuestionPlugin(models.Model):
     
     def __unicode__(self):
         return self.name
+    
+    def update(self, response):
+        "Update our error model given this response."
+        if not self.uses_dist:
+            return
+        plugin_map = plugin_api.load_plugins()
+        plugin_map[self.uses_dist].update(response)
+        return
 
 PIVOT_TYPES = (
         ('k', 'kanji'),
@@ -49,10 +58,16 @@ INSTRUCTIONS = {
     }
 
 class Question(models.Model):
-    pivot = models.CharField(max_length=30, db_index=True)
-    pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES)
-    question_type = models.CharField(max_length=2, choices=QUESTION_TYPES)
-    question_plugin = models.ForeignKey(QuestionPlugin)
+    pivot = models.CharField(max_length=30, db_index=True,
+        help_text="The word or kanji this question is created for.")
+    pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES,
+        help_text="Is this a word or a kanji question?")
+    question_type = models.CharField(max_length=2, choices=QUESTION_TYPES,
+        help_text="The broad type of this question.")
+    question_plugin = models.ForeignKey(QuestionPlugin,
+        help_text="The plugin which generated this question.")
+    annotation = models.CharField(max_length=100, null=True, blank=True,
+        help_text="Scratch space for question plugin annotations.")
     
     def pivot_type_verbose():
         def fget(self):
@@ -162,6 +177,14 @@ class MultipleChoiceResponse(Response):
         
     def is_correct(self):
         return self.option.is_correct
+
+    def save(self, *args, **kwargs):
+        """
+        Save this response, and update the error model which generated it as
+        a side-effect.
+        """
+        super(MultipleChoiceResponse, self).save(*args, **kwargs)
+        self.question.question_plugin.update(self)
 
 class TestSet(models.Model):
     user = models.ForeignKey(auth_models.User)

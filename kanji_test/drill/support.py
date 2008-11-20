@@ -31,7 +31,7 @@ def build_kanji_options(item, sample_method, exclude_set=None):
                 result.append(sample_method(char))
             else:
                 result.append(char)
-        result = u''.join(result)
+        result = ''.join(result)
         if result not in exclude_set:
             distractors.append(result)
             exclude_set.add(result)

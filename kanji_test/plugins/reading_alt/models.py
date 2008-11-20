@@ -14,7 +14,7 @@ Models for the reading_alt app.
 from django.db import models
 from django.conf import settings
 
-from kanji_test.user_model_plugins.hierarchy.models import HierarchicalModel
+from hierarchy.models import HierarchicalModel
 
 ALTERNATION_TYPES = (
         ('/', 'root node'),

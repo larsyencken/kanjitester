@@ -7,7 +7,3 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-import os
-
-from django.db import models
-

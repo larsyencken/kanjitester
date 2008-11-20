@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 
-#  __init__.py
+#  basic_drills.py
 #  kanji_test
 #  
 #  Created by Lars Yencken on 2008-06-21.

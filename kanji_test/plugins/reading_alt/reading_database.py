@@ -21,7 +21,7 @@ from cjktools.resources import kanjidic
 import consoleLog
 from checksum.models import Checksum
 
-from kanji_test.user_model_plugins.hierarchy.tree import TreeNode
+from hierarchy.tree import TreeNode
 
 import reading_model
 import alternation_model
