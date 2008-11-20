@@ -21,4 +21,4 @@ kanji_test.egg-info
 *.diff
 *.tmproj
 *.log
-doc/*.{pdf,out,aux}
+doc/*.{pdf,out,aux,toc}

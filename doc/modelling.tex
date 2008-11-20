@@ -5,39 +5,65 @@
 %  Copyright 2008 Lars Yencken. All rights reserved.
 %
 
+%----------------------------------------------------------------------------%
+% HEADER
+%----------------------------------------------------------------------------%
+
 \documentclass[11pt,a4paper]{article}
 
-% Header material (fold)
-
-% Required packages (fold)
 \usepackage{url,latexsym,hyperref,graphicx,amssymb,amsmath} 
 \usepackage{xspace} 
 \usepackage{fullpage}
-%\usepackage{pdfsync}
+\usepackage{tweaklist}
 
 % XeTeX specific
 \usepackage{fontspec} 
 \usepackage{xunicode}
 \setmainfont[
   Mapping=tex-text,
-  SmallCapsFont={LMRoman10-CapsRegular},
+%  SmallCapsFont={LMRoman10-CapsRegular},
+  ItalicFont={ACaslonPro-Italic},
+  BoldFont={ACaslonPro-Bold}
 ]{ACaslonPro-Regular}
 \setmonofont{Andale Mono}
-% Required packages (end)
 
-% Header material (end)
+\newfontinstance\scshape[Letters=SmallCaps, Numbers=Uppercase]{ACaslonPro-Regular}
 
-\title{{\fontspec{ACaslonPro-Bold} Kanji Tester: Error Modelling}} 
+\usepackage{sectsty}
+\allsectionsfont{\fontspec{ACaslonPro-Bold}}
+
+%----------------------------------------------------------------------------%
+% CJK
+%----------------------------------------------------------------------------%
+
+\newcommand{\japanesefont}{\fontspec{Epson-Kaisho}}
+\newcommand{\chinesefont}{\fontspec{LiSong Pro}}
+
+% Commands for Japanese examples
+\newcommand{\ex}[1]{\textit{#1}}
+\newcommand{\gloss}[1]{``#1''}
+\newcommand{\jreading}[1]{[#1]}
+\newcommand{\jp}[1]{\japanesefont#1\normalfont}
+\newcommand{\cn}[1]{\chinesefont#1\normalfont}
+\newcommand{\creading}[1]{[#1]}
+
+%----------------------------------------------------------------------------%
+% CONTENT
+%----------------------------------------------------------------------------%
+
+\title{\fontspec{ACaslonPro-Bold} Kanji Tester: Error Modelling}
 \author{\href{mailto:lljy@csse.unimelb.edu.au}{Lars Yencken}}
 
 \begin{document}
 \maketitle
 
-\section*{\fontspec{ACaslonPro-Bold}Prior distributions}
+\tableofcontents
 
-Here we will document the error distributions used.
+\section{Prior distributions}
 
-\subsection*{\fontspec{ACaslonPro-Bold}$(\text{kanji}' | \text{kanji})$}
+This section documents the prior error distributions use for each error type. 
+
+\subsection{$(\text{kanji}' | \text{kanji})$}
 
 Given a frequency distribution $\Pr(K)$ and a similarity measure $s: K \times
 K \rightarrow [0, 1]$, we can calculate the error distribution:
@@ -46,11 +72,18 @@ K \rightarrow [0, 1]$, we can calculate the error distribution:
 \]
 where $\alpha$ is a normalisation constant.
 
-\subsection*{\fontspec{ACaslonPro-Bold}$(\text{reading}' | \text{reading}, \text{kanji})$}
+\subsection{$(\text{reading}' | \text{reading}, \text{kanji})$}
 
 Describe FOKS reading model.
 
-\section*{\fontspec{ACaslonPro-Bold}Update rule}
+\section{Update rule}
+
+This section describes how we update our error models from user responses.
+When the error model is based on an individual item, we use a simple updating
+method, and when it is based on a sequence of items from our error
+distribution, we need to use a different sequence model.
+
+\subsection{Simple updating}
 
 First we start with some basic definitions:
 
@@ -82,9 +115,143 @@ $\epsilon$ in the posterior distribution $(C|D)$ used in the next iteration.
     \item $\Pr'(c|D) = \max\{\Pr(c|D), m\}$
     \item Normalise $(C|D)$ such that $\sum_i \Pr'(d_i|D) = 1$
   \end{itemize}
-  \item Retain $\Pr'(D) = \Pr(D)$\footnote{The evidences gives us no reason to
+  \item Retain $\Pr'(d) = \Pr(d)$ for all $d \in O \setminus D$\footnote{The evidences gives us no reason to
     increase or decrease the overall likelihood of $D$.}
   \item Set $\Pr'(d_i) = \Pr'(d_i|D)\Pr'(D)$
 \end{enumerate}
+
+\subsection{Updating sequence models}
+
+\subsubsection{Draft model}
+In our sequence model, each distractor $d$ is a sequence of elementary items
+$d_1 \dots d_n$ in the distractor space $D = D_1 \times \dots \times
+D_n$.\footnote{Note the differing meaning of this subscript from the previous
+section. $d_i$ previously represented the $i$th option displayed to the user;
+it now represents the $i$th sequence element of the single option $d$.}
+We use the same steps as in the simple update, up to the point where we have
+calculated $\forall d : \Pr'(d|D)$. At this point, we know the new sequence
+probability, but wish to determine the new primitive probability
+$\Pr'(d_i|D_i)$. We define:
+\[
+\Delta = \frac{{\Pr}'(d|D)}{\Pr(d|D)}
+\]
+which has known value at this stage. We make some simplifying assumptions to
+further reduce the right-hand side:
+\begin{eqnarray*}
+\Pr(d|D) & = & \Pr(d_{1} \dots d_{n}|D)\\
+& \approx & \prod_{j=1}^n \Pr(d_j|D)\\
+& & \text{assuming indepencence of each $(d_{j}|D)$}\\
+& \approx & \prod_{j=1}^n \Pr(d_j|D_j)\\
+& & \text{assuming further independence of $d_j$ from all $D_i$, $i \ne j$}
+\end{eqnarray*}
+Whilst these assumptions clearly {\it do not} hold in real life, whether our
+sequences models are of kanji readings or of highly similar characters, since 
+real-life cooccurrence frequencies differ significantly for different
+combinations of sequence items. We nonetheless make these assumptions to retain a simple and tractable model. Plugging this result back into our initial recipe for $\Delta$:
+\[
+\Delta \approx \prod_{j=1}^n \frac{{\Pr}'(d_j|D_j)}{\Pr(d_j|D_j)}
+\]
+We choose to distribute the probability mass evenly, which adds the
+constraint:
+\[
+\frac{{\Pr}'(d_j|D_j)}{\Pr(d_j|D_j)} = \frac{{\Pr}'(d_k|D_k)}{\Pr(d_k|D_k)}
+\mbox{\hspace{0.5cm}}
+\forall j, k \in \{{1, \dots, n}\} 
+\]
+Then our final update rule emerges:
+\[
+{\Pr}'(d_j|D_j) = \Delta^{1/n} \Pr(d_j|D_j)
+\]
+
+Note that this rule requires us to change our earlier constraint that no unseen
+options should have their likelihoods changed. At the primitive level, any
+unseen symbol will retain its original likelihood. However, at the sequence
+level, unseen combinations of seen primitives {\it will} have their
+likelihoods changed as the likelihoods of their constitutents are updated.
+This is not problematic, merely a consequence of our unigram model.
+
+\appendix
+
+\newpage
+\section{Alternative error models}
+
+\subsection{Linear interpolation}
+
+\subsubsection{Description}
+
+An alternative error model which could be considered is one where fixed priors
+are used to model different sources of error, and linear interpolation these
+alternating error models are used. We use an example to illustrate, that where
+we want to know the probability of the distractor \jp{にっき} for word
+\jp{日本}. Let:
+\begin{eqnarray*}
+R & = & R_1 R_2 \text{\hspace{0.5cm}the sequence reading}\\
+& = & \text{\jp{にっき}}\\
+R_1 & = & \text{\jp{にっ}\hspace{0.5cm}the segment reading}\\
+R_1^{*} & = & \text{\jp{にち}\hspace{0.5cm}the canonical segment reading}\\
+R_2 = R_2^{*} & = & \text{\jp{き}}\\
+K & = & K_1 K_2\\
+& = & \text{\jp{日本}}\\
+K_2' & = & \text{\jp{木}\hspace{0.5cm}a similarity variant of $K_2$}
+\end{eqnarray*}
+We construct our probability of seeing this sequence reading as follows: 
+\begin{eqnarray*}
+\Pr(R|K) & = & \alpha_\text{rc}\prod_{i = 1}^n
+{\Pr}_{\text{rc}}(R_i^{*}|K_i) + \\
+& & \beta_\text{vl}\prod_{i = 1}^n {\Pr}_\text{vl}(R_i|R_i^{*}) + \\
+& & \gamma_\text{on}\prod_{i = 1}^{n-1} {\Pr}_\text{on}(R_i|R_i^{*})
++\\
+& & \delta_\text{sv}\prod_{i = 2}^{n} {\Pr}_\text{sv}(R_i|R_i^{*}) +
+\\
+& & \epsilon_\text{gs}\prod_{i = 1}^n
+{\Pr}_\text{gs}(R_i^{*}|K_i'){\Pr}_\text{gs}(K_i'|K_i)
+\end{eqnarray*}
+This model uses many fixed probability tables for reading confusion (rc),
+vowel length (vl), sound euphony (on), sequential voicing (sv) and graphical
+similarity (gs). The final probability is determined by using the user-specific
+vector
+\[
+\langle \alpha_\text{rc}, \beta_\text{vl}, \gamma_\text{on}, \delta_\text{sv},
+\epsilon_\text{gs} \rangle
+\]
+where each value is the number of times a user has made a mistake generated
+using that model. After the user makes a number of responses, the vector is
+updated with the new error counts. A normalised version of the updated vector
+is then used to generate the next set of test questions.
+
+\subsubsection{Comparison}
+
+Comparing this model to our chosen model yields advantages, disadvantages, and
+differences which could be either.
+
+\begin{center}
+\begin{tabular}{p{4.5cm}p{4.5cm}p{4.5cm}}
+\hline
+{\bf Advantages} & {\bf Disadvantages} & {\bf Differences}\\
+\hline
+\begin{list}{\labelitemi}{\leftmargin=1em \itemindent=-0.3em \topsep=0em}
+  \item Simple per-user model
+  \item Simple update function
+  \item Easy interpretation as error type distribution
+\end{list}
+&
+\begin{list}{\labelitemi}{\leftmargin=1em \itemindent=-0.3em \topsep=0em}
+  \item Monolithic error model more complex
+  \item Explicit error distributions must be reconstructed
+\end{list}
+&
+\begin{list}{\labelitemi}{\leftmargin=1em \itemindent=-0.3em \topsep=0em}
+  \item Adapts to the type of error a learner is making, not the exact error
+  itself
+\end{list}
+\\
+\hline
+\end{tabular}
+\end{center}
+
+The two error models consider learner error at a different level of
+abstraction, but ultimately neither limits the forms of post-hoc evaluation
+which can be performed. Ideally, both would be implemented and compared on
+actual user data, to see which more accurately predicts user responses. 
 
 \end{document}
