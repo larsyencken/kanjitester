@@ -10,6 +10,6 @@
 #
 
 export DJANGO_SETTINGS_MODULE='kanji_test.settings'
-export PYTHONPATH="$(pwd)"
+export PYTHONPATH="$(pwd):${PYTHONPATH}"
 
 echo 'Environment variables set'
