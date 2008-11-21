@@ -155,10 +155,6 @@ class PriorDist(models.Model):
     syllabus = models.ForeignKey(Syllabus)
     tag = models.CharField(max_length=100)
 
-    def update(self, user, condition, answer, option_set):
-        return ErrorDist.objects.get(user=user, tag=tag).update(
-                condition, answer, option_set)
-
     class Meta:
         unique_together = (('syllabus', 'tag'),)
         verbose_name = 'prior distribution'
@@ -190,6 +186,23 @@ class ErrorDist(models.Model):
         return PriorDist.objects.get(tag=self.tag)
     prior_dist = property(prior_dist)
 
+    def differs_from_priors(self):
+        priors = self.prior_dist
+        diff_map = {}
+        for condition in set(o['condition'] for o in 
+                self.density.all().values('condition')):
+            error_hash = self._error_hash(self.density.filter(
+                    condition=condition))
+            prior_hash = self._error_hash(priors.density.filter(
+                    condition=condition))
+            diff_map[condition] = (error_hash == prior_hash)
+
+        return diff_map
+
+    def _error_hash(self, query_set):
+        return hash(tuple(o['pdf'] for o in query_set.order_by('symbol'
+                ).values('pdf')))
+ 
     class Meta:
         unique_together = (('user', 'tag'),)
         verbose_name = 'error distribution'
@@ -267,11 +280,6 @@ class ErrorPdf(util_models.CondProb):
     class Meta:
         unique_together = (('dist', 'condition', 'symbol'),)
         verbose_name_plural = 'error density'
-
-    @classmethod
-    def update(cls, dist, condition, options, selected_option):
-        # TODO redistribute mass to the chosen option
-        raise Exception('not implemented')
 
     @classmethod
     def rescore_cdf(cls, dist, condition):

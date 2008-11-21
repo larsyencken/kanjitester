@@ -101,8 +101,8 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         kanji = kanji_row.kanji
-        distractors = support.build_kanji_options(kanji,
-                lambda kanji: self._sample_kanji(kanji, user))
+        distractors, _annotations = support.build_options(kanji,
+                self._build_sampler(user))
         question = self.build_question(
                 pivot=kanji,
                 pivot_type='k',
@@ -119,10 +119,12 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
             raise plugin_api.UnsupportedItem(partial_lexeme)
 
         language = lexicon_models.Language.get_default()
-        # XXX assuming the first sense is the most frequent
-        gloss = lexeme.sense_set.filter(language=language)[0].gloss
-        distractors = support.build_kanji_options(surface,
-                lambda kanji: self._sample_kanji(kanji, user))
+
+        # Assume the first sense is the most frequent
+        gloss = lexeme.sense_set.filter(language=language).order_by(
+                'id')[0].gloss
+        distractors, _annotations = support.build_options(surface,
+                self._build_sampler(user))
         question = self.build_question(
                 pivot=surface,
                 pivot_type='w',
@@ -131,17 +133,24 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractors, surface)
         return question
 
-    def _sample_kanji(self, _kanji, user):
+    def _build_sampler(self, user):
         if not hasattr(self, '_kanji_set'):
             self._kanji_set = [row.kanji for row in \
                     lexicon_models.Kanji.objects.filter(
                         partialkanji__syllabus__userprofile__user=user)
                 ]
 
-        return random.choice(self._kanji_set)
+        def sample(char):
+            if scripts.scriptType(char) == scripts.Script.Kanji:
+                return random.choice(self._kanji_set)
+            else:
+                return char
+
+        return sample
     
 #----------------------------------------------------------------------------#
 
+# TODO Limit random glosses to within the user's syllabus.
 class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """Distractor glosses are sampled randomly."""
     supports_kanji = True
@@ -167,7 +176,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, answer)
         return question
     
-    def get_word_question(self, partial_lexeme, user):
+    def get_word_question(self, partial_lexeme, _user):
         try:
             surface = partial_lexeme.random_surface
         except ObjectDoesNotExist:

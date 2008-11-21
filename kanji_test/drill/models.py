@@ -130,7 +130,7 @@ class MultipleChoiceQuestion(Question):
         else:
             return 'stimulus_cjk'
         
-    def add_options(self, distractor_values, answer):
+    def add_options(self, distractor_values, answer, annotations=None):
         if answer in distractor_values:
             raise ValueError('answer included in distractor set')
 
@@ -138,13 +138,18 @@ class MultipleChoiceQuestion(Question):
                 not answer:
             raise ValueError('all option values must be non-empty')
 
+        if annotations and len(annotations) != len(distractor_values):
+            raise ValueEror('need annotations for every distractor')
+
         if len(set(distractor_values + [answer])) < len(distractor_values) + 1:
             raise ValueError('all option values must be unique')
 
-        for option_value in distractor_values:
+        annotation_map = dict(enumerate(annotations or []))
+        for i, option_value in enumerate(distractor_values):
             self.options.create(
                     value=option_value,
                     is_correct=False,
+                    annotation=annotation_map.get(i),
                 )
         self.options.create(value=answer, is_correct=True)
 
@@ -154,7 +159,8 @@ class MultipleChoiceOption(models.Model):
             related_name='options')
     value = models.CharField(max_length=200)
     is_correct = models.BooleanField(default=False)
-    
+    annotation = models.CharField(max_length=100, null=True, blank=True)
+
     class Meta:
         unique_together = (('question', 'value'),)
 

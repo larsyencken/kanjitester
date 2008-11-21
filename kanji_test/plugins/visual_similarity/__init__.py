@@ -14,6 +14,7 @@ Plugin for visual similarity.
 import consoleLog
 from cjktools.stats import iuniquePairs
 from cjktools.exceptions import DomainError
+from cjktools import scripts
 from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.user_model import plugin_api as user_model_api
@@ -57,20 +58,57 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
 
         _log.finish()
 
+    # TODO implement update functionality
     def update(self, response):
         "Update our error model from a user's response."
+        error_dist = usermodel_models.ErrorDist.objects.get(user=response.user,
+                tag=self.dist_name)
         question = response.question
-        if question.pivot_type == 'k':
-            # Easy, update our model
-            pass
-        elif question.pivot_type == 'w':
-            # Break word into parts
-            pass
 
-            # Update our model for each part
+        if question.pivot_type == 'k':
+            self._update_kanji(response, error_dist)
+
+        elif question.pivot_type == 'w':
+            self._update_seq(response, error_dist)
 
         else:
             raise ValueError("unknown question type")
+
+    def _update_kanji(self, response, error_dist):
+        question = response.question
+        sub_dist = usermodel_models.ProbDist(error_dist.density.filter(
+                condition=question.pivot))
+        option_values = [o['value'] for o in \
+                question.multiplechoicequestion.options.all().values('value')]
+        response_value = response.option.value
+        distractors = [v for v in option_values if v != response_value]
+        m = max(map(sub_dist.__getitem__, distractors)) + \
+                settings.UPDATE_EPSILON
+        if m > sub_dist[response_value]:
+            sub_dist[response_value] = m
+            sub_dist.normalise()
+            sub_dist.save_to(error_dist.density, condition=question.pivot)
+        return
+
+    def _update_seq(self, response, error_dist):
+        question = response.question
+        option_values = [o['value'] for o in \
+                question.multiplechoicequestion.options.all().values('value')]
+        response_value = response.option.value
+        distractors = [v for v in option_values if v != response_value]
+        for i, char in enumerate(question.pivot):
+            if scripts.scriptType(char) != scripts.Script.Kanji:
+                continue
+
+            sub_dist = usermodel_models.ProbDist(error_dist.density.filter(
+                    condition=char))
+            m = max(map(sub_dist.__getitem__, [v[i] for v in distractors])) + \
+                    settings.UPDATE_EPSILON
+            if m > sub_dist[response_value[i]]:
+                sub_dist[response_value[i]] = m
+                sub_dist.normalise()
+                sub_dist.save_to(error_dist.density, condition=char)
+        return
 
     def _build_graph(self, kanji_set):
         metric = metrics.metric_library[_default_metric_name]
@@ -122,42 +160,79 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
     supports_kanji = True
     requires_kanji = True
     uses_dist = "kanji' | kanji"
-    
+
     def get_kanji_question(self, partial_kanji, user):
-        kanji_row = partial_kanji.kanji
-        error_dist = usermodel_models.ErrorDist.objects.get(user=user,
+        self.error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
+
+        kanji_row = partial_kanji.kanji
         kanji = kanji_row.kanji
-        sample_kanji = lambda char: error_dist.sample(char).symbol
-        distractors = support.build_kanji_options(kanji, sample_kanji)
         question = self.build_question(
                 pivot=kanji,
                 pivot_type='k',
                 stimulus=kanji_row.gloss,
             )
-        question.add_options(distractors, kanji)
+        self._add_distractors(question)
         return question
         
     def get_word_question(self, partial_lexeme, user):
+        self.error_dist = usermodel_models.ErrorDist.objects.get(user=user,
+                tag=self.uses_dist)
         lexeme = partial_lexeme.lexeme
         try:
             surface = partial_lexeme.random_kanji_surface
         except ObjectDoesNotExist:
             raise drill_api.UnsupportedItem(partial_lexeme)
 
-        error_dist = usermodel_models.ErrorDist.objects.get(user=user,
-                tag=self.uses_dist)
         language = lexicon_models.Language.get_default()
-        # XXX assuming the first sense is the most frequent
-        gloss = lexeme.sense_set.filter(language=language)[0].gloss
 
-        sample_kanji = lambda char: error_dist.sample(char).symbol
-        distractors = support.build_kanji_options(surface, sample_kanji)
+        # Assume the first sense is the dominant sense
+        gloss = lexeme.sense_set.filter(language=language).order_by(
+                'id')[0].gloss
+
         question = self.build_question(
                 pivot=surface,
                 pivot_type='w',
                 stimulus=gloss
             )
-        question.add_options(distractors, surface)
+        self._add_distractors(question)
         return question
+
+    def _add_distractors(self, question):
+        """
+        Builds distractors for the question with appropriate annotations so
+        that we can easily update the error model afterwards.   
+        """
+        distractors, annotations = support.build_options(
+                question.pivot, self._sample_kanji)
+        question.add_options(distractors, question.pivot,
+                annotations=annotations)
+        question.annotation = u'|'.join(question.pivot)
+        question.save()
+        return
+
+    def _sample_kanji(self, char):
+        if scripts.scriptType(char) == scripts.Script.Kanji:
+            return self.error_dist.sample(char).symbol
+
+        return char
+
+def segment_word(surface):
+    """
+    Finds the script boundaries of a word, but also creates a slot for each
+    kanji in the word.
+
+    >>> segment_word(unicode('感謝する', 'utf8'))
+    (u'\u611f', u'\u8b1d', u'\u3059\u308b')
+    """
+    base_segments = scripts.scriptBoundaries(surface)
+    kanji_script = scripts.Script.Kanji
+    result = []
+    for segment in base_segments:
+        if scripts.scriptType(segment) == kanji_script:
+            result.extend(segment)
+        else:
+            result.append(segment)
+
+    return tuple(result)
 

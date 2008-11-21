@@ -17,7 +17,8 @@ class OptionInline(admin.StackedInline):
     extra = 1
 
 class MultipleChoiceAdmin(admin.ModelAdmin):
-    list_display = ('pivot', 'pivot_type', 'question_type', 'question_plugin')
+    list_display = ('pivot', 'pivot_type', 'question_type', 'question_plugin',
+            'annotation')
     list_filter = ('pivot_type', 'question_type')
     search_fields = ('pivot',)
     inlines = [OptionInline]

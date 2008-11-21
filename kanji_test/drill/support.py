@@ -15,7 +15,7 @@ from cjktools.scripts import Script, scriptType, containsScript
 
 from kanji_test import settings
 
-def build_kanji_options(item, sample_method, exclude_set=None):
+def build_options(item, sample_method, exclude_set=None):
     exclude_set = set(exclude_set or [])
     exclude_set.add(item)
 
@@ -23,19 +23,21 @@ def build_kanji_options(item, sample_method, exclude_set=None):
         raise ValueError("Can't generate options without kanji")
 
     distractors = []
-    template = list(item)
+    annotations = []
     while len(distractors) < settings.N_DISTRACTORS:
         result = []
-        for char in template:
+        for char in item:
             if scriptType(char) == Script.Kanji:
                 result.append(sample_method(char))
             else:
                 result.append(char)
-        result = ''.join(result)
-        if result not in exclude_set:
-            distractors.append(result)
-            exclude_set.add(result)
+        seg_result = u'|'.join(result)
+        base_result = u''.join(result)
+        if base_result not in exclude_set:
+            exclude_set.add(base_result)
+            distractors.append(base_result)
+            annotations.append(seg_result)
 
-    return distractors
+    return distractors, annotations
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
