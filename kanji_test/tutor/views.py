@@ -7,6 +7,8 @@
 #  Copyright 2008-06-13 Lars Yencken. All rights reserved.
 # 
 
+import time
+
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
@@ -50,11 +52,14 @@ def test_user(request):
 
     if not 'test_set_id' in request.REQUEST:
         n_questions = settings.QUESTIONS_PER_SET
+        start_time = time.time()
         if request.method == 'POST' and 'n_questions' in request.POST:
             n_questions = int(request.POST['n_questions'])
         test_set = drill_models.TestSet.from_user(request.user,
                 n_questions=n_questions)
         form = TestSetForm(test_set)
+        time_taken = time.time() - start_time
+        context['time_taken'] = time_taken
     else:
         if request.method != 'POST':
             raise Exception("expected a POST form")

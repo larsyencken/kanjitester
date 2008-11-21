@@ -17,6 +17,9 @@
   </form>
 {% else %}
   <p>Please answer the following questions.</p>
+  {% if user.is_staff %}
+  <p>[Generated in {{time_taken|floatformat:2}} seconds]</p>
+  {% endif %}
 {% endif %}
 <form method="POST">
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
