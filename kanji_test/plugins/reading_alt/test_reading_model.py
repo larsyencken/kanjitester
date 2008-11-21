@@ -47,12 +47,6 @@ class KanjiReadingModelTestCase(unittest.TestCase):
         assert u'高' in reverseMap[u'こう']
         return
 
-    def testCaching(self):
-        doppleganger = VoicingAndGeminationModel()
-
-        assert self.model is doppleganger
-        return
-
     def testBug159(self):
         """Tests for bug [159]: hatsu"""
         assert self.model.prob(u'発', u'はつ', u'はっ') > 0.0
