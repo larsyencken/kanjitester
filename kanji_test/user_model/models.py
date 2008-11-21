@@ -143,6 +143,9 @@ class PartialKanji(models.Model):
     def has_kanji(self):
         "Does this item have a kanji surface? Always."
         return True
+
+    def __unicode__(self):
+        return self.kanji.kanji
     
     class Meta:
         verbose_name_plural = 'partial kanji'
