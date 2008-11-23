@@ -182,8 +182,8 @@ class PriorPdf(util_models.CondProb):
 
 class ErrorDist(models.Model):
     "A user-specific prior disribution."
-    user = models.ForeignKey(User, unique=True)
-    tag = models.CharField(max_length=100, unique=True)
+    user = models.ForeignKey(User)
+    tag = models.CharField(max_length=100)
 
     def prior_dist(self):
         return PriorDist.objects.get(tag=self.tag)
