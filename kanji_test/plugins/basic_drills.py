@@ -147,7 +147,6 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     
 #----------------------------------------------------------------------------#
 
-# TODO Limit random glosses to within the user's syllabus.
 class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """Distractor glosses are sampled randomly."""
     supports_kanji = True
@@ -156,14 +155,21 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     question_type = 'pg'
     uses_dist = None
 
-    def get_kanji_question(self, partial_kanji, _user):
+    def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
         answer = kanji_row.gloss
+        syllabus = user.get_profile().syllabus
         distractor_values = set()
         while len(distractor_values) < settings.N_DISTRACTORS:
-            candidate = lexicon_models.KanjiProb.sample().kanji.gloss
-            if candidate != answer:
-                distractor_values.add(candidate)
+            for kanji in lexicon_models.Kanji.objects.filter(
+                        partialkanji__syllabus=syllabus
+                    ).order_by('?')[:settings.N_DISTRACTORS]:
+                distractor = kanji.gloss
+                if distractor != answer:
+                    distractor_values.add(distractor)
+                    if len(distractor_values) > settings.N_DISTRACTORS:
+                        break
+
         distractor_values = list(distractor_values)
         question = self.build_question(
                 pivot=kanji_row.kanji,
@@ -173,7 +179,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         question.add_options(distractor_values, answer)
         return question
     
-    def get_word_question(self, partial_lexeme, _user):
+    def get_word_question(self, partial_lexeme, user):
         try:
             surface = partial_lexeme.random_surface
         except ObjectDoesNotExist:
@@ -181,14 +187,13 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
 
         word_row = partial_lexeme.lexeme
         
-        # Use only the first sense
         answer = word_row.first_sense.gloss
+        syllabus = user.get_profile().syllabus
 
         distractor_values = set()
         exclude_set = set(s.gloss for s in word_row.sense_set.all())
         while len(distractor_values) < settings.N_DISTRACTORS:
-            for sense in lexicon_models.LexemeSense.sample_n(
-                        settings.N_DISTRACTORS):
+            for sense in syllabus.sample_senses(settings.N_DISTRACTORS):
                 gloss = sense.gloss
                 if gloss not in exclude_set:
                     distractor_values.add(gloss)

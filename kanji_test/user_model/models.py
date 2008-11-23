@@ -56,6 +56,10 @@ class Syllabus(models.Model):
 
         return items
 
+    def sample_senses(self, n):
+        return lexicon_models.LexemeSense.objects.filter(
+                lexeme__partiallexeme__syllabus=self).order_by('?')[:n]
+
     def get_random_kanji_item(self):
         if random.random() < self._get_kanji_word_proportion():
             return self.partiallexeme_set.filter(
