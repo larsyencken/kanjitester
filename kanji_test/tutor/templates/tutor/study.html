@@ -60,7 +60,7 @@
             {% endfor %}
           </td>
           <td>
-            {% for lexeme_sense in partial_lexeme.lexeme.sense_set %}
+            {% for lexeme_sense in partial_lexeme.lexeme.sense_set.all %}
               {{lexeme_sense.gloss}}{% if not forloop.last %}, {% endif %}
             {% endfor %}
           </td>
