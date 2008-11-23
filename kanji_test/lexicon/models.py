@@ -23,18 +23,12 @@ from kanji_test import settings
 
 class Lexeme(models.Model):
     """A single word or phrase."""
-    def _get_default_sense_set(self):
-        language = Language.objects.get(code=settings.DEFAULT_LANGUAGE_CODE)
-        return self.sense_set.filter(language=language)
-    default_sense_set = property(_get_default_sense_set)
-    
     def _get_random_sense(self):
-        results = list(self.default_sense_set)
-        return random.choice(results)
+        return self.sense_set.order_by('?')[0]
     random_sense = property(_get_random_sense)
     
     def first_sense(self):
-        return self.default_sense_set.order_by('id')[0]
+        return self.sense_set.get(is_first_sense=True)
     first_sense = property(first_sense)
         
     def __unicode__(self):
@@ -83,24 +77,11 @@ class LexemeReading(models.Model):
     class Meta:
         unique_together = (('lexeme', 'reading'),)
     
-class Language(models.Model):
-    """A human language."""
-    code = models.CharField(max_length=10, primary_key=True)
-    english_name = models.CharField(max_length=100, blank=True, null=True)
-    native_name = models.CharField(max_length=100, blank=True, null=True)
-
-    @classmethod
-    def get_default(cls):
-        return cls.objects.get(code=settings.DEFAULT_LANGUAGE_CODE)
-
-    def __unicode__(self):
-        return self.code
-
 class LexemeSense(models.Model):
     """A word sense."""
     lexeme = models.ForeignKey(Lexeme, related_name='sense_set')
-    language = models.ForeignKey(Language)
     gloss = models.CharField(max_length=500)
+    is_first_sense = models.BooleanField()
 
     class Meta:
         # XXX Uniqueness constraint doesn't work due in mysql due to length of
@@ -109,7 +90,13 @@ class LexemeSense(models.Model):
         pass
 
     def __unicode__(self):
-        return u'%s [%s]' % (self.gloss, self.language.code)
+        return self.gloss
+
+    @classmethod
+    def sample_n(cls, n):
+        surface_set = LexemeSurfaceProb.sample_n(n)
+        return cls.objects.filter(lexeme__surface_set__in=surface_set,
+                is_first_sense=True)
 
 #----------------------------------------------------------------------------#        
 
@@ -126,9 +113,6 @@ class KanjiProb(prob_models.Prob):
         verbose_name = 'probability of kanji'
         verbose_name_plural = 'distribution of kanji'
 
-    def __unicode__(self):
-        return u"KanjiProb"
-        
     @classmethod
     def initialise(cls):
         dist = probability.FreqDist.from_file(cls._freq_dist_file)

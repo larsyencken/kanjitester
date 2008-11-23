@@ -12,6 +12,7 @@ Abstract models for probability distributions.
 """
 
 import random
+import operator
 
 from django.db import models, connection
 from cjktools.sequences import groupsOfN
@@ -33,6 +34,24 @@ class ProbI(models.Model):
         result = cls.objects.filter(cdf__gte=target_cdf).order_by('cdf')[0]
         return result
 
+    @classmethod
+    def sample_n(cls, n):
+        if n < 1:
+            raise ValueError(n)
+
+        target_cdfs = [random.random() for i in xrange(n)]
+        quote_name = connection.ops.quote_name
+        table_name = quote_name(cls._meta.db_table)
+        id_field = '%s.%s' % (table_name, quote_name('id'))
+        cdf_field = '%s.%s' % (table_name, quote_name('cdf'))
+
+        sql = ' OR '.join(
+                ['%s = (select %s from %s where %s >= %f limit 1)' % (
+                        id_field, id_field, table_name, cdf_field, cdf
+                    ) for cdf in target_cdfs]
+            )
+        return cls.objects.extra(where=[sql])
+
 class Prob(ProbI):
     """A basic probability distribution."""
     symbol = models.CharField(max_length=50, db_index=True, unique=True)
@@ -40,6 +59,9 @@ class Prob(ProbI):
     class Meta:
         abstract = True
         ordering = ['-pdf', 'symbol']
+
+    def __unicode__(self):
+        return self.symbol
 
     @classmethod
     def from_dist(cls, prob_dist):
@@ -73,6 +95,9 @@ class CondProb(ProbI):
         abstract = True
         unique_together = (('condition', 'symbol'),)
         ordering = ['condition', '-pdf', 'symbol']
+
+    def __unicode__(self):
+        return '%s | %s' % (self.symbol, self.condition)
 
     @classmethod
     def sample(cls, condition):

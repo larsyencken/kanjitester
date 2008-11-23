@@ -41,7 +41,6 @@ def load_lexicon(filename=_jmdict_path):
     
     log.start('Loading JMdict', nSteps=2)
     _clear_lexicon()
-    models.Lexeme.objects.all().delete()
     log.log('Reading from %s' % path.basename(filename))
     iStream = sopen(filename, 'r', 'byte')
     data = iStream.read()
@@ -66,6 +65,7 @@ def _clear_lexicon():
             'lexicon_lexemesurface',
             'lexicon_lexemesense',
             'lexicon_lexemereading',
+            'lexicon_lexeme',
         ]
     for table_name in tables:
         cursor.execute('DELETE FROM %s' % table_name)
@@ -102,16 +102,15 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
     for reading in reading_list:
         lexeme_reading_stack.append((lexeme_id, reading))
 
+    is_first_sense = True
     for sense_node in sense_list:
         for gloss in sense_node.findall('gloss'):
-            code_keys = [key for key in gloss.keys() if key.endswith('lang')]
-            if code_keys:
-                (code_key,) = code_keys
-                language_code = gloss.get(code_key)
-            else:
-                language_code = 'eng'
-            language = _get_language(language_code)
-            lexeme_sense_stack.append((lexeme_id, gloss.text, language.code))
+            (lang_key,) = [key for key in gloss.keys() if key.endswith('lang')]
+            lang = gloss.get(lang_key)
+            if lang != 'eng':
+                continue
+            lexeme_sense_stack.append((lexeme_id, gloss.text, is_first_sense))
+            is_first_sense = False
     return
 
 #----------------------------------------------------------------------------#
@@ -125,6 +124,7 @@ def _store_lexemes(lexeme_nodes):
     cursor.execute('DELETE FROM lexicon_lexemesense')
     cursor.execute('DELETE FROM lexicon_lexemesurface')
     cursor.execute('DELETE FROM lexicon_lexeme')
+    cursor.execute('COMMIT')
 
     next_lexeme_id = 1
     lexeme_surface_stack = []
@@ -162,30 +162,14 @@ def _store_lexemes(lexeme_nodes):
     log.log('Storing to lexicon_lexemesense')
     for lexeme_sense_rows in groupsOfNIter(max_rows, lexeme_sense_stack):
         cursor.executemany( """
-                INSERT INTO lexicon_lexemesense (lexeme_id, gloss, language_id)
+                INSERT INTO lexicon_lexemesense (lexeme_id, gloss,
+                        is_first_sense)
                 VALUES (%s, %s, %s)
             """, lexeme_sense_rows)
 
     connection._commit()
     log.finish()
     return
-
-#----------------------------------------------------------------------------#
-
-_known_languages = {}
-def _get_language(language_code):
-    """
-    Fetches or creates the database object for a language, caching it in
-    memory to reduce database queries.
-    """
-    global _known_languages
-    try:
-        return _known_languages[language_code]
-    except KeyError:
-        language = models.Language.objects.get_or_create(
-                code=language_code)[0]
-        _known_languages[language_code] = language
-        return language
 
 #----------------------------------------------------------------------------#
 

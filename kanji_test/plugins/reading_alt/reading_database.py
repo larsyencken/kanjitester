@@ -15,7 +15,6 @@ import sys, optparse
 from django.db import connection
 
 from cjktools import scripts
-from cjktools.progressBar import withProgress
 from cjktools.sequences import groupsOfN
 from cjktools.resources import kanjidic
 import consoleLog
@@ -209,7 +208,7 @@ class ReadingDatabase(object):
         @param root_node: The root node of the entire tree.
         @type root_node: TreeNode
         """
-        for kanji_node in withProgress(root_node.children.values()):
+        for kanji_node in consoleLog.withProgress(root_node.children.values()):
             kanji = kanji_node.label
             leaves = list(kanji_node.walk_leaves())
             for reading_node in leaves:

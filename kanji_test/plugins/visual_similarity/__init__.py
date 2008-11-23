@@ -184,11 +184,8 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         except ObjectDoesNotExist:
             raise drill_api.UnsupportedItem(partial_lexeme)
 
-        language = lexicon_models.Language.get_default()
-
         # Assume the first sense is the dominant sense
-        gloss = lexeme.sense_set.filter(language=language).order_by(
-                'id')[0].gloss
+        gloss = lexeme.sense_set.get(is_first_sense=True).gloss
 
         question = self.build_question(
                 pivot=surface,

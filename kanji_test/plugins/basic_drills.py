@@ -118,11 +118,8 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         except ObjectDoesNotExist:
             raise plugin_api.UnsupportedItem(partial_lexeme)
 
-        language = lexicon_models.Language.get_default()
-
         # Assume the first sense is the most frequent
-        gloss = lexeme.sense_set.filter(language=language).order_by(
-                'id')[0].gloss
+        gloss = lexeme.sense_set.get(is_first_sense=True).gloss
         distractors, _annotations = support.build_options(surface,
                 self._build_sampler(user))
         question = self.build_question(
@@ -190,15 +187,13 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         distractor_values = set()
         exclude_set = set(s.gloss for s in word_row.sense_set.all())
         while len(distractor_values) < settings.N_DISTRACTORS:
-            # Find a random gloss by sampling a random surface and taking
-            # its gloss. Only surfaces containing kanji are eligible.
-            random_surface = lexicon_models.LexemeSurface.sample()
-            if random_surface != answer and \
-                    scripts.containsScript(scripts.Script.Kanji,
-                            random_surface.surface):
-                gloss = random_surface.lexeme.first_sense.gloss
+            for sense in lexicon_models.LexemeSense.sample_n(
+                        settings.N_DISTRACTORS):
+                gloss = sense.gloss
                 if gloss not in exclude_set:
                     distractor_values.add(gloss)
+                    if len(distractor_values) == settings.N_DISTRACTORS:
+                        break
 
         distractor_values = list(distractor_values)
         question = self.build_question(

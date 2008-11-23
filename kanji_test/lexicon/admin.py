@@ -36,14 +36,9 @@ class LexemeReadingAdmin(admin.ModelAdmin):
 admin.site.register(models.LexemeReading, LexemeReadingAdmin)
 
 class LexemeSenseAdmin(admin.ModelAdmin):
-    list_display = ('lexeme', 'language', 'gloss')
+    list_display = ('lexeme', 'gloss')
     search_fields = ('gloss',)
 admin.site.register(models.LexemeSense, LexemeSenseAdmin)
-
-class LanguageAdmin(admin.ModelAdmin):
-    list_display = ('code', 'english_name', 'native_name')
-    search_fields = ('code', 'english_name', 'native_name')    
-admin.site.register(models.Language, LanguageAdmin)
 
 #----------------------------------------------------------------------------#
 
