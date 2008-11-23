@@ -47,8 +47,9 @@ class MultipleChoiceOptionAdmin(admin.ModelAdmin):
 admin.site.register(models.MultipleChoiceOption, MultipleChoiceOptionAdmin)
 
 class TestSetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'accuracy', 'start_time', 'end_time')
-    list_filter = ('end_time',)
+    list_display = ('id', 'user', 'accuracy', 'start_time', 'end_time',
+            'set_type')
+    list_filter = ('end_time', 'set_type')
 
 admin.site.register(models.TestSet, TestSetAdmin)
 

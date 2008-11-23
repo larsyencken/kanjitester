@@ -11,16 +11,19 @@
 A broad interface for test questions and their database management.
 """
 
+from django.conf import settings
+
 from kanji_test import util as _requires_util
 from kanji_test import user_model as _requires_user_model
 
-def load_plugins():
+def load_plugins(plugin_set=settings.DRILL_PLUGINS):
     """
-    Load all the plugins listed in the settings file.
+    Returns a list of plugin instances from the set given, defaulting to
+    all the plugins which are available.
     """
     from kanji_test import settings
     plugins = []
-    for plugin_path in settings.DRILL_PLUGINS:
+    for plugin_path in plugin_set:
         import_path = plugin_path.split('.')
         plugin_class_name = import_path.pop()
         module = __import__('.'.join(import_path))

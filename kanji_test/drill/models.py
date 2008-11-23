@@ -199,6 +199,10 @@ class TestSet(models.Model):
     random_seed = models.IntegerField()
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(blank=True, null=True)
+    set_type = models.CharField(max_length=1, choices=(
+            ('c', 'control'),
+            ('a', 'adaptive'),
+        ))
 
     @staticmethod
     def get_latest(user):
@@ -237,11 +241,17 @@ class TestSet(models.Model):
 
     @staticmethod
     def from_user(user, n_questions=settings.QUESTIONS_PER_SET):
-        test_set = TestSet(user=user, random_seed=random.randrange(0, 2**30))
+        """
+        Generate a new test set for this user using their profile to determine
+        the appropriate syllabus.
+        """
+        set_type, plugin_set = TestSet._get_plugin_set(user)
+        test_set = TestSet(user=user, random_seed=random.randrange(0, 2**30),
+                set_type=set_type)
         test_set.save()
 
         from kanji_test.drill import load_plugins
-        question_plugins = load_plugins()
+        question_plugins = load_plugins(plugin_set)
         items = user.get_profile().syllabus.get_random_items(n_questions)
         questions = []
         for item in items:
@@ -253,4 +263,25 @@ class TestSet(models.Model):
 
         test_set.questions = questions
         return test_set
+
+    @staticmethod
+    def _get_plugin_set(user):
+        "Determine the set type and the plugins to use for the next test set."
+        try:
+            previous_set = TestSet.get_latest(user)
+        except IndexError:
+            # Start with the adaptive set
+            set_type = 'a'
+            plugin_set = settings.ADAPTIVE_DRILL_PLUGINS
+            return set_type, plugin_set
+
+        # Alternate between control and adaptive sets
+        if previous_set.set_type == 'a':
+            set_type = 'c'
+            plugin_set = settings.CONTROL_DRILL_PLUGINS
+        else:
+            set_type = 'a'
+            plugin_set = settings.ADAPTIVE_DRILL_PLUGINS
+
+        return set_type, plugin_set
 

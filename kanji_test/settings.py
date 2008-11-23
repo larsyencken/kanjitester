@@ -117,12 +117,19 @@ INSTALLED_APPS = (
 TEST_DATABASE_CHARSET = 'utf8'
 TEST_DATABASE_COLLATION = 'utf8_bin'
 
-DRILL_PLUGINS = (
+CONTROL_DRILL_PLUGINS = (
     'kanji_test.plugins.basic_drills.ReadingQuestionFactory',
     'kanji_test.plugins.basic_drills.SurfaceQuestionFactory',
     'kanji_test.plugins.basic_drills.GlossQuestionFactory',
+)
+
+ADAPTIVE_DRILL_PLUGINS = (
+    'kanji_test.plugins.basic_drills.ReadingQuestionFactory',
+    'kanji_test.plugins.basic_drills.GlossQuestionFactory',
     'kanji_test.plugins.visual_similarity.VisualSimilarityDrills',
 )
+
+DRILL_PLUGINS = list(set(CONTROL_DRILL_PLUGINS + ADAPTIVE_DRILL_PLUGINS))
 
 USER_MODEL_PLUGINS = (
     'kanji_test.plugins.visual_similarity.VisualSimilarity',
