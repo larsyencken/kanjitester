@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # 
 #  readingDatabase.py
@@ -12,6 +13,7 @@ Builds the tables of readings and reading alternations.
 """
 
 import sys, optparse
+import math
 from django.db import connection
 
 from cjktools import scripts
@@ -20,8 +22,8 @@ from cjktools.resources import kanjidic
 import consoleLog
 from checksum.models import Checksum
 
+from kanji_test.lexicon.models import Kanji
 from hierarchy.tree import TreeNode
-
 import reading_model
 import alternation_model
 
@@ -34,7 +36,6 @@ _alternation_models = [
     ('vowel length', 'v', alternation_model.VowelLengthModel),
     ('palatalization', 'p', alternation_model.PalatalizationModel),
 ]
-
 
 log = consoleLog.default
 
@@ -50,21 +51,18 @@ class ReadingDatabase(object):
     #------------------------------------------------------------------------#
 
     @classmethod
-    def build(cls, kanji_set):
+    def build(cls):
         """
         Build the tables needed to generate search results at runtime. These
         tables describe readings and reading alternations for each kanji which
         might be searched for.
         """
+        kanji_set = set(row.kanji for row in Kanji.objects.all())
         log.start('Building reading tables')
         if not Checksum.needs_update('reading_alt', _dependencies,
                 ['lexicon']):
             log.finish('Already up-to-date')
             return
-
-#        log.log('Detecting unique kanji ', newLine=False)
-#        sys.stdout.flush()
-#        kanji_set = cls._get_lookup_kanji()
 
         alt_tree = cls._build_alternation_tree(kanji_set)
 
@@ -72,7 +70,6 @@ class ReadingDatabase(object):
 
         log.log('Storing readings per kanji')
         cls._store_kanji_readings(alt_tree)
-        cls._prune_kanji_readings()
         
         Checksum.store('reading_alt', _dependencies)
         log.finish()
@@ -234,21 +231,34 @@ class ReadingDatabase(object):
 
     @staticmethod
     def _store_kanji_readings(alt_tree):
-        """
-        Stores a separate table of only leaf-node readings
-        """
+        "Stores a separate table of only leaf-node readings."
         def iter_results(tree):
             for kanji_node in tree.children.itervalues():
                 kanji = kanji_node.label
 
+                reading_map = {}
                 for leaf_node in kanji_node.walk_leaves():
                     # Calculate the probability for this path.
                     reading = leaf_node.label
                     leaf_path = leaf_node.get_ancestors()[1:]
-                    probability = sum([n.probability for n in leaf_path])
-                    codes = ''.join([n.code for n in leaf_path])
-                    yield (kanji, reading, codes, probability,
-                        leaf_path[-1].left_visit)
+                    pdf = math.exp(sum([n.probability for n in leaf_path]))
+                    codes = set([n.code for n in leaf_path])
+                    if reading not in reading_map or \
+                            reading_map[reading]['pdf'] < pdf:
+                        reading_map[reading] = {'pdf': pdf, 'codes': codes}
+
+                if not reading_map:
+                    # No readings for this kanji
+                    continue
+
+                total = sum(r['pdf'] for r in reading_map.itervalues())
+                cdf = 0.0
+                for reading, entry in reading_map.iteritems():
+                    pdf = entry['pdf'] / total
+                    cdf += pdf
+                    yield (kanji, reading, ''.join(sorted(entry['codes'])),
+                            pdf, cdf, leaf_path[-1].left_visit)
+                assert abs(cdf - 1.0) < 1e-8
             return
 
         max_per_insert = 10000
@@ -256,45 +266,22 @@ class ReadingDatabase(object):
         cursor = connection.cursor()
         cursor.execute('DELETE FROM reading_alt_kanjireading')
 
+        quoted_fields = tuple(connection.ops.quote_name(f) for f in
+            ['condition', 'symbol', 'alternations', 'pdf', 'cdf',
+            'reading_alternation_id'])
         for results in groupsOfN(max_per_insert, all_results):
             cursor.executemany(
                     """
                     INSERT INTO reading_alt_kanjireading
-                    (kanji, reading, alternations, probability,
-                        reading_alternation_id)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """,
+                    (%s)
+                    VALUES (%%s, %%s, %%s, %%s, %%s, %%s)
+                    """ % ', '.join(quoted_fields),
                     results
                 )
             cursor.execute('COMMIT')
 
         cursor.close()
 
-        return
-
-    #------------------------------------------------------------------------#
-
-    @staticmethod
-    def _prune_kanji_readings():
-        """Prune duplicates from the database."""
-        cursor = connection.cursor()
-        cursor.execute(
-                """
-                SELECT id
-                    FROM reading_alt_kanjireading AS A
-                    WHERE A.probability != (
-                        SELECT MAX(B.probability)
-                            FROM reading_alt_kanjireading AS B
-                            WHERE A.kanji = B.kanji AND A.reading = B.reading
-                    )
-                """
-            )
-        ids = cursor.fetchall()
-        cursor.executemany(
-                """DELETE FROM reading_alt_kanjireading WHERE id = %s""",
-                ids
-        )
-        cursor.execute('COMMIT')
         return
 
     #------------------------------------------------------------------------#
@@ -334,16 +321,10 @@ def _create_option_parser():
     usage = \
 """%prog [options]
 
-Builds the reading tables required for FOKS lookup."""
+Builds the reading alternation database."""
 
     parser = optparse.OptionParser(usage)
-
-    parser.add_option('--debug', action='store_true', dest='debug',
-            default=False, help='Enables debugging mode [False]')
-
     return parser
-
-#----------------------------------------------------------------------------#
 
 def main(argv):
     parser = _create_option_parser()
@@ -353,23 +334,11 @@ def main(argv):
         parser.print_help()
         sys.exit(1)
 
-    # Avoid psyco in debugging mode, since it merges stack frames.
-    if not options.debug:
-        try:
-            import psyco
-            psyco.profile()
-        except:
-            pass
-
     build()
     
     return
 
-#----------------------------------------------------------------------------#
-
 if __name__ == '__main__':
     main(sys.argv[1:])
 
-#----------------------------------------------------------------------------#
-  
 # vim: ts=4 sw=4 sts=4 et tw=78:

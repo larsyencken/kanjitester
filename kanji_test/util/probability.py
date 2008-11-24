@@ -131,7 +131,8 @@ class UnsupportedMethodError(Exception):
 
 class FixedProbDist(nltk_prob.ProbDistI):
     """A fixed probability distribution, not based on a FreqDist object."""
-    def __init__(self, samples):
+    def __init__(self, samples=None):
+        samples = samples or []
         cdf = 0.0
         backing_dist = {}
         for sample, pdf in samples:
@@ -139,10 +140,15 @@ class FixedProbDist(nltk_prob.ProbDistI):
             cdf += pdf
         
         if abs(cdf - 1.0) > 1e-8:
-            raise ValueError("probability mass must sum to 1.0")
+            self.normalise()
 
         self._prob_dist = backing_dist        
-    
+
+    def normalise(self):
+        total = sum(self._prob_dist.values())
+        for key in self._prob_dist:
+            self.prob_dist[key] /= total
+
     def max(self):
         raise UnsupportedMethodError
     
@@ -151,3 +157,63 @@ class FixedProbDist(nltk_prob.ProbDistI):
     
     def logprob(self, key):
         return math.log(self.prob(key))
+
+# XXX Doesn't match NLTK interface.
+class ProbDist(dict):
+    def __init__(self, *args, **kwargs):
+        super(dict, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def from_query_set(cls, query_set):
+        dist = cls()
+        for row in query_set.values('symbol', 'pdf'):
+            dist[row['symbol']] = row['pdf']
+
+        dist.normalise()
+
+    def normalise(self):
+        total = sum(self.itervalues())
+        for key in self:
+            self[key] /= total
+
+    def save_to(self, manager, **kwargs):
+        manager.filter(**kwargs).delete()
+        cdf = 0.0
+        for symbol, pdf in self.iteritems():
+            row_kwargs = {}
+            row_kwargs.update(kwargs)
+            cdf += pdf
+            row_kwargs['cdf'] = cdf
+            row_kwargs['pdf'] = pdf
+            row_kwargs['symbol'] = symbol
+            manager.create(**row_kwargs)
+
+        return
+
+# XXX Doesn't match NLTK interface.
+class CondProbDist(dict):
+    def __init__(self, *args, **kwargs):
+        super(dict, self).__init__(*args, **kwargs)
+    
+    @classmethod
+    def from_query_set(cls, query_set):
+        for row in query_set.values('condition', 'symbol', 'pdf'):
+            condition = row['condition']
+            symbol =  row['symbol']
+            symbol_dist = self.get(condition)
+            if symbol_dist:
+                symbol_dist[row['symbol']] = row['pdf']
+            else:
+                self[condition] = ProbDist({row['symbol']: row['pdf']})
+
+    def normalise(self):
+        for sub_dist in self.itervalues():
+            sub_dist.normalise()
+
+    def save_to(self, manager, **kwargs):
+        manager.filter(**kwargs).delete()
+        for condition, sub_dist in self.iteritems():
+            sub_dist_kwargs = kwargs.copy()
+            sub_dist_kwargs['condition'] = condition
+            sub_dist.save_to(manager, **sub_dist_kwargs)
+

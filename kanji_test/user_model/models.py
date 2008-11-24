@@ -17,6 +17,7 @@ from cjktools.stats import mean
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
+from kanji_test.util.probability import ProbDist
 
 class Syllabus(models.Model):
     tag = models.CharField(max_length=100, unique=True,
@@ -173,10 +174,27 @@ class PriorDist(models.Model):
     def get_accuracy(self):
         return mean(o['pdf'] for o in self.density.values('pdf'))
 
+    def from_dist(self, dist):
+        rows = []
+        for condition in dist.keys():
+            sub_dist = dist[condition]
+            cdf = 0.0
+            for symbol in sub_dist.keys():
+                pdf = sub_dist[symbol]
+                cdf += pdf
+                rows.append((self.id, condition, symbol, pdf, cdf))
+        cursor = connection.cursor()
+        cursor.executemany("""
+                INSERT INTO user_model_priorpdf
+                (dist, condition, symbol, pdf, cdf)
+                VALUES (%s, %s, %s, %s, %s)
+        """, rows)
+        cursor.execute('COMMIT')
+        return
+
 class PriorPdf(util_models.CondProb):
     "Individual densities for a prior distribution."
     dist = models.ForeignKey(PriorDist, related_name='density')
-    is_correct = models.BooleanField(default=False)        
 
     class Meta:
         unique_together = (('dist', 'condition', 'symbol'),)
@@ -232,17 +250,12 @@ class ErrorDist(models.Model):
                         cdf=prior_pdf.cdf,
                         condition=prior_pdf.condition,
                         symbol=prior_pdf.symbol,
-                        is_correct=prior_pdf.is_correct,
                     )
 
     def sample(self, condition):
         target_cdf = random.random()
         return self.density.filter(condition=condition,
                 cdf__gte=target_cdf).order_by('cdf')[0]
-
-    def get_accuracy(self):
-        return mean(o['pdf'] for o in self.density.filter(
-                is_correct=True).values('pdf'))
 
     def get_normalized_accuracy(self):
         prior_accuracy = self.prior_dist.get_accuracy()
@@ -282,7 +295,6 @@ class ErrorDist(models.Model):
 
 class ErrorPdf(util_models.CondProb):
     dist = models.ForeignKey(ErrorDist, related_name='density')
-    is_correct = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (('dist', 'condition', 'symbol'),)
@@ -307,28 +319,3 @@ class ErrorPdf(util_models.CondProb):
     def from_dist(cls):
         raise Exception('not supported')
 
-class ProbDist(dict):
-    def __init__(self, query_set):
-        for row in query_set.values('symbol', 'pdf'):
-            self[row['symbol']] = row['pdf']
-
-        self.normalise()
-
-    def normalise(self):
-        total = sum(self.itervalues())
-        for key in self:
-            self[key] /= total
-
-    def save_to(self, manager, **kwargs):
-        manager.filter(**kwargs).delete()
-        cdf = 0.0
-        for symbol, pdf in self.iteritems():
-            row_kwargs = {}
-            row_kwargs.update(kwargs)
-            cdf += pdf
-            row_kwargs['cdf'] = cdf
-            row_kwargs['pdf'] = pdf
-            row_kwargs['symbol'] = symbol
-            manager.create(**row_kwargs)
-
-        return

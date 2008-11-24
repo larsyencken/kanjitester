@@ -12,8 +12,8 @@ from django.contrib import admin
 import models
 
 class KanjiReadingAdmin(admin.ModelAdmin):
-    list_display = ('kanji', 'reading', 'alternations')
-    list_filter = ('alternations',)
+    list_display = ('condition', 'symbol', 'alternations', 'pdf', 'cdf')
+    search_fields = ('condition', 'alternations')
 
 admin.site.register(models.KanjiReading, KanjiReadingAdmin)
 

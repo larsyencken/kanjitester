@@ -133,6 +133,7 @@ DRILL_PLUGINS = list(set(CONTROL_DRILL_PLUGINS + ADAPTIVE_DRILL_PLUGINS))
 
 USER_MODEL_PLUGINS = (
     'kanji_test.plugins.visual_similarity.VisualSimilarity',
+    'kanji_test.plugins.reading_alt.KanjiReadingModel',
 )
 
 # auth
@@ -144,7 +145,8 @@ QUESTIONS_PER_SET = 10
 QUESTIONS_PER_PAGE = 5
 
 # visual_similarity
-MAX_GRAPH_DEGREE = 20
+MIN_TOTAL_DISTRACTORS = 10
+MAX_GRAPH_DEGREE = MIN_TOTAL_DISTRACTORS
 
 # reading_alt
 ALTERNATION_ALPHA = 0.5

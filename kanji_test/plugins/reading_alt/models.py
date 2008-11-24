@@ -15,6 +15,7 @@ from django.db import models
 from django.conf import settings
 
 from hierarchy.models import HierarchicalModel
+from kanji_test.util.models import CondProb
 
 ALTERNATION_TYPES = (
         ('/', 'root node'),
@@ -54,35 +55,19 @@ class ReadingAlternation(HierarchicalModel):
     def get_alternation_root(kanji):
         return ReadingAlternation.objects.get(value=kanji, code='k')
 
-class KanjiReading(models.Model):
+class KanjiReading(CondProb):
     "A reading of a given kanji after alternations have been applied."
-
-    reading = models.CharField(
-            max_length=settings.MAX_READING_LENGTH * \
-                    settings.UTF8_BYTES_PER_CHAR,
-            db_index=True,
-            help_text='The reading of this kanji.',
-        )
-
-    kanji = models.CharField(
-            max_length=settings.UTF8_BYTES_PER_CHAR,
-            help_text='The kanji from which the reading derived.',
-        )
-
     alternations = models.CharField(max_length=len(ALTERNATION_TYPES),
             blank=True, null=True,
             help_text='The alternation codes used to get this reading.')
 
-    probability = models.FloatField(
-            help_text='The log-probability of this reading for this kanji.')
-
-    # The final alternation step which provided this reading.
     reading_alternation = models.ForeignKey(ReadingAlternation, blank=True,
             null=True, help_text='The final alternation step which' \
             ' provided this reading.')
 
     def __unicode__(self):
-        return u'%s /%s/ (%s)' % (self.kanji, self.reading, self.alternations)
+        return u'%s /%s/ (%s)' % (self.condition, self.symbol,
+                self.alternations)
 
     def get_alternation_path(self):
         """

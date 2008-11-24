@@ -58,7 +58,6 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
 
         _log.finish()
 
-    # TODO implement update functionality
     def update(self, response):
         "Update our error model from a user's response."
         error_dist = usermodel_models.ErrorDist.objects.get(user=response.user,
@@ -148,7 +147,6 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
                         symbol=neighbour_label,
                         pdf=pdf,
                         cdf=cdf,
-                        is_correct=(label == neighbour_label),
                     )
 
 #----------------------------------------------------------------------------#
