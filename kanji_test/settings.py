@@ -124,7 +124,7 @@ CONTROL_DRILL_PLUGINS = (
 )
 
 ADAPTIVE_DRILL_PLUGINS = (
-    'kanji_test.plugins.basic_drills.ReadingQuestionFactory',
+    'kanji_test.plugins.reading_alt.ReadingAlternationQuestions',
     'kanji_test.plugins.basic_drills.GlossQuestionFactory',
     'kanji_test.plugins.visual_similarity.VisualSimilarityDrills',
 )

@@ -16,6 +16,7 @@ from cjktools.scripts import Script, scriptType, containsScript
 from kanji_test import settings
 
 def build_options(item, sample_method, exclude_set=None):
+    assert isinstance(item, unicode)
     exclude_set = set(exclude_set or [])
     exclude_set.add(item)
 
