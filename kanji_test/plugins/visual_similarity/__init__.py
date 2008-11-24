@@ -75,8 +75,8 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
 
     def _update_kanji(self, response, error_dist):
         question = response.question
-        sub_dist = usermodel_models.ProbDist(error_dist.density.filter(
-                condition=question.pivot))
+        sub_dist = usermodel_models.ProbDist.from_query_set(
+                error_dist.density.filter(condition=question.pivot))
         option_values = [o['value'] for o in \
                 question.multiplechoicequestion.options.all().values('value')]
         response_value = response.option.value
@@ -99,8 +99,9 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
             if scripts.scriptType(char) != scripts.Script.Kanji:
                 continue
 
-            sub_dist = usermodel_models.ProbDist(error_dist.density.filter(
-                    condition=char))
+            sub_dist = usermodel_models.ProbDist.from_query_set(
+                    error_dist.density.filter(condition=char))
+
             m = max(map(sub_dist.__getitem__, [v[i] for v in distractors])) + \
                     settings.UPDATE_EPSILON
             if m > sub_dist[response_value[i]]:

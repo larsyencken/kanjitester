@@ -170,6 +170,7 @@ class ProbDist(dict):
             dist[row['symbol']] = row['pdf']
 
         dist.normalise()
+        return dist
 
     def normalise(self):
         total = sum(self.itervalues())
@@ -197,14 +198,16 @@ class CondProbDist(dict):
     
     @classmethod
     def from_query_set(cls, query_set):
+        dist = cls()
         for row in query_set.values('condition', 'symbol', 'pdf'):
             condition = row['condition']
             symbol =  row['symbol']
-            symbol_dist = self.get(condition)
+            symbol_dist = dist.get(condition)
             if symbol_dist:
                 symbol_dist[row['symbol']] = row['pdf']
             else:
-                self[condition] = ProbDist({row['symbol']: row['pdf']})
+                dist[condition] = ProbDist({row['symbol']: row['pdf']})
+        return dist
 
     def normalise(self):
         for sub_dist in self.itervalues():
