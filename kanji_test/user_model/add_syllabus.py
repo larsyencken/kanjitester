@@ -49,7 +49,8 @@ def add_all_syllabi(force=False):
     syllabi = _fetch_syllabi()
     dependencies = _deps_from_syllabi(syllabi)
     _log.start('Adding all syllabi', nSteps=len(syllabi))
-    if not Checksum.needs_update('syllabi', dependencies, ['lexicon']):
+    if not force and not Checksum.needs_update('syllabi', dependencies,
+            ['lexicon']):
         _log.finish('Already up-to-date')
         return
         
@@ -219,6 +220,7 @@ def _determine_word_surfaces(alignments, syllabus):
 #                new_surface.save()
 #            partial_lexeme.surface_set.add(new_surface)
     _log.log('%d reduced surfaces' % n_reduced)
+    _log.finish()
 
     _log.start('Adding existing surfaces')
     for partial_lexeme in syllabus.partiallexeme_set.all():
