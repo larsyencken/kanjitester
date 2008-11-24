@@ -64,7 +64,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                 self._random_reading_iter(1, real_readings),
                 settings.N_DISTRACTORS,
             ))
-        answer = partial_kanji.reading_set.order_by('?')[0]
+        answer = partial_kanji.reading_set.order_by('?')[0].reading
         question = self.build_question(
                 pivot=partial_kanji.kanji.kanji,
                 pivot_type='k',
