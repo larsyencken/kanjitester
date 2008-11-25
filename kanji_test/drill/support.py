@@ -32,7 +32,8 @@ def build_options(pivot, sample_n_method, exclude_set=None):
     while len(distractors) < settings.N_DISTRACTORS:
         potentials = []
         for char in pivot:
-            potentials.append(sample_n_method(char, settings.N_DISTRACTORS))
+            potentials.append(sample_n_method(char, settings.N_DISTRACTORS,
+                    exclude_set))
         potentials = zip(*potentials)
 
         for result in potentials:

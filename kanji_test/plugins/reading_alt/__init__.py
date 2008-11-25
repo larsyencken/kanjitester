@@ -48,7 +48,6 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
             else:
                 return
 
-
         _log.log('Fetching syllabus kanji')
         kanji_set = self._fetch_syllabus_kanji(syllabus)
 
@@ -99,32 +98,34 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
 
         To circumvent this problem, we pad with random distractors.
         """
-        cursor = connection.cursor()
-        cursor.execute("""
-                SELECT `condition`, `n_readings`
-                FROM
-                    (SELECT `condition`, COUNT(*) AS `n_readings`
-                    FROM `user_model_priorpdf`
-                    WHERE `dist_id` = %s
-                    GROUP BY `condition`) AS `A`
-                WHERE
-                    `n_readings` < %s
-            """,
-            (prior_dist.id, settings.MIN_TOTAL_DISTRACTORS))
-        results = cursor.fetchall()
-        _log.log('%d need padding' % len(results))
-
         _log.log('Padding results ', newLine=False)
-        for condition, n_stored in consoleLog.withProgress(results):
+        conditions = set(o['condition'] for o in \
+                prior_dist.density.all().values('condition'))
+        for (condition,) in consoleLog.withProgress(conditions):
+            if condition == u'後':
+                import pdb; pdb.set_trace()
+            exclude_set = set(
+                    o.reading for o in \
+                    lexicon_models.KanjiReading.objects.filter(
+                        kanji__kanji=condition)
+                )
+            n_stored = prior_dist.density.filter(condition=condition).exclude(
+                    symbol__in=exclude_set).count()
+
             sub_dist = ProbDist.from_query_set(prior_dist.density.filter(
                     condition=condition))
+            exclude_set.update(sub_dist.keys())
             n_needed = settings.MIN_TOTAL_DISTRACTORS - n_stored
             min_prob = min(sub_dist.itervalues()) / 2
             while n_needed > 0:
                 for row in lexicon_models.KanjiReadingProb.sample_n(n_needed):
-                    if row.symbol not in sub_dist:
+                    if row.symbol not in exclude_set:
                         sub_dist[row.symbol] = min_prob
+                        exclude_set.add(row.symbol)
                         n_needed -= 1
+
+                    if n_needed == 0:
+                        break
 
             sub_dist.normalise()
             sub_dist.save_to(prior_dist.density, condition=condition)
@@ -201,11 +202,14 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
         return
 
     def _build_sampler(self, error_dist):
-        def sample(char, n):
+        def sample(char, n, exclude_set):
             if scripts.scriptType(char) == scripts.Script.Kanji:
-                return error_dist.sample_n(char, n)
-            else:
-                return [char] * n
+                return error_dist.sample_n(char, n, exclude_set=exclude_set)
+
+            if char in exclude_set:
+                raise ValueError('unfulfillable request')
+
+            return [char] * n
 
         return sample
 

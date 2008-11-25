@@ -18,7 +18,7 @@ admin.site.register(models.Kanji, KanjiAdmin)
 
 class KanjiReadingAdmin(admin.ModelAdmin):
     list_display = ('kanji', 'reading', 'reading_type')
-    search_fields = ('kanji', 'reading')
+    search_fields = ('kanji__kanji', 'reading')
     list_filter = ('reading_type',)
 admin.site.register(models.KanjiReading, KanjiReadingAdmin)
 

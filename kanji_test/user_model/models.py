@@ -88,6 +88,7 @@ class Syllabus(models.Model):
 
 class LexemeReadingSegments(models.Model):
     """A segmentation of a lexeme reading."""
+    syllabus = models.ForeignKey(Syllabus)
     lexeme_reading = models.ForeignKey(lexicon_models.LexemeReading,
             related_name='segments')
     segments = models.CharField(max_length=100)
@@ -269,10 +270,10 @@ class ErrorDist(models.Model):
     def sample(self, condition):
         return self.density.filter(condition=condition).order_by('?')[0]
 
-    def sample_n(self, condition, n):
+    def sample_n(self, condition, n, exclude_set=None):
         dist = ProbDist.from_query_set(self.density.filter(
                 condition=condition))
-        return dist.sample_n(n)
+        return dist.sample_n(n, exclude_set=exclude_set)
 
     def get_normalized_accuracy(self):
         prior_accuracy = self.prior_dist.get_accuracy()

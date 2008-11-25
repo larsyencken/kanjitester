@@ -214,6 +214,7 @@ def _determine_word_surfaces(alignments, syllabus):
         matching_reading = partial_lexeme.reading_set.get(
                 reading=alignment.phoneme)
         partial_lexeme.reading_segments.get_or_create(
+                syllabus=syllabus,
                 lexeme_reading=matching_reading,
                 segments=_format_alignment(alignment),
             )

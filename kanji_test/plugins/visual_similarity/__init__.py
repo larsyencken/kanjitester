@@ -158,9 +158,9 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         question.save()
         return
 
-    def _sample_kanji(self, char, n):
+    def _sample_kanji(self, char, n, exclude_set):
         if scripts.scriptType(char) == scripts.Script.Kanji:
-            return self.error_dist.sample_n(char, n)
+            return self.error_dist.sample_n(char, n, exclude_set=exclude_set)
 
         return [char] * n
 

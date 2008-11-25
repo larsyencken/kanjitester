@@ -141,9 +141,18 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                         partialkanji__syllabus__userprofile__user=user)
                 ]
 
-        def sample_n(char, n):
+        def sample_n(char, n, exclude_set):
             if scripts.scriptType(char) == scripts.Script.Kanji:
-                return [random.choice(self._kanji_set) for i in xrange(n)]
+                result = []
+                available_set = list(set(self._kanji_set).difference(
+                        exclude_set))
+                if len(available_set) < n:
+                    raise ValueError("don't have %d items to sample" % n)
+                while len(result) < n:
+                    kanji = random.choice(available_set)
+                    result.append(kanji)
+                    available_set.pop(available_set.index(kanji))
+                return result
             else:
                 return [char] * n
 

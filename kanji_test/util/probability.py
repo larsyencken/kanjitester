@@ -209,16 +209,24 @@ class ProbDist(dict):
                 return symbol
         raise RuntimeError("couldn't sample successfully")
 
-    def sample_n(self, n):
-        if n > len(self):
+    def sample_n(self, n, exclude_set=None):
+        exclude_set = exclude_set or set()
+
+        include_set = set(self.keys()).difference(exclude_set)
+        if n > len(include_set):
             raise ValueError("don't have %d unique values" % n)
-        elif n == len(self):
-            result = self.values()
+
+        elif n == len(include_set):
+            result = list(include_set)
             random.shuffle(result)
             return result
 
         tmp_dist = self.copy()
-        assert tmp_dist == self
+        for symbol in tmp_dist.keys():
+            if symbol not in include_set:
+                del tmp_dist[symbol]
+        tmp_dist.normalise()
+
         result = set()
         while len(result) < n:
             symbol = tmp_dist.sample()
@@ -249,7 +257,7 @@ class CondProbDist(dict):
         dist = cls()
         for row in query_set.values('condition', 'symbol', 'pdf'):
             condition = row['condition']
-            symbol =  row['symbol']
+            symbol = row['symbol']
             symbol_dist = dist.get(condition)
             if symbol_dist:
                 symbol_dist[row['symbol']] = row['pdf']
