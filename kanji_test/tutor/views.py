@@ -92,30 +92,18 @@ def study(request):
             response__in=failed_responses)
 
     failed_kanji = failed_questions.filter(pivot_type='k')
-    kanji_set = set(o['pivot'] for o in failed_kanji.values('pivot'))
-    failed_lexemes = failed_questions.filter(pivot_type='w')
-    surface_set = set(o['pivot'] for o in failed_lexemes.values('pivot'))
-    kanji_script = scripts.Script.Kanji
-    reading_set = set(s for s in surface_set if not scripts.containsScript(
-            kanji_script, s))
-    surface_set = surface_set.difference(reading_set)
-
+    kanji_set = set(o['pivot_id'] for o in failed_kanji.values('pivot_id'))
     partial_kanji = usermodel_models.PartialKanji.objects.filter(
-            syllabus=syllabus).filter(kanji__in=kanji_set)
+            id__in=kanji_set)
 
-    # Note that some lexemes have no surfaces, so we have to query their
-    # readings too.
-    lexeme_set = set(o['lexeme_id'] for o in \
-            usermodel_models.PartialLexeme.objects.filter(
-            syllabus=syllabus).filter(
-                    Q(surface_set__surface__in=surface_set) | 
-                    Q(reading_set__reading__in=reading_set)
-            ).values('lexeme_id'))
+    failed_lexemes = failed_questions.filter(pivot_type='w')
+    lexeme_set = set(o['pivot_id'] for o in failed_lexemes.values('pivot_id'))
     partial_lexemes = usermodel_models.PartialLexeme.objects.filter(
-            syllabus=syllabus).filter(lexeme__id__in=lexeme_set)
+            id__in=lexeme_set)
 
     context['partial_kanji'] = partial_kanji
     context['partial_lexemes'] = partial_lexemes
+    context['all_correct'] = not partial_kanji and not partial_lexemes
     
     return render_to_response('tutor/study.html', context,
             context_instance=RequestContext(request))

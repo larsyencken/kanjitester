@@ -51,6 +51,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
 
         question = self.build_question(
                 pivot=surface,
+                pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )
@@ -67,6 +68,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         answer = partial_kanji.reading_set.order_by('?')[0].reading
         question = self.build_question(
                 pivot=partial_kanji.kanji.kanji,
+                pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=partial_kanji.kanji.kanji,
             )
@@ -105,6 +107,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                 self._build_sampler(user))
         question = self.build_question(
                 pivot=kanji,
+                pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=kanji_row.gloss,
             )
@@ -124,6 +127,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                 self._build_sampler(user))
         question = self.build_question(
                 pivot=surface,
+                pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=gloss
             )
@@ -173,6 +177,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         distractor_values = list(distractor_values)
         question = self.build_question(
                 pivot=kanji_row.kanji,
+                pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=kanji_row.kanji,
             )
@@ -203,6 +208,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         distractor_values = list(distractor_values)
         question = self.build_question(
                 pivot=surface,
+                pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )

@@ -10,7 +10,8 @@
   <p class="score">Your score: {{form.n_correct}}/{{form.n_questions}}</p>
   <form method="POST" action="{% url tutor_study %}" class="navigation">
     <input type="hidden" name="test_set_id" value="{{test_set.id}}">
-    <input type="submit" value="Study mistakes">
+    <input type="submit" value="Study mistakes"
+      {% if all_correct %}disabled="disabled"{% endif %}>
   </form>
   <form method="GET" action="{% url tutor_dashboard %}" class="navigation">
     <input type="submit" value="Back to dashboard">
@@ -31,7 +32,8 @@
 </form>
 <form method="POST" action="{% url tutor_study %}" class="navigation">
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
-  <input type="submit" value="Study mistakes">
+  <input type="submit" value="Study mistakes"
+    {% if all_correct %}disabled="disabled"{% endif %}>
 </form>
 <form method="GET" action="{% url tutor_dashboard %}" class="navigation">
   <input type="submit" value="Back to dashboard">

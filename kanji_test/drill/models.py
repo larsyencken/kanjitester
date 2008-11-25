@@ -60,6 +60,8 @@ INSTRUCTIONS = {
 class Question(models.Model):
     pivot = models.CharField(max_length=30, db_index=True,
         help_text="The word or kanji this question is created for.")
+    pivot_id = models.IntegerField(
+        help_text="The id of the pivot PartialKanji or PartialLexeme.")
     pivot_type = models.CharField(max_length=1, choices=PIVOT_TYPES,
         help_text="Is this a word or a kanji question?")
     question_type = models.CharField(max_length=2, choices=QUESTION_TYPES,
@@ -69,34 +71,29 @@ class Question(models.Model):
     annotation = models.CharField(max_length=100, null=True, blank=True,
         help_text="Scratch space for question plugin annotations.")
     
-    def pivot_type_verbose():
-        def fget(self):
-            return [vd for (d, vd) in PIVOT_TYPES if d == self.pivot_type][0]
-        return locals()
-    pivot_type_verbose = property(**pivot_type_verbose())
-
-    def question_type_verbose():
-        def fget(self):
-            return [vd for (d, vd) in QUESTION_TYPES 
-                    if d == self.question_type][0]
-        return locals()
-    question_type_verbose = property(**question_type_verbose())
-
-    def instructions():
-        def fget(self):
-            return INSTRUCTIONS[self.question_type] % self.pivot_type_verbose
-        return locals()
-    instructions = property(**instructions())
-
     class Meta:
         abstract = False
 
     def __unicode__(self):
         return 'type %s about %s %s' % (
                 self.question_type,
-                self.pivot_type_verbose,
+                self.get_pivot_type_display(),
                 self.pivot,
             )
+
+    def instructions():
+        def fget(self):
+            return INSTRUCTIONS[self.question_type] % \
+                    self.get_pivot_type_display()
+        return locals()
+    instructions = property(**instructions())
+
+    def get_pivot_item(self):
+        if self.pivot_type == 'k':
+            return usermodel_models.PartialKanji.objects.get(id=self.pivot_id)
+
+        assert self.pivot_type == 'w'
+        return usermodel_models.PartialLexeme.objects.get(id=self.pivot_id)
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)

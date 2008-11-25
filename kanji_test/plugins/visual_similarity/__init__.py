@@ -168,6 +168,7 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         kanji = kanji_row.kanji
         question = self.build_question(
                 pivot=kanji,
+                pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=kanji_row.gloss,
             )
@@ -188,6 +189,7 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
 
         question = self.build_question(
                 pivot=surface,
+                pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=gloss
             )

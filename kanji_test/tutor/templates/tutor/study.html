@@ -6,8 +6,15 @@
 
 {% block content %}
   <h1>Revision</h1>
+  {% if not partial_kanji  and not partial_lexemes %}
+  <p>
+    Well done! You got everything correct in your last test, so there's nothing
+    to study. Consider taking a longer test to find items you might not know.
+  </p>
+  {% else %}
   <p>In your previous test, you made mistakes on the following kanji and
      words. Try to write down an example sentence using each item.</p>
+  {% endif %}
   {% if partial_kanji %}
     <h2>Kanji to study</h2>
     <table>
@@ -68,10 +75,11 @@
         {% endfor %}
       </tbody>
     </table>
+  {% endif %}
+
   <p>
     <form action="{% url tutor_dashboard %}" method="GET">
       <input type="submit" value="Back to dashboard">
     </form>
   </p>
-  {% endif %}
 {% endblock %}

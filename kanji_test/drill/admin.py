@@ -17,8 +17,8 @@ class OptionInline(admin.StackedInline):
     extra = 1
 
 class MultipleChoiceAdmin(admin.ModelAdmin):
-    list_display = ('pivot', 'pivot_type', 'question_type', 'question_plugin',
-            'annotation')
+    list_display = ('pivot', 'pivot_type', 'pivot_id', 'question_type',
+            'question_plugin', 'annotation')
     list_filter = ('pivot_type', 'question_type')
     search_fields = ('pivot',)
     inlines = [OptionInline]
@@ -30,9 +30,6 @@ class QuestionPluginAdmin(admin.ModelAdmin):
     list_filter = ('supports_kanji', 'supports_words')
 
 admin.site.register(models.QuestionPlugin, QuestionPluginAdmin)
-
-admin.site.register(models.Question)
-admin.site.register(models.Response)
 
 class MultipleChoiceResponseAdmin(admin.ModelAdmin):
     list_display = ('user', 'question', 'option', 'timestamp')
