@@ -165,6 +165,8 @@ UPDATE_EPSILON = 0.2
 # When True, enables the debugging media view.
 DEPLOYED = False
 
+DEFAULT_FROM_EMAIL = "Kanji Tester <lljy@csse.unimelb.edu.au>"
+
 # Overwrite any of these settings with local customizations.
 try:
     from local_settings import *
