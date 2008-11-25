@@ -253,9 +253,12 @@ class ErrorDist(models.Model):
                     )
 
     def sample(self, condition):
-        target_cdf = random.random()
-        return self.density.filter(condition=condition,
-                cdf__gte=target_cdf).order_by('cdf')[0]
+        return self.density.filter(condition=condition).order_by('?')[0]
+
+    def sample_n(self, condition, n):
+        dist = ProbDist.from_query_set(self.density.filter(
+                condition=condition))
+        return dist.sample_n(n)
 
     def get_normalized_accuracy(self):
         prior_accuracy = self.prior_dist.get_accuracy()

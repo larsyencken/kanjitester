@@ -8,6 +8,7 @@
 # 
 
 import math
+import random
 
 from nltk import probability as nltk_prob
 from cjktools.common import sopen
@@ -161,7 +162,8 @@ class FixedProbDist(nltk_prob.ProbDistI):
 # XXX Doesn't match NLTK interface.
 class ProbDist(dict):
     def __init__(self, *args, **kwargs):
-        super(dict, self).__init__(*args, **kwargs)
+        dict.__init__(self, *args, **kwargs)
+        self._refresh_cdf()
 
     @classmethod
     def from_query_set(cls, query_set):
@@ -172,10 +174,19 @@ class ProbDist(dict):
         dist.normalise()
         return dist
 
+    def copy(self):
+        new_dist = ProbDist(self)
+        new_dist._cdf = self._cdf[:]
+        return new_dist
+
+    def __eq__(self, rhs):
+        return set(self.items()) == set(rhs.items())
+
     def normalise(self):
         total = sum(self.itervalues())
         for key in self:
             self[key] /= total
+        self._refresh_cdf()
 
     def save_to(self, manager, **kwargs):
         manager.filter(**kwargs).delete()
@@ -190,6 +201,43 @@ class ProbDist(dict):
             manager.create(**row_kwargs)
 
         return
+
+    def sample(self):
+        target_cdf = random.random()
+        for cdf, symbol in self._cdf:
+            if cdf >= target_cdf:
+                return symbol
+        raise RuntimeError("couldn't sample successfully")
+
+    def sample_n(self, n):
+        if n > len(self):
+            raise ValueError("don't have %d unique values" % n)
+        elif n == len(self):
+            result = self.values()
+            random.shuffle(result)
+            return result
+
+        tmp_dist = self.copy()
+        assert tmp_dist == self
+        result = set()
+        while len(result) < n:
+            symbol = tmp_dist.sample()
+            result.add(symbol)
+            del tmp_dist[symbol]
+            tmp_dist.normalise()
+
+        result = list(result)
+        random.shuffle(result)
+        return result
+
+    def _refresh_cdf(self):
+        cdf_seq = []
+        cdf = 0.0
+        for symbol, pdf in self.iteritems():
+            cdf += pdf
+            cdf_seq.append((cdf, symbol))
+
+        self._cdf = cdf_seq
 
 # XXX Doesn't match NLTK interface.
 class CondProbDist(dict):

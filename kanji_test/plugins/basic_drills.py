@@ -137,13 +137,13 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                         partialkanji__syllabus__userprofile__user=user)
                 ]
 
-        def sample(char):
+        def sample_n(char, n):
             if scripts.scriptType(char) == scripts.Script.Kanji:
-                return random.choice(self._kanji_set)
+                return [random.choice(self._kanji_set) for i in xrange(n)]
             else:
-                return char
+                return [char] * n
 
-        return sample
+        return sample_n
     
 #----------------------------------------------------------------------------#
 

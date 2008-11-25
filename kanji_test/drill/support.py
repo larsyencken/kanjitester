@@ -15,29 +15,35 @@ from cjktools.scripts import Script, scriptType, containsScript
 
 from kanji_test import settings
 
-def build_options(item, sample_method, exclude_set=None):
-    assert isinstance(item, unicode)
+def build_options(pivot, sample_n_method, exclude_set=None):
+    """
+    Builds a series of distractors for a question, based on its pivot and
+    a method which samples into the distractor space.
+    """
+    assert isinstance(pivot, unicode)
     exclude_set = set(exclude_set or [])
-    exclude_set.add(item)
+    exclude_set.add(pivot)
 
-    if not containsScript(Script.Kanji, item):
+    if not containsScript(Script.Kanji, pivot):
         raise ValueError("Can't generate options without kanji")
 
     distractors = []
     annotations = []
     while len(distractors) < settings.N_DISTRACTORS:
-        result = []
-        for char in item:
-            if scriptType(char) == Script.Kanji:
-                result.append(sample_method(char))
-            else:
-                result.append(char)
-        seg_result = u'|'.join(result)
-        base_result = u''.join(result)
-        if base_result not in exclude_set:
-            exclude_set.add(base_result)
-            distractors.append(base_result)
-            annotations.append(seg_result)
+        potentials = []
+        for char in pivot:
+            potentials.append(sample_n_method(char, settings.N_DISTRACTORS))
+        potentials = zip(*potentials)
+
+        for result in potentials:
+            seg_result = u'|'.join(result)
+            base_result = u''.join(result)
+            if base_result not in exclude_set:
+                exclude_set.add(base_result)
+                distractors.append(base_result)
+                annotations.append(seg_result)
+                if len(distractors) == settings.N_DISTRACTORS:
+                    break
 
     return distractors, annotations
 

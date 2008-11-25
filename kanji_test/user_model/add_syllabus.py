@@ -231,7 +231,7 @@ def _determine_word_surfaces(alignments, syllabus):
                     partial_lexeme.surface_set.add(lexeme_surface)
     _log.finish()
 
-    return
+    _log.finish()
 
 #----------------------------------------------------------------------------#
 

@@ -26,6 +26,7 @@ def benchmark(n_sets, n_questions):
     test_user = _new_test_user()
     start_time = time.time()
     for i in xrange(n_sets):
+        print 'Test set %d' % i
         test_set = TestSet.from_user(test_user, n_questions)
     end_time = time.time()
     test_user.delete()

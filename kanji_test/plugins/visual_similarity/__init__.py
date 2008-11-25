@@ -207,11 +207,11 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         question.save()
         return
 
-    def _sample_kanji(self, char):
+    def _sample_kanji(self, char, n):
         if scripts.scriptType(char) == scripts.Script.Kanji:
-            return self.error_dist.sample(char).symbol
+            return self.error_dist.sample_n(char, n)
 
-        return char
+        return [char] * n
 
 def segment_word(surface):
     """
