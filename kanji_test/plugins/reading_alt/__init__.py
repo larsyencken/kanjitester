@@ -27,12 +27,6 @@ from kanji_test.lexicon import models as lexicon_models
 
 _log = consoleLog.default
 
-def build():
-    import reading_database
-    _log.start('Building reading database', nSteps=1)
-    reading_database.ReadingDatabase.build()
-    _log.finish()
-
 class KanjiReadingModel(usermodel_api.UserModelPlugin):
     dist_name = 'reading | kanji'
 
@@ -165,6 +159,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
         assert answer in exclude_set
         question = self.build_question(
                 pivot=surface,
+                pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )
@@ -180,6 +175,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 'reading')[0]['reading']
         question = self.build_question(
                 pivot=partial_kanji.kanji.kanji,
+                pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=partial_kanji.kanji.kanji,
             )
