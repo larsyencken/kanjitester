@@ -30,7 +30,7 @@ import threshold_graph
 _default_metric_name = 'stroke edit distance'
 _log = consoleLog.default
 
-class VisualSimilarity(user_model_api.UserModelPlugin):
+class VisualSimilarity(user_model_api.SegmentedSeqPlugin):
     dist_name = "kanji' | kanji"
 
     def init_priors(self, syllabus, force=False):
@@ -57,58 +57,6 @@ class VisualSimilarity(user_model_api.UserModelPlugin):
         self._store_graph(graph, prior_dist)
 
         _log.finish()
-
-    def update(self, response):
-        "Update our error model from a user's response."
-        error_dist = usermodel_models.ErrorDist.objects.get(user=response.user,
-                tag=self.dist_name)
-        question = response.question
-
-        if question.pivot_type == 'k':
-            self._update_kanji(response, error_dist)
-
-        elif question.pivot_type == 'w':
-            self._update_seq(response, error_dist)
-
-        else:
-            raise ValueError("unknown question type")
-
-    def _update_kanji(self, response, error_dist):
-        question = response.question
-        sub_dist = usermodel_models.ProbDist.from_query_set(
-                error_dist.density.filter(condition=question.pivot))
-        option_values = [o['value'] for o in \
-                question.multiplechoicequestion.options.all().values('value')]
-        response_value = response.option.value
-        distractors = [v for v in option_values if v != response_value]
-        m = max(map(sub_dist.__getitem__, distractors)) + \
-                settings.UPDATE_EPSILON
-        if m > sub_dist[response_value]:
-            sub_dist[response_value] = m
-            sub_dist.normalise()
-            sub_dist.save_to(error_dist.density, condition=question.pivot)
-        return
-
-    def _update_seq(self, response, error_dist):
-        question = response.question
-        option_values = [o['value'] for o in \
-                question.multiplechoicequestion.options.all().values('value')]
-        response_value = response.option.value
-        distractors = [v for v in option_values if v != response_value]
-        for i, char in enumerate(question.pivot):
-            if scripts.scriptType(char) != scripts.Script.Kanji:
-                continue
-
-            sub_dist = usermodel_models.ProbDist.from_query_set(
-                    error_dist.density.filter(condition=char))
-
-            m = max(map(sub_dist.__getitem__, [v[i] for v in distractors])) + \
-                    settings.UPDATE_EPSILON
-            if m > sub_dist[response_value[i]]:
-                sub_dist[response_value[i]] = m
-                sub_dist.normalise()
-                sub_dist.save_to(error_dist.density, condition=char)
-        return
 
     def _build_graph(self, kanji_set):
         metric = metrics.metric_library[_default_metric_name]
@@ -191,7 +139,7 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
                 pivot=surface,
                 pivot_id=partial_lexeme.id,
                 pivot_type='w',
-                stimulus=gloss
+                stimulus=gloss,
             )
         self._add_distractors(question)
         return question
@@ -201,10 +149,11 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         Builds distractors for the question with appropriate annotations so
         that we can easily update the error model afterwards.   
         """
-        distractors, annotations = support.build_options(
+        distractors, annotation_map = support.build_options(
                 question.pivot, self._sample_kanji)
+        annotation_map[question.pivot] = '|'.join(question.pivot)
         question.add_options(distractors, question.pivot,
-                annotations=annotations)
+                annotation_map=annotation_map)
         question.annotation = u'|'.join(question.pivot)
         question.save()
         return

@@ -74,6 +74,9 @@ class LexemeReading(models.Model):
     reading = models.CharField(max_length=60, db_index=True)
     priority_codes = models.CharField(blank=True, max_length=60, null=True)
 
+    def __unicode__(self):
+        return self.reading
+
     class Meta:
         unique_together = (('lexeme', 'reading'),)
     

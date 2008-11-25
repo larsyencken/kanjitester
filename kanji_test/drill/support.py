@@ -28,7 +28,7 @@ def build_options(pivot, sample_n_method, exclude_set=None):
         raise ValueError("Can't generate options without kanji")
 
     distractors = []
-    annotations = []
+    annotation_map = {}
     while len(distractors) < settings.N_DISTRACTORS:
         potentials = []
         for char in pivot:
@@ -41,10 +41,10 @@ def build_options(pivot, sample_n_method, exclude_set=None):
             if base_result not in exclude_set:
                 exclude_set.add(base_result)
                 distractors.append(base_result)
-                annotations.append(seg_result)
+                annotation_map[base_result] = seg_result
                 if len(distractors) == settings.N_DISTRACTORS:
                     break
 
-    return distractors, annotations
+    return distractors, annotation_map
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

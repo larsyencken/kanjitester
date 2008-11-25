@@ -67,9 +67,12 @@ def _clear_lexicon():
             'lexicon_lexemereading',
             'lexicon_lexeme',
         ]
-    for table_name in tables:
-        cursor.execute('DELETE FROM %s' % table_name)
-        cursor.execute('COMMIT')
+    try:
+        for table_name in tables:
+            cursor.execute('DELETE FROM %s' % table_name)
+            cursor.execute('COMMIT')
+    except:
+        models.Lexeme.objects.all().delete()
     return
 
 #----------------------------------------------------------------------------#

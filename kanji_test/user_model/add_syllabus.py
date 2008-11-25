@@ -185,6 +185,11 @@ def _load_word_list(word_file, alignments, syllabus):
 #----------------------------------------------------------------------------#
 
 def _determine_word_surfaces(alignments, syllabus):
+    """
+    Aligns the word surfaces with JMdict. We also use our known kanji set,
+    replacing any unknown kanji with their readings. If this results in a
+    surface known to JMdict, then we add that surface to the lexeme's list.
+    """
     _log.start('Building lexeme surfaces from kanji', nSteps=2)
     _log.start('Adding reduced surfaces where needed', nSteps=1)
     n_reduced = 0
@@ -205,20 +210,14 @@ def _determine_word_surfaces(alignments, syllabus):
         reduced_surface = _maybe_reduce(alignment, kanji_set)
         if reduced_surface == lexeme_surface.surface:
             partial_lexeme.surface_set.add(lexeme_surface)
-        else:
-            # XXX Removed because of bug [305]
-            continue
-            # Add a reduced surface to the lexicon
-#            n_reduced += 1
-#            new_surface, created = lexeme.surface_set.get_or_create(
-#                    surface=reduced_surface,
-#                    has_kanji=scripts.containsScript(scripts.Script.Kanji,
-#                            reduced_surface),
-#                )
-#            if created:
-#                new_surface.in_lexicon = False
-#                new_surface.save()
-#            partial_lexeme.surface_set.add(new_surface)
+
+        matching_reading = partial_lexeme.reading_set.get(
+                reading=alignment.phoneme)
+        partial_lexeme.reading_segments.get_or_create(
+                lexeme_reading=matching_reading,
+                segments=_format_alignment(alignment),
+            )
+
     _log.log('%d reduced surfaces' % n_reduced)
     _log.finish()
 
@@ -382,6 +381,17 @@ def _load_kanji_list(char_file, alignments, syllabus):
     _log.finish()
 
     _log.finish()
+
+#----------------------------------------------------------------------------#
+
+def _format_alignment(alignment):
+    result = []
+    for g_seg, p_seg in zip(alignment.g_segs, alignment.p_segs):
+        if scripts.scriptType(g_seg) == scripts.Script.Kanji:
+            result.append(p_seg)
+        else:
+            result.extend(p_seg)
+    return '|'.join(result)
 
 #----------------------------------------------------------------------------#
 

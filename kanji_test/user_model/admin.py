@@ -15,6 +15,9 @@ class PartialLexemeAdmin(admin.ModelAdmin):
     list_display = ('lexeme',)
     list_filter = ('syllabus',)
 
+class LexemeReadingSegmentsAdmin(admin.ModelAdmin):
+    list_display = ('lexeme_reading', 'segments')
+
 class SenseNoteAdmin(admin.ModelAdmin):
     list_display = ('partial_lexeme', 'note')
 
@@ -41,6 +44,7 @@ class ErrorDistAdmin(admin.ModelAdmin):
     search_fields = ('user__username',)
 
 admin.site.register(models.PartialLexeme, PartialLexemeAdmin)
+admin.site.register(models.LexemeReadingSegments, LexemeReadingSegmentsAdmin)
 admin.site.register(models.PartialKanji, PartialKanjiAdmin)
 admin.site.register(models.Syllabus)
 admin.site.register(models.PriorDist, PriorDistAdmin)

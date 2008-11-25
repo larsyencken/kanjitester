@@ -27,7 +27,7 @@ from kanji_test.lexicon import models as lexicon_models
 
 _log = consoleLog.default
 
-class KanjiReadingModel(usermodel_api.UserModelPlugin):
+class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
     dist_name = 'reading | kanji'
 
     def __init__(self):
@@ -61,10 +61,6 @@ class KanjiReadingModel(usermodel_api.UserModelPlugin):
 
     
         _log.finish()
-
-    def update(self, response):
-        # TODO Add update functionality.
-        pass
 
     #------------------------------------------------------------------------#
 
@@ -155,15 +151,19 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 tag=self.uses_dist)
         exclude_set = set(r.reading for r in 
                 partial_lexeme.lexeme.reading_set.all())
-        answer = partial_lexeme.reading_set.all().order_by('?')[0].reading
-        assert answer in exclude_set
+        answer = partial_lexeme.reading_set.all().order_by('?')[0]
+        answer_reading = answer.reading
+        answer_segments = answer.segments.get().segments
+        assert answer_reading in exclude_set
+        pivot = surface
         question = self.build_question(
-                pivot=surface,
+                pivot=pivot,
                 pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )
-        self._add_distractors(question, answer, error_dist, exclude_set)
+        self._add_distractors(question, answer_reading, answer_segments,
+                error_dist, exclude_set)
         return question
             
     def get_kanji_question(self, partial_kanji, user):
@@ -173,24 +173,29 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 partial_kanji.kanji.reading_set.values('reading'))
         answer = partial_kanji.reading_set.order_by('?').values(
                 'reading')[0]['reading']
+        pivot = partial_kanji.kanji.kanji
         question = self.build_question(
-                pivot=partial_kanji.kanji.kanji,
+                pivot=pivot,
                 pivot_id=partial_kanji.id,
                 pivot_type='k',
                 stimulus=partial_kanji.kanji.kanji,
             )
-        self._add_distractors(question, answer, error_dist, exclude_set)
+        self._add_distractors(question, answer, answer,
+                error_dist, exclude_set)
         return question
     
-    def _add_distractors(self, question, answer, error_dist, exclude_set):
+    def _add_distractors(self, question, answer, answer_segments, error_dist,
+            exclude_set):
         """
         Builds distractors for the question with appropriate annotations so
         that we can easily update the error model afterwards.   
         """
         assert answer in exclude_set
-        distractors, annotations = support.build_options(question.pivot,
+        distractors, annotation_map = support.build_options(question.pivot,
                 self._build_sampler(error_dist), exclude_set)
-        question.add_options(distractors, answer, annotations=annotations)
+        annotation_map[answer] = answer_segments
+        question.add_options(distractors, answer,
+                annotation_map=annotation_map)
         question.annotation = u'|'.join(question.pivot)
         question.save()
         return

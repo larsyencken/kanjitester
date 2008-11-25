@@ -86,12 +86,26 @@ class Syllabus(models.Model):
 
         return self._cached_kanji_word_prop
 
+class LexemeReadingSegments(models.Model):
+    """A segmentation of a lexeme reading."""
+    lexeme_reading = models.ForeignKey(lexicon_models.LexemeReading,
+            related_name='segments')
+    segments = models.CharField(max_length=100)
+
+    def __unicode__(self):
+        return self.segments
+
+    class Meta:
+        unique_together = (('lexeme_reading', 'segments'),)
+        verbose_name_plural = 'lexeme reading segments'
+
 class PartialLexeme(models.Model):
     """A subset of an individual lexeme."""
     syllabus = models.ForeignKey(Syllabus)
     lexeme = models.ForeignKey(lexicon_models.Lexeme,
             help_text="The word under consideration.")
     reading_set = models.ManyToManyField(lexicon_models.LexemeReading)
+    reading_segments = models.ManyToManyField(LexemeReadingSegments)
     sense_set = models.ManyToManyField(lexicon_models.LexemeSense)
     surface_set = models.ManyToManyField(lexicon_models.LexemeSurface)
     

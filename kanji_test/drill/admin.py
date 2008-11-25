@@ -38,7 +38,7 @@ class MultipleChoiceResponseAdmin(admin.ModelAdmin):
 admin.site.register(models.MultipleChoiceResponse, MultipleChoiceResponseAdmin)
 
 class MultipleChoiceOptionAdmin(admin.ModelAdmin):
-    list_display = ('question', 'value', 'is_correct')
+    list_display = ('question', 'value', 'annotation', 'is_correct')
     list_filter = ('is_correct',)
 
 admin.site.register(models.MultipleChoiceOption, MultipleChoiceOptionAdmin)

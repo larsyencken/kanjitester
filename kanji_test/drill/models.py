@@ -127,7 +127,7 @@ class MultipleChoiceQuestion(Question):
         else:
             return 'stimulus_cjk'
         
-    def add_options(self, distractor_values, answer, annotations=None):
+    def add_options(self, distractor_values, answer, annotation_map=None):
         if answer in distractor_values:
             raise ValueError('answer included in distractor set')
 
@@ -135,20 +135,21 @@ class MultipleChoiceQuestion(Question):
                 not answer:
             raise ValueError('all option values must be non-empty')
 
-        if annotations and len(annotations) != len(distractor_values):
-            raise ValueEror('need annotations for every distractor')
+        annotation_map = annotation_map or {}
+        if annotation_map and len(annotation_map) != len(distractor_values) + 1:
+            raise ValueEror('need annotation_map for every distractor')
 
         if len(set(distractor_values + [answer])) < len(distractor_values) + 1:
             raise ValueError('all option values must be unique')
 
-        annotation_map = dict(enumerate(annotations or []))
         for i, option_value in enumerate(distractor_values):
             self.options.create(
                     value=option_value,
                     is_correct=False,
-                    annotation=annotation_map.get(i),
+                    annotation=annotation_map.get(option_value),
                 )
-        self.options.create(value=answer, is_correct=True)
+        self.options.create(value=answer, is_correct=True,
+                annotation=annotation_map.get(answer))
 
 class MultipleChoiceOption(models.Model):
     """A single option in a multiple choice question."""
