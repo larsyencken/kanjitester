@@ -107,3 +107,12 @@ def study(request):
     
     return render_to_response('tutor/study.html', context,
             context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+
+def about(request):
+    return render_to_response('tutor/about.html', {},
+            context_instance=RequestContext(request))
+
+#----------------------------------------------------------------------------#
+

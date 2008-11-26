@@ -14,4 +14,5 @@ urlpatterns = patterns('kanji_test.tutor.views',
     url(r'^welcome/$', 'welcome', name='tutor_welcome'),
     url(r'^test/$', 'test_user', name='tutor_testuser'),
     url(r'^study/$', 'study', name='tutor_study'),
+    url(r'^about/$', 'about', name='tutor_about'),
 )

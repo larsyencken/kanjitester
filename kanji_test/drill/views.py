@@ -99,11 +99,11 @@ class TestSetForm(forms.Form):
         "Returns an html table representation of this test set."
         return mark_safe(self._html_output(
                 # normal row
-                """<tr><td><div class="instructions">%(help_text)s</div><div class="stimulus_cjk">%(label)s</div><div class="mc_select">%(field)s</div>%(errors)s""",
+                """<tr><td><div class="instructions">%(help_text)s</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # correct row
-                """<tr class="correct"><td><div class="instructions">%(help_text)s</div><div class="success">Correct</div><div class="stimulus_cjk">%(label)s</div><div class="mc_select">%(field)s</div>%(errors)s""",
+                """<tr class="correct"><td><div class="instructions">%(help_text)s</div><div class="success">Correct</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # incorrect row
-                """<tr class="incorrect"><td><div class="instructions">%(help_text)s</div><div class="failure">Incorrect</div><div class="stimulus_cjk">%(label)s</div><div class="mc_select">%(field)s</div>%(errors)s""",
+                """<tr class="incorrect"><td><div class="instructions">%(help_text)s</div><div class="failure">Incorrect</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # error row
                 u'<tr><td colspan="2">%s</td></tr>',
                 # row ender

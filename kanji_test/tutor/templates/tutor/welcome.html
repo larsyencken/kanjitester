@@ -8,8 +8,19 @@
   <h1>{{project_name}}</h1>
   
   <h2>What is {{project_name}}?</h2>
-  <p>A Japanese study application which drills repeatedly on your knowledge of  vocabulary and kanji.</p>
+  <p>A research project which generates randomized vocab and kanji tests for
+  JLPT levels 3 and 4.</p>
+
+  <h2>What's it for?</h2>
+  <p>Most people use {{project_name}} in one of two ways:</p>
+  <ul class="text">
+    <li>To drill themselves, as a form of vocab study.</li>
+    <li>To test themselves regularly after other forms of study, to measure
+    their progress.</li>
+  </ul>
 
   <h2>How do I get started?</h2>
-  <p><a href="{% url registration_register %}">Register</a>, then <a href="{% url auth_login %}">log-in</a>.</p>
+  <p><a href="{% url registration_register %}">Register</a>, then
+  <a href="{% url auth_login %}">log-in</a>.</p>
+  <p>Or, you can read more <a href="{% url tutor_about %}">about it</a>.</p>
 {% endblock %}

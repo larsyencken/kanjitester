@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>About {{project_name}}</h1>
+
+<h2>Overview</h2>
+<p>{{project_name}} is a project by <a
+href="http://www.csse.unimelb.edu.au/~lljy/">Lars Yencken</a> and <a
+href="http://www.csse.unimelb.edu.au/~tim/">Timothy Baldwin</a> at the
+University of Melbourne which provides online tests of Japanese vocabulary
+and kanji knowledge. Unlike paper tests, these test are:</p>
+<ul class="text">
+  <li><em>Automated</em>, so you don't need a teacher or instructor to
+  administrate them</li> 
+  <li><em>Randomised</em>, so you can do them as often as you like and still
+  get an honest score</li>
+  <li><em>Adaptive</em>, so that the more you times you make a mistake, the
+  more you get drilled on that mistake
+</ul>
+
+<h2>Goals</h2>
+<p>The goal of this project is to get information on the types of
+mistakes that people make as they learn Japanese, and the extent to which we
+can predict those mistakes. The more closely we can model learner behaviour,
+the more difficult and stimulating we can make this form of testing.</p>
+
+<h2>Current limitations</h2>
+<p>We currently only support testing for JLPT levels 3 and 4, though we're keen
+on supporting other resources in the future. The main obstacle for us is
+obtaining the vocabulary and kanji lists. If you want support for such a
+resource, and are willing to type in the vocabulary list, feel free to <a
+href="mailto:lljy@csse.unimelb.edu.au">contact us</a>.</p>
+
+<h2>Resources used</h2>
+
+<p>The following resources were used as part of this experiment.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Resource</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <a href="http://www.csse.monash.edu.au/~jwb/jmdict.html">JMdict</a>
+      </td>
+      <td>
+        A freely available Japanese dictionary.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <a href="http://www.csse.monash.edu.au/~jwb/kanjidic.html">Kanjidic</a>
+      </td>
+      <td>
+        A freely available kanji dictionary.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Any questions</h2>
+<p>Feel free to <a href="mailto:lljy@csse.unimelb.edu.au">send an email</a> if
+you have any more questions.</p>
+{% endblock %}

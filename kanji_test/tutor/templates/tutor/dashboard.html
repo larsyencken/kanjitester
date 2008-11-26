@@ -7,8 +7,8 @@
 {% block content %}
   <h1>Dashboard</h1>
   
-  <p>Here is where you'll be able to monitor your progress and take new tests.
-  </p>
+  <p>Here is where you can monitor your progress and take new tests, or 
+  <a href="{% url tutor_about %}">read about</a> the project.</p>
 
   <h2>Progress on {{user.get_profile.syllabus.tag}}</h2>
   {% if not stats.has_questions %}
