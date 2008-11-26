@@ -4,6 +4,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta name="description"
+    content="
+    {% block meta_description %}
+    Free online tool for studying JLPT 3 &amp; 4. Automatically generates
+    tests you can take to determine your proficiency.
+    {% endblock %}
+  " />
 	<title>{{project_name}} | {% block title %}{% endblock %}</title>
   <link rel="stylesheet" href="{{media_url}}css/tutor.css" type="text/css"
     charset="utf-8">
