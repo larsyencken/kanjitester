@@ -15,4 +15,5 @@ def basic_vars(request):
         'media_url':        settings.MEDIA_URL,
         'admin_media_url':  settings.ADMIN_MEDIA_PREFIX,
         'project_name':     settings.PROJECT_NAME,
+        'analytics_code':   settings.GOOGLE_ANALYTICS_CODE,
     }

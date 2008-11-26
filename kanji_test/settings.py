@@ -167,6 +167,8 @@ DEPLOYED = False
 
 DEFAULT_FROM_EMAIL = "Kanji Tester <lljy@csse.unimelb.edu.au>"
 
+GOOGLE_ANALYTICS_CODE = None
+
 # Overwrite any of these settings with local customizations.
 try:
     from local_settings import *
