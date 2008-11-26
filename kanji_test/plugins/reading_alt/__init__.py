@@ -102,8 +102,6 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
         conditions = set(o['condition'] for o in \
                 prior_dist.density.all().values('condition'))
         for (condition,) in consoleLog.withProgress(conditions):
-            if condition == u'後':
-                import pdb; pdb.set_trace()
             exclude_set = set(
                     o.reading for o in \
                     lexicon_models.KanjiReading.objects.filter(
