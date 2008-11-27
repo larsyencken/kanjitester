@@ -150,11 +150,14 @@ def _store_word_surfaces(syllabus, syllabus_bundle):
 
     _log.log('Adding non-syllabus surfaces which match')
     for partial_lexeme in syllabus.partiallexeme_set.all():
-        if partial_lexeme.surface_set.count() == 0:
-            for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
-                if scripts.uniqueKanji(lexeme_surface.surface).issubset(
-                        syllabus_bundle.chars):
-                    partial_lexeme.surface_set.add(lexeme_surface)
+        # Only add new surfaces if we had no matches
+        if partial_lexeme.surface_set.count() > 0:
+            continue
+
+        for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
+            if scripts.uniqueKanji(lexeme_surface.surface).issubset(
+                    syllabus_bundle.chars):
+                partial_lexeme.surface_set.add(lexeme_surface)
 
     _log.finish()
 
@@ -183,8 +186,8 @@ def _store_reduced_surfaces(syllabus, syllabus_bundle):
         valid_source = partial_lexeme.lexeme.surface_set
         base_surface = valid_source.get(surface=alignment.grapheme)
         surface = _maybe_reduce(alignment, syllabus_bundle.chars, valid_source)
-        surface = surface or base_surface
-        partial_lexeme.surface_set.add(surface)
+        if surface:
+            partial_lexeme.surface_set.add(surface)
 
         # Store the alignment itself.
         partial_lexeme.reading_segments.get_or_create(

@@ -14,6 +14,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from cjktools.stats import mean
+from cjktools import scripts
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
@@ -86,6 +87,19 @@ class Syllabus(models.Model):
 
         return self._cached_kanji_word_prop
 
+    @classmethod
+    def validate(cls):
+        for syllabus in cls.objects.all():
+            kanji_set = set(k.kanji for k in \
+                    lexicon_models.Kanji.objects.filter(
+                            partialkanji__syllabus=syllabus)
+                )
+            for partial_lexeme in syllabus.partiallexeme_set.all():
+                for lexeme_surface in partial_lexeme.surface_set.all():
+                    if not scripts.uniqueKanji(lexeme_surface.surface
+                            ).issubset(kanji_set):
+                        raise Exception('invalid surface')
+
 class LexemeReadingSegments(models.Model):
     """A segmentation of a lexeme reading."""
     syllabus = models.ForeignKey(Syllabus)
@@ -97,7 +111,7 @@ class LexemeReadingSegments(models.Model):
         return self.segments
 
     class Meta:
-        unique_together = (('lexeme_reading', 'segments'),)
+        unique_together = (('syllabus', 'lexeme_reading', 'segments'),)
         verbose_name_plural = 'lexeme reading segments'
 
 class PartialLexeme(models.Model):
