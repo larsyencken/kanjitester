@@ -17,25 +17,22 @@ import re
 
 from cjktools.common import sopen
 
-def to_alignment_format(syllabus_file, output_file):
-    i_stream = sopen(syllabus_file)
-    o_stream = sopen(output_file, 'w')
-    for line in i_stream:
-        line = re.sub(u'\t\[.*\]', u'', line, re.UNICODE)
-        line = line.strip().split('\t')
-        if len(line) == 1:
-            continue
+from kanji_test.user_model.bundle import SyllabusBundle  
 
-        reading, surface = line
-        print >> o_stream, surface, reading
+def to_alignment_format(syllabus_name, output_file):
+    syllabus = SyllabusBundle(syllabus_name)
+
+    o_stream = sopen(output_file, 'w')
+    for word in syllabus.words:
+        if word.reading and word.surface:
+            print >> o_stream, word.surface, word.reading
     o_stream.close()
-    i_stream.close()
 
 #----------------------------------------------------------------------------#
 
 def _create_option_parser():
     usage = \
-"""%prog [options] syllabus_file ouput_file
+"""%prog [options] syllabus_name ouput_file
 
 Converts the syllabus word file into alignment format."""
 
