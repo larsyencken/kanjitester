@@ -65,6 +65,10 @@ class Alignment(object):
 
         return cls(g_segs.split(_seg_sep), p_segs.split(_seg_sep))
 
+    def to_line(self):
+        return '%s %s:%s %s' % (self.grapheme, self.phoneme,
+                _seg_sep.join(self.g_segs), _seg_sep.join(self.p_segs))
+
 class AlignedFile(object):
     def __init__(self, filename):
         self._alignments = []

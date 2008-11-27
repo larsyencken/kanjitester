@@ -8,50 +8,51 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 #
 
-import os, sys, optparse
-from itertools import imap
-import string
+import sys, optparse
 
 import consoleLog
 from cjktools.common import sopen
+from cjktools import scripts
+
+from kanji_test.user_model.bundle import SyllabusBundle
+from kanji_test.util.alignment import AlignedFile
 
 _log = consoleLog.default
 
-def from_aligned_file(syllabus_words, aligned_file, aligned_output):
+def from_aligned_file(syllabus_name, aligned_file, output_file):
     _log.start('Extracting gp-aligned words', nSteps=3)
 
-    _log.start('Loading syllabus entries from %s' % \
-            os.path.basename(syllabus_words), nSteps=1)
-    include_set = set(imap(string.strip, sopen(syllabus_words)))
-    _log.log('%d entries' % len(include_set))
-    _log.finish()
+    _log.log('Loading syllabus')
+    bundle = SyllabusBundle(syllabus_name)
+    include_set = set((w.surface, w.reading) for w in bundle.words if \
+            scripts.containsScript(scripts.Script.Kanji, w.surface))
 
-    _log.log('Extracting words from %s' % os.path.basename(aligned_file))
-    i_stream = sopen(aligned_file)
-    o_stream = sopen(aligned_output, 'w')
-    for line in i_stream:
-        entry = line.split(':')[0]
-        if entry in include_set:
-            o_stream.write(line)
-            include_set.remove(entry)
+    _log.log('Loading alignments')
+    alignments = AlignedFile(aligned_file)
+    
+    _log.log('Saving alignments')
+    o_stream = sopen(output_file, 'w')
+    for alignment in alignments:
+        key = (alignment.grapheme, alignment.phoneme)
+        if key in include_set:
+            print >> o_stream, alignment.to_line()
+            include_set.remove(key)
     o_stream.close()
-    i_stream.close()
+
     if include_set:
         _log.start('%d entries not found' % len(include_set),
                 nSteps=len(include_set))
-        for entry in sorted(include_set):
-            _log.log(entry)
+        for surface, reading in sorted(include_set):
+            _log.log('%s /%s/' % (surface, reading))
         _log.finish()
     else:
-        _log.log('All entries found')
-    _log.finish()
-    return
+        _log.finish('All entries found')
 
 #----------------------------------------------------------------------------#
 
 def _create_option_parser():
     usage = \
-"""%prog [options] syllabus_words aligned_file aligned_output
+"""%prog [options] syllabus_name aligned_file output_file
 
 Extracts the alignments for the words in the syllabus from the aligned file."""
 
