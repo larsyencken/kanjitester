@@ -8,8 +8,10 @@
 # 
 
 import random
+import traceback
 
 from django.db import models
+from django.core.mail import send_mail
 from django.contrib.auth import models as auth_models
 from django.conf import settings
 from django import forms
@@ -31,11 +33,23 @@ class QuestionPlugin(models.Model):
         return self.name
     
     def update(self, response):
-        "Update our error model given this response."
+        """
+        Update our error model given this response. May fail silently
+        and attempt to notify admins of an error.
+        """
         if not self.uses_dist:
             return
         plugin_map = plugin_api.load_plugins()
-        plugin_map[self.uses_dist].update(response)
+        try:
+            plugin_map[self.uses_dist].update(response)
+        except:
+            error_message = "In updating %s:\n\n%s" % (
+                    self.uses_dist,
+                    traceback.format_exc(),
+                )
+            send_mail('Error at jlpt.gakusha.info', error_message,
+                    settings.DEFAULT_FROM_EMAIL, [settings.DEFAULT_FROM_EMAIL],
+                    fail_silently=True)
         return
 
 PIVOT_TYPES = (
