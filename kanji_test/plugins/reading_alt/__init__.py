@@ -54,7 +54,7 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
         _log.log('Storing readings')
         self._import_readings(prior_dist, kanji_set)
 
-        _log.start('Padding reading lists')
+        _log.start('Padding reading lists', nSteps=1)
         self._pad_readings(prior_dist)
         _log.finish()
 

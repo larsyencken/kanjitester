@@ -17,6 +17,7 @@ from cjktools import scripts
 from cjktools import alternations
 import consoleLog
 from django.contrib.auth import models as auth_models
+from django.core.exceptions import ObjectDoesNotExist
 from checksum.models import Checksum
 
 from kanji_test.lexicon import models as lexicon_models
@@ -24,7 +25,6 @@ from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_model import plugin_api
 from kanji_test.util.alignment import Alignment
 from kanji_test import settings
-from kanji_test.user_model import plugin_api
 
 #----------------------------------------------------------------------------#
 
@@ -71,9 +71,9 @@ def add_syllabus(syllabus_name, force=False):
     aligned_file = syllabus_path + '.aligned'
 
     syllabus = _init_syllabus(syllabus_name)
-    alignments = _load_alignments(aligned_file)
-    _load_kanji_list(char_file, alignments, syllabus)
-    _load_word_list(word_file, alignments, syllabus)
+    _load_kanji_list(char_file, syllabus)
+    _load_word_list(word_file, syllabus)
+    _load_aligned_readings(aligned_file, syllabus)
 
     _log.start('Adding error models')
     plugin_api.load_priors(syllabus, force=force)
@@ -93,6 +93,7 @@ def add_per_user_models(username):
 #----------------------------------------------------------------------------#
 
 def _init_syllabus(syllabus_name):
+    _log.start('Initialising syllabus %s' % syllabus_name, nSteps=2)
     tag = syllabus_name.replace('_', ' ')
     _log.log('Clearing any existing objects')    
     usermodel_models.Syllabus.objects.filter(tag=tag).delete()
@@ -100,7 +101,15 @@ def _init_syllabus(syllabus_name):
     _log.log('Creating new syllabus object')
     syllabus = usermodel_models.Syllabus(tag=tag)
     syllabus.save()
+    _log.finish()
     return syllabus
+
+def _load_aligned_readings(aligned_file, syllabus):
+    _log.start('Determining readings from alignments', nSteps=3)
+    alignments = _load_alignments(aligned_file)
+    _load_kanji_readings(alignments, syllabus)
+    _determine_word_surfaces(alignments, syllabus)
+    _log.finish()
     
 def _fetch_syllabi():
     syllabi = []
@@ -126,6 +135,7 @@ def _deps_from_syllabi(syllabi):
     return dependencies
 
 def _load_alignments(aligned_file):
+    _log.log('Loading alignments')
     i_stream = sopen(aligned_file)
     alignments = []
     for line in i_stream:
@@ -143,8 +153,8 @@ def _check_syllabus_name(syllabus_name):
             sys.exit(1)
     return syllabus_path
 
-def _find_matching_lexeme(reading, surface=None, skipped=None, 
-        disambiguation=None):
+def _find_matching_lexeme(reading, surface='', skipped=None, 
+        disambiguation=''):
     """Finds a uniquely matching lexeme for this specification."""    
     if skipped is None:
         skipped = []
@@ -158,6 +168,7 @@ def _find_matching_lexeme(reading, surface=None, skipped=None,
                 [s.lexeme for s in lexicon_models.LexemeSurface.objects.filter(
                         surface=surface)]
             )
+    
     if len(matches) == 0:
         skipped.append(u'%s\t%s\t%s\tno match' % (
                 reading,
@@ -178,23 +189,36 @@ def _find_matching_lexeme(reading, surface=None, skipped=None,
     
 #----------------------------------------------------------------------------#
 
-def _load_word_list(word_file, alignments, syllabus):
-    _parse_word_list(word_file, syllabus)
-    _determine_word_surfaces(alignments, syllabus)
-
-#----------------------------------------------------------------------------#
-
 def _determine_word_surfaces(alignments, syllabus):
     """
     Aligns the word surfaces with JMdict. We also use our known kanji set,
     replacing any unknown kanji with their readings. If this results in a
     surface known to JMdict, then we add that surface to the lexeme's list.
     """
-    _log.start('Building lexeme surfaces from kanji', nSteps=2)
-    _log.start('Adding reduced surfaces where needed', nSteps=1)
-    n_reduced = 0
+    _log.start('Building lexeme surfaces from kanji', nSteps=3)
+
+    _log.log('Loading kanji set')
     kanji_set = set(o.kanji for o in lexicon_models.Kanji.objects.filter(
             partialkanji__syllabus=syllabus))
+
+    _add_reduced_surfaces(alignments, kanji_set, syllabus)
+
+    _log.log('Adding existing surfaces')
+    for partial_lexeme in syllabus.partiallexeme_set.all():
+        if partial_lexeme.surface_set.count() == 0:
+            for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
+                if scripts.uniqueKanji(lexeme_surface.surface).issubset(
+                        kanji_set):
+                    partial_lexeme.surface_set.add(lexeme_surface)
+
+    _log.finish()
+
+#----------------------------------------------------------------------------#
+
+def _add_reduced_surfaces(alignments, kanji_set, syllabus):
+    _log.start('Adding reduced surfaces where needed', nSteps=1)
+    n_reduced = 0
+
     for alignment in alignments:
         if not scripts.containsScript(scripts.Script.Kanji,
                 alignment.grapheme):
@@ -219,23 +243,10 @@ def _determine_word_surfaces(alignments, syllabus):
                 segments=_format_alignment(alignment),
             )
 
-    _log.log('%d reduced surfaces' % n_reduced)
-    _log.finish()
+    _log.finish('%d reduced surfaces' % n_reduced)
+    return kanji_set
 
-    _log.start('Adding existing surfaces')
-    for partial_lexeme in syllabus.partiallexeme_set.all():
-        if partial_lexeme.surface_set.count() == 0:
-            for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
-                if scripts.uniqueKanji(lexeme_surface.surface).issubset(
-                        kanji_set):
-                    partial_lexeme.surface_set.add(lexeme_surface)
-    _log.finish()
-
-    _log.finish()
-
-#----------------------------------------------------------------------------#
-
-def _parse_word_list(word_file, syllabus):
+def _load_word_list(word_file, syllabus):
     _log.start('Parsing word list', nSteps=1)
     n_ok = 0
     skipped = []
@@ -254,13 +265,13 @@ def _parse_word_list(word_file, syllabus):
             partial_lexeme.sensenote_set.create(note=disambiguation)
         n_ok += 1
     _log.log('%d ok, %d skipped (see skipped.log)' % (n_ok, len(skipped)))
-    _log.finish()
 
     o_stream = sopen('skipped.log', 'w')
     print >> o_stream, "# vim: set ts=20 noet sts=20:"
     for skipped_word in skipped:
         print >> o_stream, skipped_word
     o_stream.close()
+    _log.finish()
 
 #----------------------------------------------------------------------------#
 
@@ -293,7 +304,7 @@ class _SyllabusParser(object):
         for line in self.i_stream:
             if line.startswith(u'#'):
                 continue
-            line = line.rstrip()
+            line = line.rstrip('\n')
             if u'〜' in line:
                 line = line.replace(u'〜', u'')
             if u'・' in line:
@@ -305,27 +316,7 @@ class _SyllabusParser(object):
     
     def _parse_line(self, line):
         """Splits the line into a reading and possibly extra information."""
-        parts = line.rstrip().split()
-        reading = parts.pop(0)
-        surface = None
-        disambiguation = None
-        
-        num_parts = len(parts)
-        if num_parts == 2:
-            disambiguation = parts.pop().strip('[]')
-            surface = parts.pop()
-        
-        elif num_parts == 1:
-            last_part = parts.pop()
-            if not last_part.startswith(u'['):
-                surface = last_part
-                return reading, surface, disambiguation
-            
-            disambiguation = last_part.strip('[]')
-        elif num_parts != 0:
-            raise Exception('format error: bad number of parts')
-        
-        # No surface string => kana entry
+        (reading, surface, disambiguation) = line.rstrip('\n').split('\t')
         return reading, surface, disambiguation
     
     def __del__(self):
@@ -333,8 +324,9 @@ class _SyllabusParser(object):
         
 #----------------------------------------------------------------------------#
 
-def _load_kanji_list(char_file, alignments, syllabus):
-    _log.log('Parsing kanji list')
+def _load_kanji_list(char_file, syllabus):
+    _log.start('Loading kanji list', nSteps=1)
+
     i_stream = sopen(char_file)
     kanji_set = scripts.uniqueKanji(i_stream.read())
     for kanji in kanji_set:
@@ -342,8 +334,54 @@ def _load_kanji_list(char_file, alignments, syllabus):
                 kanji=lexicon_models.Kanji.objects.get(kanji=kanji))
     i_stream.close()
 
+    _log.finish('%d kanji' % len(kanji_set))
+
+#----------------------------------------------------------------------------#
+
+def _load_kanji_readings(alignments, syllabus):
     _log.start('Loading kanji readings', nSteps=2)
+
     _log.log('Parsing alignments')
+    readings = _get_kanji_alignment_readings(alignments)
+
+    _match_readings(readings, syllabus)
+
+    _log.finish()
+
+def _match_readings(known_readings, syllabus):
+    _log.start('Matching with known readings', nSteps=1)
+    n_kanji = 0
+    n_fallback = 0
+    for partial_kanji in syllabus.partialkanji_set.all():
+        n_kanji += 1
+        kanji = partial_kanji.kanji.kanji
+        real_readings = partial_kanji.kanji.reading_set
+
+        # Try to save all the matched readings in bulk
+        partial_kanji.reading_set = real_readings.filter(
+                reading__in=known_readings.get(kanji, []))
+
+        if partial_kanji.reading_set.count() == 0:
+            # None-matched, fall back to the single most frequent reading
+            # we can find.
+            n_fallback += 1
+            best_readings = lexicon_models.KanjiReadingCondProb.objects.filter(
+                    condition=kanji).order_by('-pdf')
+            for best_reading in best_readings:
+                reading = best_reading.symbol
+                try:
+                    real_reading = real_readings.filter(reading=reading)[0]
+                    break
+                except IndexError:
+                    pass
+            else:
+                raise Exception("none of our readings match")
+            partial_kanji.reading_set.add(real_reading)
+
+    _log.finish('%d kanji, %d/%d matched/fallback' % (
+            n_kanji, n_kanji - n_fallback, n_fallback))
+
+def _get_kanji_alignment_readings(alignments):
     kanji_script = scripts.Script.Kanji
     readings = {}
     for alignment in alignments:
@@ -362,28 +400,7 @@ def _load_kanji_list(char_file, alignments, syllabus):
                     rightContext=has_right_context)
             reading_set.update(extra_variants)
 
-    _log.start('Matching with known readings', nSteps=1)
-    n_kanji = 0
-    n_fallback = 0
-    for partial_kanji in syllabus.partialkanji_set.all():
-        n_kanji += 1
-        partial_kanji.reading_set = partial_kanji.kanji.reading_set.filter(
-                reading__in=readings[partial_kanji.kanji.kanji])
-        # Fall back to the single most frequent reading
-        if partial_kanji.reading_set.count() == 0:
-            n_fallback += 1
-            best_reading = lexicon_models.KanjiReadingCondProb.objects.filter(
-                    condition=partial_kanji.kanji.kanji
-                ).order_by('-pdf')[0].symbol
-            partial_kanji.reading_set.add(partial_kanji.kanji.reading_set.get(
-                    reading=best_reading))
-    _log.log('%d kanji, %d/%d matched/fallback' % (
-            n_kanji, n_kanji - n_fallback, n_fallback))
-    _log.finish()
-
-    _log.finish()
-
-#----------------------------------------------------------------------------#
+    return readings
 
 def _format_alignment(alignment):
     result = []
