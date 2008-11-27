@@ -13,6 +13,9 @@ Resouces for parsing and utilising alignments.
 
 from itertools import izip
 
+from cjktools.common import sopen
+from cjktools.scripts import containsScript, Script
+
 class FormatError(Exception): pass
 
 _gp_sep = u':'
@@ -36,6 +39,9 @@ class Alignment(object):
         return u''.join(self.p_segs)
     phoneme = property(phoneme)
 
+    def has_kanji(self):
+        return containsScript(Script.Kanji, self.grapheme)
+
     def __len__(self):
         return len(self.g_segs)
 
@@ -58,6 +64,25 @@ class Alignment(object):
             raise FormatError(line)
 
         return cls(g_segs.split(_seg_sep), p_segs.split(_seg_sep))
-    
-# vim: ts=4 sw=4 sts=4 et tw=78:
 
+class AlignedFile(object):
+    def __init__(self, filename):
+        self._alignments = []
+
+        i_stream = sopen(filename)
+        for i, line in enumerate(i_stream):
+            if line.lstrip().startswith('#'):
+                continue
+            try:
+                self._alignments.append(Alignment.from_line(line))
+            except:
+                raise FormatError('on line %d of %s' % (i + 1, filename))
+        i_stream.close()
+
+    def __iter__(self):
+        return iter(self._alignments)
+
+    def __len__(self):
+        return len(self._alignments)
+
+# vim: ts=4 sw=4 sts=4 et tw=78:
