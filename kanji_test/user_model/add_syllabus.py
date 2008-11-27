@@ -67,10 +67,10 @@ def add_syllabus(syllabus_name, force=False):
     """Adds the given syllabus to the database."""
     _log.start('Adding syllabus %s' % syllabus_name)
 
-    syllabus = _init_syllabus(syllabus_name)
-
     _log.log('Loading bundle')
     syllabus_bundle = bundle.SyllabusBundle(syllabus_name)
+
+    syllabus = _init_syllabus(syllabus_name)
 
     _store_kanji(syllabus, syllabus_bundle)
     _store_words(syllabus, syllabus_bundle)
