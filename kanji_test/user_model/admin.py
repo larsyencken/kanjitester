@@ -12,8 +12,10 @@ from django.contrib import admin
 from kanji_test.user_model import models
 
 class PartialLexemeAdmin(admin.ModelAdmin):
-    list_display = ('lexeme',)
+    list_display = ('lexeme', 'syllabus')
     list_filter = ('syllabus',)
+    search_fields = ('lexeme__reading_set__reading',
+            'lexeme__surface_set__surface')
 
 class LexemeReadingSegmentsAdmin(admin.ModelAdmin):
     list_display = ('lexeme_reading', 'segments', 'syllabus')

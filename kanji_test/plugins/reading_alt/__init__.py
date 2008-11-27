@@ -152,7 +152,8 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 partial_lexeme.lexeme.reading_set.all())
         answer = partial_lexeme.reading_set.all().order_by('?')[0]
         answer_reading = answer.reading
-        answer_segments = answer.segments.get().segments
+        answer_segments = answer.segments.get(
+                syllabus=partial_lexeme.syllabus).segments
         assert answer_reading in exclude_set
         pivot = surface
         question = self.build_question(
