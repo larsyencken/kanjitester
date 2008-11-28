@@ -12,19 +12,16 @@
 Converts a syllabus file to alignment format, pruning any non-kanji entries.
 """
 
-import os, sys, optparse
-import re
+import sys, optparse
 
 from cjktools.common import sopen
 
-from kanji_test.user_model.bundle import SyllabusBundle  
+import align_core
 
 def to_alignment_format(syllabus_name, output_file):
-    syllabus = SyllabusBundle(syllabus_name)
-
     o_stream = sopen(output_file, 'w')
-    for word in syllabus.words:
-        if word.reading and word.surface:
+    for word in align_core.iter_words(syllabus_name):
+        if word.reading and word.has_kanji():
             print >> o_stream, word.surface, word.reading
     o_stream.close()
 
@@ -38,8 +35,8 @@ Converts the syllabus word file into alignment format."""
 
     parser = optparse.OptionParser(usage)
 
-    parser.add_option('--debug', action='store_true', dest='debug',
-            default=False, help='Enables debugging mode [False]')
+    parser.add_option('--db', action='store_true', dest='use_database',
+            default=False, help='Use surfaces from the database')
 
     return parser
 
@@ -48,13 +45,12 @@ def main(argv):
     (options, args) = parser.parse_args(argv)
 
     try:
-        (syllabus_file, output_file) = args
+        (syllabus_name, output_name) = args
     except ValueError:
         parser.print_help()
         sys.exit(1)
 
-    to_alignment_format(syllabus_file, output_file)
-    return
+    return to_alignment_format(syllabus_name, output_name)
 
 #----------------------------------------------------------------------------#
 

@@ -19,6 +19,7 @@ from cjktools import scripts
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
 from kanji_test.util.probability import ProbDist
+from kanji_test.util import alignment
 
 class Syllabus(models.Model):
     tag = models.CharField(max_length=100, unique=True,
@@ -100,18 +101,22 @@ class Syllabus(models.Model):
                             ).issubset(kanji_set):
                         raise Exception('invalid surface')
 
-class LexemeReadingSegments(models.Model):
+class Alignment(models.Model):
     """A segmentation of a lexeme reading."""
     syllabus = models.ForeignKey(Syllabus)
-    lexeme_reading = models.ForeignKey(lexicon_models.LexemeReading,
-            related_name='segments')
-    segments = models.CharField(max_length=100)
+    reading = models.ForeignKey(lexicon_models.LexemeReading)
+    surface = models.ForeignKey(lexicon_models.LexemeSurface)
+    alignment = models.CharField(max_length=100)
+
+    def alignment_obj(self):
+        return alignment.Alignment.from_short_form(self.alignment)
+    alignment_obj = property(alignment_obj)
 
     def __unicode__(self):
-        return self.segments
+        return self.alignment
 
     class Meta:
-        unique_together = (('syllabus', 'lexeme_reading', 'segments'),)
+        unique_together = (('syllabus', 'reading', 'surface', 'alignment'),)
         verbose_name_plural = 'lexeme reading segments'
 
 class PartialLexeme(models.Model):
@@ -120,9 +125,18 @@ class PartialLexeme(models.Model):
     lexeme = models.ForeignKey(lexicon_models.Lexeme,
             help_text="The word under consideration.")
     reading_set = models.ManyToManyField(lexicon_models.LexemeReading)
-    reading_segments = models.ManyToManyField(LexemeReadingSegments)
     sense_set = models.ManyToManyField(lexicon_models.LexemeSense)
     surface_set = models.ManyToManyField(lexicon_models.LexemeSurface)
+
+    def alignments(self):
+        return Alignment.objects.filter(
+                syllabus=self.syllabus,
+                reading__in=[o['id'] for o in self.reading_set.all().values(
+                        'id')],
+                surface__in=[o['id'] for o in self.surface_set.all().values(
+                        'id')],
+            )
+    alignments = property(alignments)
     
     def __unicode__(self):
         return '/'.join(s.surface for s in self.surface_set.all()) + ' ' + \

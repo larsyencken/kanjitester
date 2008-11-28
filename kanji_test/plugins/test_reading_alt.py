@@ -11,6 +11,7 @@
 import unittest
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from kanji_test.user_model import models
 from kanji_test.plugins import reading_alt
@@ -39,19 +40,19 @@ class ReadingAltQuestionTest(unittest.TestCase):
         models.ErrorDist.init_from_priors(self.user)
 
     def test_bug_329(self):
+        "Audits every partial lexeme to find missing alignments."
         self._init_syllabus('jlpt 3')
-        partial_lexeme = models.PartialLexeme.objects.get(
-                syllabus=self.syllabus,
-                lexeme__surface_set__surface=u'別に',
-                lexeme__reading_set__reading=u'べつに',
-            )
-        
-        # [329] failure in segment query here
-        question = self.factory.get_question(partial_lexeme, self.user)
+        n_missing = 0
+        for partial_lexeme in models.PartialLexeme.objects.filter(
+                syllabus=self.syllabus):
+            if not partial_lexeme.has_kanji():
+                continue
 
-        # If we get here, it worked.
-        question.options.all().delete()
-        question.delete()
+            if partial_lexeme.alignments.count() == 0:
+                n_missing += 1
+            
+            
+        self.assertEqual(n_missing, 0)
 
     def test_bug_325(self):
         self._init_syllabus('jlpt 4')

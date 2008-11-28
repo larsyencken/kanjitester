@@ -23,6 +23,7 @@ from kanji_test.user_model import models as usermodel_models
 from kanji_test.drill import plugin_api as drill_api
 from kanji_test.drill import support
 from kanji_test.util.probability import CondProbDist, ProbDist
+from kanji_test.util.alignment import Alignment
 from kanji_test.lexicon import models as lexicon_models
 
 _log = consoleLog.default
@@ -142,28 +143,27 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
 
     def get_word_question(self, partial_lexeme, user):
         try:
-            surface = partial_lexeme.random_kanji_surface
-        except ObjectDoesNotExist:
+            alignment = partial_lexeme.alignments.order_by('?')[0]
+        except IndexError:
             raise drill_api.UnsupportedItem(partial_lexeme)
 
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
         exclude_set = set(r.reading for r in 
                 partial_lexeme.lexeme.reading_set.all())
-        answer = partial_lexeme.reading_set.all().order_by('?')[0]
-        answer_reading = answer.reading
-        answer_segments = answer.segments.get(
-                syllabus=partial_lexeme.syllabus).segments
+
+        surface = alignment.surface.surface
+        answer_reading = alignment.reading.reading
+        pivot = alignment.surface.surface
         assert answer_reading in exclude_set
-        pivot = surface
         question = self.build_question(
                 pivot=pivot,
                 pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )
-        self._add_distractors(question, answer_reading, answer_segments,
-                error_dist, exclude_set)
+        self._add_distractors(question, answer_reading,
+                alignment, error_dist, exclude_set)
         return question
             
     def get_kanji_question(self, partial_kanji, user):
@@ -180,11 +180,12 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 pivot_type='k',
                 stimulus=partial_kanji.kanji.kanji,
             )
-        self._add_distractors(question, answer, answer,
+        alignment = '%s %s' % (pivot, answer)
+        self._add_distractors(question, answer, alignment,
                 error_dist, exclude_set)
         return question
     
-    def _add_distractors(self, question, answer, answer_segments, error_dist,
+    def _add_distractors(self, question, answer, alignment, error_dist,
             exclude_set):
         """
         Builds distractors for the question with appropriate annotations so
@@ -193,7 +194,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
         assert answer in exclude_set
         distractors, annotation_map = support.build_options(question.pivot,
                 self._build_sampler(error_dist), exclude_set)
-        annotation_map[answer] = answer_segments
+        annotation_map[answer] = alignment
         question.add_options(distractors, answer,
                 annotation_map=annotation_map)
         question.annotation = u'|'.join(question.pivot)

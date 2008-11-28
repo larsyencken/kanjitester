@@ -170,7 +170,7 @@ def _store_reduced_surfaces(syllabus, syllabus_bundle):
     which don't use the missing kanji are also available.
     """
     _log.start('Finding reduced surfaces', nSteps=1)
-    n_reduced = 0
+    n_aligned = 0
     for alignment in syllabus_bundle.alignments:
         if not alignment.has_kanji():
             continue
@@ -183,21 +183,21 @@ def _store_reduced_surfaces(syllabus, syllabus_bundle):
         except:
             continue
 
-        valid_source = partial_lexeme.lexeme.surface_set
-        base_surface = valid_source.get(surface=alignment.grapheme)
-        surface = _maybe_reduce(alignment, syllabus_bundle.chars, valid_source)
-        if surface:
+        reading = partial_lexeme.reading_set.get(reading=alignment.phoneme)
+        surface = partial_lexeme.lexeme.surface_set.get(
+            surface=alignment.grapheme)
+
+        if scripts.uniqueKanji(surface.surface).issubset(
+                    syllabus_bundle.chars):
             partial_lexeme.surface_set.add(surface)
+            syllabus.alignment_set.get_or_create(
+                    reading=reading,
+                    surface=surface,
+                    alignment=alignment.short_form(),
+                )
+            n_aligned += 1
 
-        # Store the alignment itself.
-        partial_lexeme.reading_segments.get_or_create(
-                syllabus=syllabus,
-                lexeme_reading=partial_lexeme.reading_set.get(
-                        reading=alignment.phoneme),
-                segments=_format_alignment(alignment),
-            )
-
-    _log.finish('%d reduced surfaces' % n_reduced)
+    _log.finish('%d reduced surfaces' % n_aligned)
     return
 
 def _store_words(syllabus, syllabus_bundle):
@@ -222,30 +222,6 @@ def _store_words(syllabus, syllabus_bundle):
         print >> o_stream, '%s\t%s' % (word.to_line(), reason)
     o_stream.close()
     _log.finish()
-
-def _maybe_reduce(alignment, kanji_set, valid_source):
-    """
-    Remove any kanji from a surface which aren't in the kanji set, replacing
-    replacing them with their kana reading.
-    """
-    base_surface = alignment.grapheme
-    result = []
-    kanji_script = scripts.Script.Kanji
-    for g_seg, p_seg in alignment:
-        if scripts.scriptType(g_seg) == kanji_script and \
-                g_seg in kanji_set:
-            result.append(g_seg)
-        else:
-            result.append(p_seg)
-
-    reduced_surface = u''.join(result)
-
-    if reduced_surface != base_surface:
-        try:
-            return valid_source.get(surface=reduced_surface)
-        except ObjectDoesNotExist:
-            pass
-    return
 
 #----------------------------------------------------------------------------#
 

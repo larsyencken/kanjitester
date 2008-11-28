@@ -112,12 +112,27 @@ class WordEntry(object):
         self.surface = surface
         self.notes = notes
 
+    def has_kanji(self):
+        return scripts.containsScript(scripts.Script.Kanji, self.surface)
+
     @classmethod
     def from_line(cls, line):
         return cls(*line.replace(u'〜', '').rstrip('\n').split('\t'))
 
     def to_line(self):
         return '%s\t%s\t%s' % (self.reading, self.surface, self.notes)
+
+    def __hash__(self):
+        return hash(self._tuple())
+
+    def _tuple(self):
+        return (self.reading, self.surface, self.notes)
+
+    def __cmp__(self, rhs):
+        return cmp(self._tuple(), rhs._tuple())
+
+    def __eq__(self, rhs):
+        return self._tuple() == rhs._tuple()
 
 class FormatError(Exception): pass
 

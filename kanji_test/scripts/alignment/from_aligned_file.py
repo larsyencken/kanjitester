@@ -14,18 +14,18 @@ import consoleLog
 from cjktools.common import sopen
 from cjktools import scripts
 
-from kanji_test.user_model.bundle import SyllabusBundle
 from kanji_test.util.alignment import AlignedFile
+
+import align_core
 
 _log = consoleLog.default
 
 def from_aligned_file(syllabus_name, aligned_file, output_file):
-    _log.start('Extracting gp-aligned words', nSteps=3)
+    _log.start('Extracting gp-aligned words', nSteps=4)
 
-    _log.log('Loading syllabus')
-    bundle = SyllabusBundle(syllabus_name)
-    include_set = set((w.surface, w.reading) for w in bundle.words if \
-            scripts.containsScript(scripts.Script.Kanji, w.surface))
+    _log.log('Building set of expected words')
+    include_set = set((w.surface, w.reading) for w in \
+            align_core.iter_words(syllabus_name))
 
     _log.log('Loading alignments')
     alignments = AlignedFile(aligned_file)
@@ -40,11 +40,12 @@ def from_aligned_file(syllabus_name, aligned_file, output_file):
     o_stream.close()
 
     if include_set:
-        _log.start('%d entries not found' % len(include_set),
-                nSteps=len(include_set))
+        _log.finish('%d entries not found (see missing.log)' % len(include_set))
+        o_stream = sopen('missing.log', 'w')
         for surface, reading in sorted(include_set):
-            _log.log('%s /%s/' % (surface, reading))
-        _log.finish()
+            print >> o_stream, '%s %s:%s %s' % (surface, reading, surface,
+                reading)
+        o_stream.close()
     else:
         _log.finish('All entries found')
 

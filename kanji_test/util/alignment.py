@@ -66,8 +66,23 @@ class Alignment(object):
         return cls(g_segs.split(_seg_sep), p_segs.split(_seg_sep))
 
     def to_line(self):
-        return '%s %s:%s %s' % (self.grapheme, self.phoneme,
-                _seg_sep.join(self.g_segs), _seg_sep.join(self.p_segs))
+        return _gp_sep.join([self.entry_form(), self.short_form()])
+
+    def entry_form(self):
+        return u'%s %s' % (self.grapheme, self.phoneme)
+
+    def short_form(self):
+        return u'%s %s' % (
+                _seg_sep.join(self.g_segs),
+                _seg_sep.join(self.p_segs),
+            )
+
+    @classmethod
+    def from_short_form(cls, short_alignment):
+        g_segs, p_segs = short_alignment.split()
+        g_segs = g_segs.split(_seg_sep)
+        p_segs = p_segs.split(_seg_sep)
+        return Alignment(g_segs, p_segs)
 
 class AlignedFile(object):
     def __init__(self, filename):

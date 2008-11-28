@@ -17,12 +17,11 @@ class PartialLexemeAdmin(admin.ModelAdmin):
     search_fields = ('lexeme__reading_set__reading',
             'lexeme__surface_set__surface')
 
-class LexemeReadingSegmentsAdmin(admin.ModelAdmin):
-    list_display = ('lexeme_reading', 'segments', 'syllabus')
+class AlignmentAdmin(admin.ModelAdmin):
+    list_display = ('syllabus', 'surface', 'reading', 'alignment')
     list_filter = ('syllabus',)
-    search_fields = ('lexeme_reading__reading',
-        'lexeme_reading__lexeme__surface_set__surface')
-admin.site.register(models.LexemeReadingSegments, LexemeReadingSegmentsAdmin)
+    search_fields = ('reading__reading', 'surface__surface')
+admin.site.register(models.Alignment, AlignmentAdmin)
 
 class SenseNoteAdmin(admin.ModelAdmin):
     list_display = ('partial_lexeme', 'note')

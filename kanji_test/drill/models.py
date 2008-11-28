@@ -263,6 +263,7 @@ class TestSet(models.Model):
         test_set.save()
 
         from kanji_test.drill import load_plugins
+        from kanji_test.drill.plugin_api import UnsupportedItem
         question_plugins = load_plugins(plugin_set)
         items = user.get_profile().syllabus.get_random_items(n_questions)
         questions = []
@@ -270,8 +271,16 @@ class TestSet(models.Model):
             has_kanji = item.has_kanji()
             available_plugins = [p for p in question_plugins if \
                     p.requires_kanji == has_kanji]
-            chosen_plugin = random.choice(available_plugins)
-            questions.append(chosen_plugin.get_question(item, user))
+            question = None
+            while question == None and available_plugins:
+                i = random.randrange(len(available_plugins))
+                chosen_plugin = available_plugins[i]
+                try:
+                    question = chosen_plugin.get_question(item, user)
+                    questions.append(question)
+                except UnsupporedItem:
+                    # Oh well, try again with another plugin
+                    del available_plugins[i]
 
         test_set.questions = questions
         return test_set
