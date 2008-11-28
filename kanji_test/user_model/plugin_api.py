@@ -27,6 +27,7 @@ class UserModelPlugin(object):
         "Updates this error model from a user's response."
         raise Exception('not implemented')
 
+# XXX Needs update to use new alignment format.
 class SegmentedSeqPlugin(UserModelPlugin):
     """
     A plugin which uses annotated segments in its options. Requires its
@@ -35,7 +36,6 @@ class SegmentedSeqPlugin(UserModelPlugin):
     """
     def update(self, response):
         "Update our error model from a user's response."
-        print 'Segmented seq update'
         error_dist = models.ErrorDist.objects.get(user=response.user,
                 tag=self.dist_name)
         question = response.question
