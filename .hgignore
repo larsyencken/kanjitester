@@ -22,3 +22,6 @@ kanji_test.egg-info
 *.tmproj
 *.log
 doc/*.{pdf,out,aux,toc}
+*.output
+*.input
+tags
