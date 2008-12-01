@@ -43,13 +43,20 @@ class QuestionPlugin(models.Model):
         try:
             plugin_map[self.uses_dist].update(response)
         except:
-            error_message = "In updating %s:\n\n%s" % (
-                    self.uses_dist,
-                    traceback.format_exc(),
-                )
-            send_mail('Error at jlpt.gakusha.info', error_message,
-                    settings.DEFAULT_FROM_EMAIL, [settings.DEFAULT_FROM_EMAIL],
-                    fail_silently=True)
+            if settings.DEPLOYED:
+                error_message = "In updating %s:\n\n%s" % (
+                        self.uses_dist,
+                        traceback.format_exc(),
+                    )
+                send_mail(
+                        'Error at jlpt.gakusha.info',
+                        error_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [settings.DEFAULT_FROM_EMAIL],
+                        fail_silently=not settings.DEBUG,
+                    )
+            else:
+                raise
         return
 
 PIVOT_TYPES = (
