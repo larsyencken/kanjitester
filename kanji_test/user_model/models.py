@@ -214,9 +214,6 @@ class PriorDist(models.Model):
     def __unicode__(self):
         return self.tag
 
-    def get_accuracy(self):
-        return mean(o['pdf'] for o in self.density.values('pdf'))
-
     def from_dist(self, dist):
         rows = []
         for condition in dist.keys():
@@ -296,19 +293,32 @@ class ErrorDist(models.Model):
                     )
 
     def sample(self, condition):
-        return self.density.filter(condition=condition).order_by('?')[0]
+        "Samples a single symbol using the underlying distribution."
+        target_cdf = random.random()
+        return self.density.filter(condition=condition,
+            cdf__gte=target_cdf).order_by('cdf')[0].symbol
 
     def sample_n(self, condition, n, exclude_set=None):
+        "Samples n symbols without replacement from the distribution."
         dist = ProbDist.from_query_set(self.density.filter(
                 condition=condition))
         return dist.sample_n(n, exclude_set=exclude_set)
 
-    def get_normalized_accuracy(self):
-        prior_accuracy = self.prior_dist.get_accuracy()
-        user_accuracy = self.get_accuracy()
-        norm_accuracy = (user_accuracy - prior_accuracy) / \
-                (1.0 - prior_accuracy)
-        return (norm_accuracy > 0.0 and norm_accuracy or 0.0)
+    def sample_uniform(self, condition, exclude_set=None):
+        "Samples a single symbol assuming a uniform distribution."
+        base_query = self.density.filter(condition=condition)
+        if exclude_set:
+            base_query.exclude(symbol__in=exclude_set)
+        return base_query.order_by('?')[0]
+
+    def sample_n_uniform(self, condition, n, exclude_set=None):
+        """
+        Samples n symbols without replacement assuming a uniform distribution.
+        """
+        return [o['symbol'] for o in self.density.filter(
+                condition=condition).exclude(
+                symbol__in=exclude_set
+            ).order_by('?').values('symbol')[:n]]
 
     @classmethod
     def from_dist(cls):

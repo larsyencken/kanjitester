@@ -147,6 +147,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
     uses_dist = 'reading | kanji'
     description = 'A reading alternation model is used to generate' \
         ' distractors.'
+    is_adaptive = True
 
     def get_word_question(self, partial_lexeme, user):
         try:

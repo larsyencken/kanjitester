@@ -28,6 +28,7 @@ class QuestionPlugin(models.Model):
     supports_kanji = models.BooleanField()
     supports_words = models.BooleanField()
     uses_dist = models.CharField(max_length=100, null=True, blank=True)
+    is_adaptive = models.BooleanField()
     
     def __unicode__(self):
         return self.name
@@ -37,7 +38,7 @@ class QuestionPlugin(models.Model):
         Update our error model given this response. May fail silently
         and attempt to notify admins of an error.
         """
-        if not self.uses_dist:
+        if not self.is_adaptive:
             return
         plugin_map = plugin_api.load_plugins()
         try:

@@ -35,6 +35,7 @@ class QuestionFactoryI(object):
                     supports_kanji=cls.supports_kanji,
                     supports_words=cls.supports_words,
                     uses_dist=cls.uses_dist,
+                    is_adaptive=cls.is_adaptive,
                 )[0]
         return cls._question_plugin
 

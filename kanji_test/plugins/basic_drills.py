@@ -28,67 +28,63 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = True
     supports_kanji = True
     supports_words = True
-    uses_dist = None
+    uses_dist = 'reading | kanji'
+    is_adaptive = False
 
-    def get_word_question(self, partial_lexeme, _user):
+    def get_word_question(self, partial_lexeme, user):
         try:
             surface = partial_lexeme.random_kanji_surface
         except ObjectDoesNotExist:
             raise plugin_api.UnsupportedItem(partial_lexeme)
 
-        real_readings = [r.reading for r in 
-                partial_lexeme.lexeme.reading_set.all()]
         answer = partial_lexeme.reading_set.all().order_by('?')[0].reading
-        distractor_values = list(itertools.islice(
-                    self._random_reading_iter(len(surface), real_readings), 
-                    settings.N_DISTRACTORS,
-                ))
-        while len(distractor_values) > len(set(distractor_values)):
-            distractor_values = list(itertools.islice(
-                        self._random_reading_iter(len(surface), real_readings), 
-                        settings.N_DISTRACTORS,
-                    ))
-
         question = self.build_question(
                 pivot=surface,
                 pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
+                annotation=u'|'.join(surface),
             )
-        question.add_options(distractor_values, answer)
+        segments = list(surface)
+        real_readings = set([r.reading for r in 
+                partial_lexeme.lexeme.reading_set.all()])
+        distractor_values, annotation_map = support.build_options(segments,
+            self._build_sampler(user), exclude_values=real_readings)
+        annotation_map[answer] = u'|'.join(answer)
+        question.add_options(distractor_values, answer, annotation_map)
         return question
-            
-    def get_kanji_question(self, partial_kanji, _user):
-        real_readings = [r.reading for r in \
-                partial_kanji.kanji.reading_set.all()]
-        distractor_values = list(itertools.islice(
-                self._random_reading_iter(1, real_readings),
-                settings.N_DISTRACTORS,
-            ))
+
+    def get_kanji_question(self, partial_kanji, user):
+        real_readings = set([r.reading for r in \
+                partial_kanji.kanji.reading_set.all()])
         answer = partial_kanji.reading_set.order_by('?')[0].reading
+        kanji = partial_kanji.kanji.kanji
         question = self.build_question(
-                pivot=partial_kanji.kanji.kanji,
+                pivot=kanji,
                 pivot_id=partial_kanji.id,
                 pivot_type='k',
-                stimulus=partial_kanji.kanji.kanji,
+                stimulus=kanji,
+                annotation=kanji,
             )
         question.save()
-        question.add_options(distractor_values, answer)
+        distractor_values, annotation_map = support.build_options([kanji],
+                self._build_sampler(user), exclude_values=real_readings,
+                exclude_samples=real_readings)
+        annotation_map[answer] = u'|'.join(answer)
+        question.add_options(distractor_values, answer, annotation_map)
         return question
     
-    def _random_reading_iter(self, length, real_reading_set):
-        """Returns a random iterator over kanji readings."""
-        previous_set = set(real_reading_set)
-        while True:
-            reading_parts = []
-            for i in xrange(length):
-                reading_parts.append(
-                        lexicon_models.KanjiReadingProb.sample().symbol
-                    )
-            reading = ''.join(reading_parts)
-            if reading not in previous_set:
-                yield reading
-                previous_set.add(reading)
+    def _build_sampler(self, user):
+        "Builds a method which can be used to sample random_readings."
+        error_dist = usermodel_models.ErrorDist.objects.get(user=user,
+                tag=self.uses_dist)
+
+        def sample_n(char, n, exclude_set):
+            if scripts.scriptType(char) == scripts.Script.Kanji:
+                return error_dist.sample_n_uniform(char, n, exclude_set)
+            return [char] * n
+
+        return sample_n
 
 #----------------------------------------------------------------------------#
 
@@ -99,6 +95,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     supports_words = True
     supports_kanji = True
     uses_dist = None
+    is_adaptive = False
 
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
@@ -169,6 +166,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = False
     question_type = 'pg'
     uses_dist = None
+    is_adaptive = False
 
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji

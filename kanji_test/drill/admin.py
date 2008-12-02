@@ -26,8 +26,8 @@ class MultipleChoiceAdmin(admin.ModelAdmin):
 admin.site.register(models.MultipleChoiceQuestion, MultipleChoiceAdmin)
 
 class QuestionPluginAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'supports_kanji', 'supports_words')
-    list_filter = ('supports_kanji', 'supports_words')
+    list_display = ('name', 'description', 'is_adaptive')
+    list_filter = ('is_adaptive',)
 
 admin.site.register(models.QuestionPlugin, QuestionPluginAdmin)
 
