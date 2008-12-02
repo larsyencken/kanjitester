@@ -115,7 +115,7 @@ INSTALLED_APPS = (
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
-TEST_DATABASE_COLLATION = 'utf8_bin'
+TEST_DATABASE_COLLATION = 'utf8_general_ci'
 
 CONTROL_DRILL_PLUGINS = (
     'kanji_test.plugins.basic_drills.ReadingQuestionFactory',
