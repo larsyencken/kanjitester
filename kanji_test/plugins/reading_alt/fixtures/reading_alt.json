@@ -1,0 +1,327 @@
+[
+{
+    "pk": 1,
+    "model": "user_model.syllabus",
+    "fields": {"tag": "dummy"}
+},
+{
+    "pk": 1,
+    "model": "auth.user",
+    "fields": {"username": "dummy", "first_name": "", "last_name": "",
+        "is_active": 1, "is_superuser": 1, "is_staff": 1, 
+        "last_login": "2008-11-17 16:31:03", "groups": [],
+        "user_permissions": [], "password": "", "email": "",
+        "date_joined": "2008-11-17 16:31:00"}
+},
+{
+    "pk": 1,
+    "model": "user_profile.userprofile",
+    "fields": {"syllabus": 1, "first_language": "English", "user": 1}
+},
+{
+    "pk": 1,
+    "model": "lexicon.lexeme",
+    "fields": {}
+},
+{
+    "pk": 1,
+    "model": "lexicon.lexemesurface",
+    "fields": {"surface": "\u65e5\u672c", "lexeme": 1, "has_kanji": 1}
+},
+{
+    "pk": 1,
+    "model": "lexicon.lexemereading",
+    "fields": {"lexeme": 1, "reading": "\u306b\u307b\u3093"}
+},
+{
+    "pk": 1,
+    "model": "user_model.partiallexeme",
+    "fields": {"lexeme": 1, "surface_set": [1], "sense_set": [],
+        "reading_set": [1], "syllabus": 1}
+},
+{
+    "pk": "\u65e5",
+    "model": "lexicon.kanji",
+    "fields": {"gloss": "Japan"}
+},
+{
+    "pk": 1,
+    "model": "lexicon.kanjireading",
+    "fields": {"kanji": "\u65e5", "reading": "\u307b\u3093"}
+},
+{
+    "pk": 1,
+    "model": "user_model.partialkanji",
+    "fields": {"kanji": "\u65e5", "syllabus": 1, "reading_set": [1]}
+},
+{
+    "pk": 1,
+    "model": "user_model.alignment",
+    "fields": {"syllabus": 1, "reading": 1, "surface": 1,
+            "alignment": "\u65e5|\u672c \u306b|\u307b\u3093"}
+},
+{
+    "pk": 1,
+    "model": "user_model.errordist",
+    "fields": {"tag": "reading | kanji", "user": 1}
+},
+{
+    "pk": 1,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3042",
+            "pdf": 0.000679465303629, "cdf": 0.0114178104571}
+},
+{
+    "pk": 2,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3042\u304d",
+            "pdf": 0.000667222685545, "cdf": 0.000667222685545}
+},
+{
+    "pk": 3,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3044\u308b",
+            "pdf": 0.000679465303629, "cdf": 0.0120972757608}
+},
+{
+    "pk": 4,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304b",
+            "pdf": 0.0489798950335, "cdf": 0.063485071627}
+},
+{
+    "pk": 5,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304b\u3042",
+            "pdf": 0.00128809717379, "cdf": 0.223494631678}
+},
+{
+    "pk": 6,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304c",
+            "pdf": 0.00361717164798, "cdf": 0.067102243275}
+},
+{
+    "pk": 7,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304c\u3042",
+            "pdf": 9.51261445886e-05, "cdf": 0.00603266646094}
+},
+{
+    "pk": 8,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304d\u3083",
+            "pdf": 0.00125589474445, "cdf": 0.00728856120539}
+},
+{
+    "pk": 9,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304d\u3085",
+            "pdf": 1.59066371553e-05, "cdf": 0.00593712191405}
+},
+{
+    "pk": 10,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304d\u3087",
+            "pdf": 4.18402307176e-07, "cdf": 0.00593754031635}
+},
+{
+    "pk": 11,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304e\u3083",
+            "pdf": 9.27479909739e-05, "cdf": 0.526538733492}
+},
+{
+    "pk": 12,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304f",
+            "pdf": 0.000620358849058, "cdf": 0.067722602124}
+},
+{
+    "pk": 13,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304f\u3046",
+            "pdf": 1.63144996465e-05, "cdf": 0.432537853025}
+},
+{
+    "pk": 14,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u304f\u3055",
+            "pdf": 0.000611518773266, "cdf": 0.999347292401}
+},
+{
+    "pk": 15,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3053",
+            "pdf": 1.63176899798e-05, "cdf": 0.067738919814}
+},
+{
+    "pk": 16,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3053\u3046",
+            "pdf": 0.000652707599194, "cdf": 1.0}
+},
+{
+    "pk": 17,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3057\u3085",
+            "pdf": 0.000159673075321, "cdf": 0.0107383451535}
+},
+{
+    "pk": 18,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3058\u3064",
+            "pdf": 0.149455952514, "cdf": 0.675994686007}
+},
+{
+    "pk": 19,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3058\u3085",
+            "pdf": 2.33989875357e-05, "cdf": 0.000690621673081}
+},
+{
+    "pk": 20,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3059",
+            "pdf": 0.00622724993752, "cdf": 0.0739661697515}
+},
+{
+    "pk": 21,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3059\u3046",
+            "pdf": 0.00016376725674, "cdf": 0.00557362859065}
+},
+{
+    "pk": 22,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u305a",
+            "pdf": 0.000912560513892, "cdf": 0.0748787302654}
+},
+{
+    "pk": 23,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u305a\u3046",
+            "pdf": 2.39989615751e-05, "cdf": 0.00732765939593}
+},
+{
+    "pk": 24,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u305f\u3061",
+            "pdf": 0.00325101268225, "cdf": 0.0105786720782}
+},
+{
+    "pk": 25,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u306b",
+            "pdf": 0.0939081324763, "cdf": 0.526445985501}
+},
+{
+    "pk": 26,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u306b\u3044",
+            "pdf": 0.00240790083273, "cdf": 0.0145051765935}
+},
+{
+    "pk": 27,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u306b\u3061",
+            "pdf": 0.208347441544, "cdf": 0.431842073222}
+},
+{
+    "pk": 28,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u306b\u3063",
+            "pdf": 0.144134317312, "cdf": 0.222206534504}
+},
+{
+    "pk": 29,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u306b\u3064",
+            "pdf": 0.000679465303629, "cdf": 0.432521538526}
+},
+{
+    "pk": 30,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3072",
+            "pdf": 0.184050346772, "cdf": 0.984591022934}
+},
+{
+    "pk": 31,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3072\u3044",
+            "pdf": 0.00471923966083, "cdf": 0.00540986133391}
+},
+{
+    "pk": 32,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3073",
+            "pdf": 0.124545990155, "cdf": 0.800540676162}
+},
+{
+    "pk": 33,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3073\u3044",
+            "pdf": 0.00319348692706, "cdf": 0.0780722171925}
+},
+{
+    "pk": 34,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3074",
+            "pdf": 0.0135558807633, "cdf": 0.998146903698}
+},
+{
+    "pk": 35,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3074\u3044",
+            "pdf": 0.000347586686238, "cdf": 0.00592121527689}
+},
+{
+    "pk": 36,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3078",
+            "pdf": 0.000588869929812, "cdf": 0.998735773628}
+},
+{
+    "pk": 37,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u65e5", "symbol": "\u3078\u3044",
+            "pdf": 1.50992289695e-05, "cdf": 0.00730366043436}
+},
+{
+    "pk": 38,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u672c", "symbol": "\u307b\u3093",
+            "pdf": 0.843535875078, "cdf": 0.844380469673}
+},
+{
+    "pk": 39,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u672c", "symbol": "\u307c\u3093",
+            "pdf": 0.0429222259334, "cdf": 0.915243146669}
+},
+{
+    "pk": 40,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u672c", "symbol": "\u307d\u3093",
+            "pdf": 0.0847568533314, "cdf": 1.0}
+},
+{
+    "pk": 41,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u672c", "symbol": "\u307e\u3068",
+            "pdf": 0.000844594594595, "cdf": 0.000844594594595}
+},
+{
+    "pk": 42,
+    "model": "user_model.errorpdf",
+    "fields": {"dist": 1, "condition": "\u672c", "symbol": "\u3082\u3068",
+            "pdf": 0.0279404510623, "cdf": 0.872320920735}
+},
+{
+    "pk": 1,
+    "model": "drill.questionplugin",
+    "fields": {"uses_dist": "reading | kanji", 
+        "name": "ReadingAlternationQuestions", 
+        "description": "An alternation model generates distractor readings."}
+}
+]
