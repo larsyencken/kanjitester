@@ -25,9 +25,8 @@ from kanji_test.user_model import plugin_api
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField()
-    supports_kanji = models.BooleanField()
-    supports_words = models.BooleanField()
     uses_dist = models.CharField(max_length=100, null=True, blank=True)
+    is_adaptive = models.BooleanField()
     
     def __unicode__(self):
         return self.name
@@ -37,7 +36,7 @@ class QuestionPlugin(models.Model):
         Update our error model given this response. May fail silently
         and attempt to notify admins of an error.
         """
-        if not self.uses_dist:
+        if not self.is_adaptive:
             return
         plugin_map = plugin_api.load_plugins()
         try:
@@ -199,6 +198,12 @@ class Response(models.Model):
 class MultipleChoiceResponse(Response):
     """A response to a multiple choice question."""
     option = models.ForeignKey(MultipleChoiceOption)
+
+    def __unicode__(self):
+        return '%s (%s)' % (
+                self.option.value,
+                self.option.is_correct and 'correct' or 'incorrect',
+            )
         
     def is_correct(self):
         return self.option.is_correct
@@ -285,7 +290,7 @@ class TestSet(models.Model):
                 try:
                     question = chosen_plugin.get_question(item, user)
                     questions.append(question)
-                except UnsupporedItem:
+                except UnsupportedItem:
                     # Oh well, try again with another plugin
                     del available_plugins[i]
 

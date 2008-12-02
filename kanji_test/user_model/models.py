@@ -18,7 +18,7 @@ from cjktools import scripts
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.util import models as util_models
-from kanji_test.util.probability import ProbDist
+from kanji_test.util.probability import ProbDist, SeqDist
 from kanji_test.util import alignment
 
 class Syllabus(models.Model):
@@ -214,9 +214,6 @@ class PriorDist(models.Model):
     def __unicode__(self):
         return self.tag
 
-    def get_accuracy(self):
-        return mean(o['pdf'] for o in self.density.values('pdf'))
-
     def from_dist(self, dist):
         rows = []
         for condition in dist.keys():
@@ -296,19 +293,71 @@ class ErrorDist(models.Model):
                     )
 
     def sample(self, condition):
-        return self.density.filter(condition=condition).order_by('?')[0]
+        "Samples a single symbol using the underlying distribution."
+        target_cdf = random.random()
+        return self.density.filter(condition=condition,
+            cdf__gte=target_cdf).order_by('cdf')[0].symbol
 
     def sample_n(self, condition, n, exclude_set=None):
+        "Samples n symbols without replacement from the distribution."
         dist = ProbDist.from_query_set(self.density.filter(
                 condition=condition))
         return dist.sample_n(n, exclude_set=exclude_set)
 
-    def get_normalized_accuracy(self):
-        prior_accuracy = self.prior_dist.get_accuracy()
-        user_accuracy = self.get_accuracy()
-        norm_accuracy = (user_accuracy - prior_accuracy) / \
-                (1.0 - prior_accuracy)
-        return (norm_accuracy > 0.0 and norm_accuracy or 0.0)
+    def sample_seq_n(self, condition_segments, n, exclude_set=None):
+        dists = []
+        kanji_script = scripts.Script.Kanji
+        for segment in condition_segments:
+            if scripts.scriptType(segment) == kanji_script:
+                seg_dist = ProbDist.from_query_set(self.density.filter(
+                    condition=segment))
+                dists.append(seg_dist)
+            else:
+                dists.append(segment)
+
+        return SeqDist(*dists).sample_n(n, exclude_set)
+
+    def sample_seq_n_uniform(self, condition_segments, n, exclude_set=None):
+        # XXX Note: potential for infinite recursion if not enough candidates
+        # are available. Much less likely to hit this case than non-uniform
+        # sampling.
+        exclude_set = set(exclude_set or [])
+        results = []
+        kanji_script = scripts.Script.Kanji
+        while len(results) < n:
+            result_seg_sets = []
+            for segment in condition_segments:
+                if scripts.scriptType(segment) == kanji_script:
+                    result_seg_sets.append(
+                            [o['symbol'] for o in self.density.filter(
+                                    condition=segment).order_by('?').values(
+                                    'symbol')[:n]]
+                        )
+                else:
+                    result_seg_sets.append([segment] * n)
+            for result_segs in zip(*result_seg_sets):
+                flat_result = ''.join(result_segs)
+                if flat_result not in exclude_set:
+                    results.append(result_segs)
+                    exclude_set.add(flat_result)
+
+        return results
+
+    def sample_uniform(self, condition, exclude_set=None):
+        "Samples a single symbol assuming a uniform distribution."
+        base_query = self.density.filter(condition=condition)
+        if exclude_set:
+            base_query.exclude(symbol__in=exclude_set)
+        return base_query.order_by('?')[0]
+
+    def sample_n_uniform(self, condition, n, exclude_set=None):
+        """
+        Samples n symbols without replacement assuming a uniform distribution.
+        """
+        return [o['symbol'] for o in self.density.filter(
+                condition=condition).exclude(
+                symbol__in=exclude_set
+            ).order_by('?').values('symbol')[:n]]
 
     @classmethod
     def from_dist(cls):

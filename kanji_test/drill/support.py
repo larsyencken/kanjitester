@@ -15,34 +15,47 @@ from cjktools.scripts import Script, scriptType, containsScript
 
 from kanji_test import settings
 
-def build_options(pivot, sample_n_method, exclude_set=None):
-    """
-    Builds a series of distractors for a question, based on its pivot and
-    a method which samples into the distractor space.
-    """
-    assert isinstance(pivot, unicode)
+def build_kanji_options(kanji, error_dist, exclude_set=None, adaptive=True):
     exclude_set = set(exclude_set or [])
-    exclude_set.add(pivot)
+    annotation_map = {}
+    distractors = []
+    while len(distractors) < settings.N_DISTRACTORS:
+        if adaptive:
+            potentials = error_dist.sample_n(kanji, settings.N_DISTRACTORS,
+                    exclude_set)
+        else:
+            potentials = error_dist.sample_n_uniform(kanji,
+                    settings.N_DISTRACTORS, exclude_set)
 
-    if not containsScript(Script.Kanji, pivot):
-        raise ValueError("Can't generate options without kanji")
+        for result in potentials:
+            exclude_set.add(result)
+            distractors.append(result)
+            annotation_map[result] = result # No segments
+            if len(distractors) == settings.N_DISTRACTORS:
+                break
 
+    return distractors, annotation_map
+
+def build_word_options(segments, error_dist, exclude_set=None, adaptive=True):
+    """
+    Builds a series of distractors for a question, based on a method which
+    samples from the segment space into the distractor space.
+    """
     distractors = []
     annotation_map = {}
     while len(distractors) < settings.N_DISTRACTORS:
-        potentials = []
-        for char in pivot:
-            potentials.append(sample_n_method(char, settings.N_DISTRACTORS,
-                    exclude_set))
-        potentials = zip(*potentials)
-
+        if adaptive:
+            potentials = error_dist.sample_seq_n(segments,
+                    settings.N_DISTRACTORS, exclude_set=exclude_set)
+        else:
+            potentials = error_dist.sample_seq_n_uniform(segments,
+                    settings.N_DISTRACTORS, exclude_set=exclude_set)
         for result in potentials:
-            seg_result = u'|'.join(result)
             base_result = u''.join(result)
             if base_result not in exclude_set:
                 exclude_set.add(base_result)
                 distractors.append(base_result)
-                annotation_map[base_result] = seg_result
+                annotation_map[base_result] = u'|'.join(result)
                 if len(distractors) == settings.N_DISTRACTORS:
                     break
 
