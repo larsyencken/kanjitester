@@ -104,7 +104,8 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
         kanji_row = partial_kanji.kanji
         kanji = kanji_row.kanji
         distractors, _annotations = support.build_options(kanji,
-                self._build_sampler(user))
+                self._build_sampler(user), exclude_values=set([kanji]),
+                exclude_samples=set([kanji]))
         question = self.build_question(
                 pivot=kanji,
                 pivot_id=partial_kanji.id,
@@ -123,8 +124,9 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
 
         # Assume the first sense is the most frequent
         gloss = lexeme.sense_set.get(is_first_sense=True).gloss
+
         distractors, _annotations = support.build_options(surface,
-                self._build_sampler(user))
+                self._build_sampler(user), exclude_values=set([surface]))
         question = self.build_question(
                 pivot=surface,
                 pivot_id=partial_lexeme.id,

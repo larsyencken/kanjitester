@@ -134,12 +134,19 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
 #----------------------------------------------------------------------------#
 
 class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
-    "An alternation model generates distractor readings."
+    """
+    A factory for reading questions using FOKS-style reading alternations. 
+    Questions are annotated with their grapheme segments, and potential
+    answers (Options) are annotated with their phoneme segments. 
+    """
+
     question_type = 'pr'
     requires_kanji = True
     supports_kanji = True
     supports_words = True
     uses_dist = 'reading | kanji'
+    description = 'A reading alternation model is used to generate' \
+        ' distractors.'
 
     def get_word_question(self, partial_lexeme, user):
         try:
@@ -149,13 +156,13 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
 
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
-        exclude_set = set(r.reading for r in 
+        exclude_values = set(r.reading for r in 
                 partial_lexeme.lexeme.reading_set.all())
 
         surface = alignment.surface.surface
         answer_reading = alignment.reading.reading
         pivot = alignment.surface.surface
-        assert answer_reading in exclude_set
+        assert answer_reading in exclude_values
         question = self.build_question(
                 pivot=pivot,
                 pivot_id=partial_lexeme.id,
@@ -163,7 +170,8 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 stimulus=surface,
             )
         self._add_distractors(question, answer_reading,
-                alignment, error_dist, exclude_set)
+                alignment.alignment_obj, error_dist,
+                exclude_values=exclude_values)
         return question
             
     def get_kanji_question(self, partial_kanji, user):
@@ -180,24 +188,30 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
                 pivot_type='k',
                 stimulus=partial_kanji.kanji.kanji,
             )
-        alignment = '%s %s' % (pivot, answer)
+        alignment = Alignment([pivot], [answer])
         self._add_distractors(question, answer, alignment,
-                error_dist, exclude_set)
+                error_dist, exclude_values=exclude_set,
+                exclude_samples=exclude_set)
         return question
     
     def _add_distractors(self, question, answer, alignment, error_dist,
-            exclude_set):
+            exclude_values=None, exclude_samples=None):
         """
         Builds distractors for the question with appropriate annotations so
         that we can easily update the error model afterwards.   
         """
-        assert answer in exclude_set
-        distractors, annotation_map = support.build_options(question.pivot,
-                self._build_sampler(error_dist), exclude_set)
-        annotation_map[answer] = alignment
+        assert answer in exclude_values
+        assert isinstance(alignment, Alignment)
+        distractors, annotation_map = support.build_options(
+                alignment.g_segs,
+                self._build_sampler(error_dist),
+                exclude_values=exclude_values,
+                exclude_samples=exclude_samples,
+            )
+        annotation_map[answer] = u'|'.join(alignment.p_segs)
         question.add_options(distractors, answer,
                 annotation_map=annotation_map)
-        question.annotation = u'|'.join(question.pivot)
+        question.annotation = u'|'.join(alignment.g_segs)
         question.save()
         return
 

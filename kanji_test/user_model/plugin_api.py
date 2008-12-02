@@ -7,6 +7,8 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
+from itertools import imap, izip
+
 import consoleLog
 from cjktools import scripts
 
@@ -27,68 +29,42 @@ class UserModelPlugin(object):
         "Updates this error model from a user's response."
         raise Exception('not implemented')
 
-# XXX Needs update to use new alignment format.
 class SegmentedSeqPlugin(UserModelPlugin):
     """
     A plugin which uses annotated segments in its options. Requires its
     class to define a "dist_name" attribute, and to define segment annotations
     for all questions and their options.
+
+    Questions should be annotated with segments from the domain of error
+    distribution conditions, and options annotated with segments from the 
+    domain of error distribution symbols, or outcomes.
     """
     def update(self, response):
         "Update our error model from a user's response."
         error_dist = models.ErrorDist.objects.get(user=response.user,
                 tag=self.dist_name)
         question = response.question
+        base_segs = question.annotation.split(u'|')
+        response_segs = response.option.annotation.split(u'|')
+        distractor_sets = izip(
+                [o['annotation'].split('|')
+                for o in question.multiplechoicequestion.options.values(
+                        'annotation')
+                if o['annotation'] != question.annotation]
+            )
+        assert len(base_segs) == len(response_segs) == len(distractor_sets)
 
-        if question.pivot_type == 'k':
-            self._update_kanji(response, error_dist)
-
-        elif question.pivot_type == 'w':
-            self._update_seq(response, error_dist)
-
-        else:
-            raise ValueError("unknown question type")
-
-    def _update_kanji(self, response, error_dist):
-        "Straight-forward update, no need for annotations."
-        question = response.question
-        sub_dist = models.ProbDist.from_query_set(
-                error_dist.density.filter(condition=question.pivot))
-        option_values = [o['value'] for o in \
-                question.multiplechoicequestion.options.all().values('value')]
-        response_value = response.option.value
-        distractors = [v for v in option_values if v != response_value]
-        m = max(map(sub_dist.__getitem__, distractors)) + \
-                settings.UPDATE_EPSILON
-        if m > sub_dist[response_value]:
-            sub_dist[response_value] = m
-            sub_dist.normalise()
-            sub_dist.save_to(error_dist.density, condition=question.pivot)
-        return
-
-    def _update_seq(self, response, error_dist):
-        "Update using segments and annotations."
-        question = response.question
-        option_segments = [o['annotation'].split('|') for o in \
-                question.multiplechoicequestion.options.values('annotation')]
-        response_segments = response.option.annotation.split('|')
-        distractors = [ss for ss in option_segments if ss != response_segments]
-        for i, char in enumerate(question.annotation.split('|')):
-            # Assumption: non-kanji segments are passed through.
-            if scripts.scriptType(char) != scripts.Script.Kanji:
-                continue
-
+        for base_seg, response_seg, distractor_segs in \
+                    izip(base_segs, response_segs, distractor_sets):
             sub_dist = models.ProbDist.from_query_set(
-                    error_dist.density.filter(condition=char))
-
-            m = max(map(sub_dist.__getitem__, [v[i] for v in distractors])) + \
-                    settings.UPDATE_EPSILON
-            if m > sub_dist[response_segments[i]]:
-                sub_dist[response_segments[i]] = m
+                    error_dist.density.filter(condition=base_seg))
+            e = settings.UPDATE_EPSILON
+            m = max(imap(sub_dist.__getitem__, distractor_segs)) + e
+            if m > sub_dist[response_seg]:
+                sub_dist[response_seg] = m
                 sub_dist.normalise()
-                sub_dist.save_to(error_dist.density, condition=char)
+                sub_dist.save_to(error_dist.density, condition=base_seg)
         return
-
 
 _cached_plugins = None
 

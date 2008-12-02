@@ -22,13 +22,16 @@ class QuestionFactoryI(object):
     @classmethod
     def get_question_plugin(cls):
         if not hasattr(cls, '_question_plugin'):
+            if hasattr(cls, 'description'):
+                description = cls.description
+            elif hasattr(cls, '__doc__'):
+                description = cls.__doc__.strip()
+            else:
+                description = ''
+
             cls._question_plugin = models.QuestionPlugin.objects.get_or_create(
                     name=cls.__name__,
-                    description=(
-                            hasattr(cls, '__doc__')
-                                and cls.__doc__.strip()
-                                or ''
-                        ),
+                    description=description,
                     supports_kanji=cls.supports_kanji,
                     supports_words=cls.supports_words,
                     uses_dist=cls.uses_dist,

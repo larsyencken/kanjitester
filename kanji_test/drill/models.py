@@ -192,6 +192,12 @@ class Response(models.Model):
 class MultipleChoiceResponse(Response):
     """A response to a multiple choice question."""
     option = models.ForeignKey(MultipleChoiceOption)
+
+    def __unicode__(self):
+        return '%s (%s)' % (
+                self.option.value,
+                self.option.is_correct and 'correct' or 'incorrect',
+            )
         
     def is_correct(self):
         return self.option.is_correct
@@ -278,7 +284,7 @@ class TestSet(models.Model):
                 try:
                     question = chosen_plugin.get_question(item, user)
                     questions.append(question)
-                except UnsupporedItem:
+                except UnsupportedItem:
                     # Oh well, try again with another plugin
                     del available_plugins[i]
 

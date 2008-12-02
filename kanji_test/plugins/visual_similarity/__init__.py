@@ -148,13 +148,25 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         """
         Builds distractors for the question with appropriate annotations so
         that we can easily update the error model afterwards.   
+
+        Note that the segments used here are simplistic, one per character,
+        since the richer GP segments need not be supported by this error
+        distribution.
         """
-        distractors, annotation_map = support.build_options(
-                question.pivot, self._sample_kanji)
+        segments = list(question.pivot)
+        exclude_values = set([question.pivot])
+        if len(question.pivot) == 1:
+            exclude_samples = set([question.pivot]) 
+        else:
+            exclude_samples = None
+
+        distractors, annotation_map = support.build_options(segments,
+                self._sample_kanji, exclude_values=exclude_values,
+                exclude_samples=exclude_samples)
         annotation_map[question.pivot] = '|'.join(question.pivot)
         question.add_options(distractors, question.pivot,
                 annotation_map=annotation_map)
-        question.annotation = u'|'.join(question.pivot)
+        question.annotation = u'|'.join(segments)
         question.save()
         return
 
