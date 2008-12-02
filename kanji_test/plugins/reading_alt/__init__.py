@@ -142,8 +142,6 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
 
     question_type = 'pr'
     requires_kanji = True
-    supports_kanji = True
-    supports_words = True
     uses_dist = 'reading | kanji'
     description = 'A reading alternation model is used to generate' \
         ' distractors.'

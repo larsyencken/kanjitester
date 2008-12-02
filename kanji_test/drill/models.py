@@ -25,8 +25,6 @@ from kanji_test.user_model import plugin_api
 class QuestionPlugin(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField()
-    supports_kanji = models.BooleanField()
-    supports_words = models.BooleanField()
     uses_dist = models.CharField(max_length=100, null=True, blank=True)
     is_adaptive = models.BooleanField()
     

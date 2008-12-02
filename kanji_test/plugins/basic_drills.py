@@ -26,8 +26,6 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     "Distractor readings are randomly sampled."
     question_type = 'pr'
     requires_kanji = True
-    supports_kanji = True
-    supports_words = True
     uses_dist = 'reading | kanji'
     is_adaptive = False
 
@@ -92,8 +90,6 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     "Distractors sampled randomly from a naive surface distribution."
     question_type = 'gp'
     requires_kanji = True
-    supports_words = True
-    supports_kanji = True
     uses_dist = None
     is_adaptive = False
 
@@ -161,8 +157,6 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
 
 class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     """Distractor glosses are sampled randomly."""
-    supports_kanji = True
-    supports_words = True
     requires_kanji = False
     question_type = 'pg'
     uses_dist = None

@@ -103,8 +103,6 @@ class VisualSimilarity(user_model_api.SegmentedSeqPlugin):
 class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
     "Distractors are sampled from the user error distribution."
     question_type = 'gp'
-    supports_words = True
-    supports_kanji = True
     requires_kanji = True
     uses_dist = "kanji' | kanji"
     is_adaptive = True
