@@ -119,12 +119,10 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
                 pivot_type='k',
                 stimulus=kanji_row.gloss,
             )
-        self._add_distractors(question)
+        self._add_distractors(question, user)
         return question
         
     def get_word_question(self, partial_lexeme, user):
-        self.error_dist = usermodel_models.ErrorDist.objects.get(user=user,
-                tag=self.uses_dist)
         lexeme = partial_lexeme.lexeme
         try:
             surface = partial_lexeme.random_kanji_surface
@@ -140,10 +138,10 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
                 pivot_type='w',
                 stimulus=gloss,
             )
-        self._add_distractors(question)
+        self._add_distractors(question, user)
         return question
 
-    def _add_distractors(self, question):
+    def _add_distractors(self, question, user):
         """
         Builds distractors for the question with appropriate annotations so
         that we can easily update the error model afterwards.   
@@ -152,45 +150,18 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
         since the richer GP segments need not be supported by this error
         distribution.
         """
-        segments = list(question.pivot)
-        exclude_values = set([question.pivot])
-        if len(question.pivot) == 1:
-            exclude_samples = set([question.pivot]) 
+        error_dist = user.errordist_set.get(tag=self.uses_dist)
+        pivot = question.pivot
+        segments = list(pivot) # Simple segments
+        if question.pivot_type == 'w':
+            distractors, annotation_map = support.build_word_options(
+                    segments, error_dist, exclude_set=set([pivot]))
         else:
-            exclude_samples = None
-
-        distractors, annotation_map = support.build_options(segments,
-                self._sample_kanji, exclude_values=exclude_values,
-                exclude_samples=exclude_samples)
-        annotation_map[question.pivot] = '|'.join(question.pivot)
+            distractors, annotation_map = support.build_kanji_options(
+                    question.pivot, error_dist, exclude_set=set([pivot]))
+        annotation_map[pivot] = u'|'.join(segments)
         question.add_options(distractors, question.pivot,
                 annotation_map=annotation_map)
         question.annotation = u'|'.join(segments)
         question.save()
         return
-
-    def _sample_kanji(self, char, n, exclude_set):
-        if scripts.scriptType(char) == scripts.Script.Kanji:
-            return self.error_dist.sample_n(char, n, exclude_set=exclude_set)
-
-        return [char] * n
-
-def segment_word(surface):
-    """
-    Finds the script boundaries of a word, but also creates a slot for each
-    kanji in the word.
-
-    >>> segment_word(unicode('感謝する', 'utf8'))
-    (u'\u611f', u'\u8b1d', u'\u3059\u308b')
-    """
-    base_segments = scripts.scriptBoundaries(surface)
-    kanji_script = scripts.Script.Kanji
-    result = []
-    for segment in base_segments:
-        if scripts.scriptType(segment) == kanji_script:
-            result.extend(segment)
-        else:
-            result.append(segment)
-
-    return tuple(result)
-

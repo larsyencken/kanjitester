@@ -11,6 +11,7 @@
 
 from cjktools.exceptions import NotYetImplementedError
 from cjktools import scripts
+from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.drill import models
 from kanji_test.user_model import models as usermodel_models

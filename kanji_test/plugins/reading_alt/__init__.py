@@ -58,7 +58,6 @@ class KanjiReadingModel(usermodel_api.SegmentedSeqPlugin):
         _log.start('Padding reading lists', nSteps=1)
         self._pad_readings(prior_dist)
         _log.finish()
-
     
         _log.finish()
 
@@ -139,7 +138,6 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
     Questions are annotated with their grapheme segments, and potential
     answers (Options) are annotated with their phoneme segments. 
     """
-
     question_type = 'pr'
     requires_kanji = True
     uses_dist = 'reading | kanji'
@@ -148,6 +146,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
     is_adaptive = True
 
     def get_word_question(self, partial_lexeme, user):
+        "See parent."
         try:
             alignment = partial_lexeme.alignments.order_by('?')[0]
         except IndexError:
@@ -155,75 +154,53 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
 
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
-        exclude_values = set(r.reading for r in 
+        exclude_set = set(r.reading for r in 
                 partial_lexeme.lexeme.reading_set.all())
 
         surface = alignment.surface.surface
         answer_reading = alignment.reading.reading
         pivot = alignment.surface.surface
-        assert answer_reading in exclude_values
+        assert answer_reading in exclude_set
         question = self.build_question(
                 pivot=pivot,
                 pivot_id=partial_lexeme.id,
                 pivot_type='w',
                 stimulus=surface,
             )
-        self._add_distractors(question, answer_reading,
-                alignment.alignment_obj, error_dist,
-                exclude_values=exclude_values)
+        alignment_obj = alignment.alignment_obj
+        distractors, annotation_map = support.build_word_options(
+                alignment_obj.g_segs, error_dist,
+                exclude_set=exclude_set)
+        annotation_map[answer_reading] = u'|'.join(alignment_obj.p_segs)
+        question.add_options(distractors, answer_reading,
+                annotation_map=annotation_map)
+        question.annotation = u'|'.join(alignment_obj.g_segs)
+        question.save()
         return question
             
     def get_kanji_question(self, partial_kanji, user):
+        "See parent."
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
         exclude_set = set(row['reading'] for row in \
                 partial_kanji.kanji.reading_set.values('reading'))
         answer = partial_kanji.reading_set.order_by('?').values(
                 'reading')[0]['reading']
-        pivot = partial_kanji.kanji.kanji
+        kanji = partial_kanji.kanji.kanji
         question = self.build_question(
-                pivot=pivot,
+                pivot=kanji,
                 pivot_id=partial_kanji.id,
                 pivot_type='k',
-                stimulus=partial_kanji.kanji.kanji,
+                stimulus=kanji,
             )
-        alignment = Alignment([pivot], [answer])
-        self._add_distractors(question, answer, alignment,
-                error_dist, exclude_values=exclude_set,
-                exclude_samples=exclude_set)
-        return question
-    
-    def _add_distractors(self, question, answer, alignment, error_dist,
-            exclude_values=None, exclude_samples=None):
-        """
-        Builds distractors for the question with appropriate annotations so
-        that we can easily update the error model afterwards.   
-        """
-        assert answer in exclude_values
-        assert isinstance(alignment, Alignment)
-        distractors, annotation_map = support.build_options(
-                alignment.g_segs,
-                self._build_sampler(error_dist),
-                exclude_values=exclude_values,
-                exclude_samples=exclude_samples,
-            )
-        annotation_map[answer] = u'|'.join(alignment.p_segs)
+        distractors, annotation_map = support.build_kanji_options(
+                kanji, error_dist, exclude_set=exclude_set,
+                adaptive=self.is_adaptive)
+        annotation_map[answer] = answer         # No segments
         question.add_options(distractors, answer,
                 annotation_map=annotation_map)
-        question.annotation = u'|'.join(alignment.g_segs)
+        question.annotation = kanji             # No segments
         question.save()
-        return
-
-    def _build_sampler(self, error_dist):
-        def sample(char, n, exclude_set):
-            if scripts.scriptType(char) == scripts.Script.Kanji:
-                return error_dist.sample_n(char, n, exclude_set=exclude_set)
-
-            if char in exclude_set:
-                raise ValueError('unfulfillable request')
-
-            return [char] * n
-
-        return sample
-
+        return question
+    
 # vim: ts=4 sw=4 sts=4 et tw=78:

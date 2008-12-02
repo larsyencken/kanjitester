@@ -7,7 +7,6 @@
 #  Copyright 2008 Lars Yencken. All rights reserved.
 # 
 
-import math
 import random
 
 from nltk import probability as nltk_prob
@@ -130,36 +129,27 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
 class UnsupportedMethodError(Exception):
     pass
 
-class FixedProbDist(nltk_prob.ProbDistI):
-    """A fixed probability distribution, not based on a FreqDist object."""
-    def __init__(self, samples=None):
-        samples = samples or []
-        cdf = 0.0
-        backing_dist = {}
-        for sample, pdf in samples:
-            backing_dist[sample] = pdf
-            cdf += pdf
-        
-        if abs(cdf - 1.0) > 1e-8:
-            self.normalise()
-
-        self._prob_dist = backing_dist        
-
-    def normalise(self):
-        total = sum(self._prob_dist.values())
-        for key in self._prob_dist:
-            self.prob_dist[key] /= total
-
-    def max(self):
-        raise UnsupportedMethodError
-    
-    def prob(self, key):
-        return self._prob_dist.get(key, 0.0)
-    
-    def logprob(self, key):
-        return math.log(self.prob(key))
+class AbstractMethod(Exception): pass
 
 # XXX Doesn't match NLTK interface.
+class ProbDistI(object):
+    def __init__(self):
+        raise AbstractMethod
+
+    def sample(self, exclude_set=None):
+        """
+        Randomly samples a single object such that the object is not present
+        in the excluded set.
+        """
+        raise AbstractMethod
+
+    def sample_n(self, n, exclude_set=None):
+        """
+        Randomly samples n objects without replacement, such that none are
+        included in the exclude_set.
+        """
+        raise AbstractMethod
+
 class ProbDist(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
@@ -260,9 +250,9 @@ class CondProbDist(dict):
             symbol = row['symbol']
             symbol_dist = dist.get(condition)
             if symbol_dist:
-                symbol_dist[row['symbol']] = row['pdf']
+                symbol_dist[symbol] = row['pdf']
             else:
-                dist[condition] = ProbDist({row['symbol']: row['pdf']})
+                dist[condition] = ProbDist({symbol: row['pdf']})
         return dist
 
     def normalise(self):
@@ -275,4 +265,45 @@ class CondProbDist(dict):
             sub_dist_kwargs = kwargs.copy()
             sub_dist_kwargs['condition'] = condition
             sub_dist.save_to(manager, **sub_dist_kwargs)
+
+class SeqDist(ProbDist):
+    """
+    A distribution constructed as a sequence of smaller distributions.
+    """
+    def __init__(self, *dists):
+        dict.__init__(self)
+        old_dist = {(): 1.0}
+        if not dists:
+            raise ValueError("cannot be constructed empty")
+
+        for new_dist in dists:
+            if isinstance(new_dist, ProbDist):
+                current = {} 
+                for old_seq, old_pdf in old_dist.iteritems():
+                    for new_symbol, new_pdf in new_dist.iteritems():
+                        current[old_seq + (new_symbol,)] = old_pdf * new_pdf
+                old_dist = current
+            else:
+                fixed_char = new_dist
+                old_dist = dict((k + (fixed_char,), v) for (k,v) in \
+                        old_dist.iteritems())
+
+        self._segments = {}
+        for segments, pdf in old_dist.iteritems():
+            flat = u''.join(segments)
+            # Overwrite alternative segmentations (simplification)
+            self._segments[flat] = segments
+            self[flat] = self.get(flat, 0.0) + pdf
+        self.normalise()
+
+    def sample(self):
+        "Samples a segmented sequence from this distribution."
+        return self._segments[ProbDist.sample(self)]
+
+    def sample_n(self, n, exclude_set=None):
+        "Samples n segmented sequences from this distribution."
+        return map(
+                self._segments.__getitem__,
+                ProbDist.sample_n(self, n, exclude_set),
+            )
 

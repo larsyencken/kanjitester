@@ -15,27 +15,45 @@ from cjktools.scripts import Script, scriptType, containsScript
 
 from kanji_test import settings
 
-def build_options(segments, sample_n_method, exclude_samples=None,
-        exclude_values=None):
+def build_kanji_options(kanji, error_dist, exclude_set=None, adaptive=True):
+    exclude_set = set(exclude_set or [])
+    annotation_map = {}
+    distractors = []
+    while len(distractors) < settings.N_DISTRACTORS:
+        if adaptive:
+            potentials = error_dist.sample_n(kanji, settings.N_DISTRACTORS,
+                    exclude_set)
+        else:
+            potentials = error_dist.sample_n_uniform(kanji,
+                    settings.N_DISTRACTORS, exclude_set)
+
+        for result in potentials:
+            exclude_set.add(result)
+            distractors.append(result)
+            annotation_map[result] = result # No segments
+            if len(distractors) == settings.N_DISTRACTORS:
+                break
+
+    return distractors, annotation_map
+
+def build_word_options(segments, error_dist, exclude_set=None, adaptive=True):
     """
     Builds a series of distractors for a question, based on a method which
     samples from the segment space into the distractor space.
     """
-    exclude_samples = set(exclude_samples or [])
-    exclude_values = set(exclude_values or [] )
     distractors = []
     annotation_map = {}
     while len(distractors) < settings.N_DISTRACTORS:
-        potentials = []
-        for segment in segments:
-            potentials.append(sample_n_method(segment, settings.N_DISTRACTORS,
-                    exclude_samples))
-        potentials = zip(*potentials)
-
+        if adaptive:
+            potentials = error_dist.sample_seq_n(segments,
+                    settings.N_DISTRACTORS, exclude_set=exclude_set)
+        else:
+            potentials = error_dist.sample_seq_n_uniform(segments,
+                    settings.N_DISTRACTORS, exclude_set=exclude_set)
         for result in potentials:
             base_result = u''.join(result)
-            if base_result not in exclude_values:
-                exclude_values.add(base_result)
+            if base_result not in exclude_set:
+                exclude_set.add(base_result)
                 distractors.append(base_result)
                 annotation_map[base_result] = u'|'.join(result)
                 if len(distractors) == settings.N_DISTRACTORS:
