@@ -19,7 +19,7 @@
 {% else %}
   <p>Please answer the following questions.</p>
   {% if user.is_staff %}
-  <p>[Generated in {{time_taken|floatformat:2}} seconds]</p>
+  <p>[{{test_set.get_set_type_display}} set generated in {{time_taken|floatformat:2}} seconds]</p>
   {% endif %}
 {% endif %}
 <form method="POST">
