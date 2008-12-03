@@ -46,16 +46,18 @@ class SegmentedSeqPlugin(UserModelPlugin):
         question = response.question
         base_segs = question.annotation.split(u'|')
         response_segs = response.option.annotation.split(u'|')
-        distractor_sets = izip(
-                [o['annotation'].split('|')
+        distractor_sets = map(set, zip(
+                *[o['annotation'].split('|')
                 for o in question.multiplechoicequestion.options.values(
                         'annotation')
-                if o['annotation'] != question.annotation]
-            )
+                if o['annotation'] != response.option.annotation]
+            ))
         assert len(base_segs) == len(response_segs) == len(distractor_sets)
 
         for base_seg, response_seg, distractor_segs in \
                     izip(base_segs, response_segs, distractor_sets):
+            if scripts.scriptType(base_seg) != scripts.Script.Kanji:
+                continue
             sub_dist = models.ProbDist.from_query_set(
                     error_dist.density.filter(condition=base_seg))
             e = settings.UPDATE_EPSILON

@@ -182,6 +182,12 @@ class MultipleChoiceOption(models.Model):
     class Meta:
         unique_together = (('question', 'value'),)
 
+    def __unicode__(self):
+        return u'%s (%s)' % (
+                self.value,
+                (self.is_correct and 'correct' or 'incorrect'),
+            )
+
 class Response(models.Model):
     """A generic response to the user."""
     question = models.ForeignKey(Question)
