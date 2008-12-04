@@ -65,6 +65,26 @@ class ReadingAltQuestionTest(unittest.TestCase):
         # If we get here, it worked.
         question.options.all().delete()
         question.delete()
+
+    def test_bug_339(self):
+        "Tests that multiple correct answers aren't available."
+        self._init_syllabus('jlpt 3')
+        partial_kanji = models.PartialKanji.objects.get(kanji__kanji=u'家',
+                syllabus=self.syllabus)
+        real_readings = set(o.reading for o in \
+                partial_kanji.kanji.reading_set.all())
+        for i in xrange(100):
+            question = self.factory.get_kanji_question(partial_kanji,
+                    self.user)
+            distractor_values = set(o.value for o in question.options.all() \
+                    if not o.is_correct)
+            correct_value = question.options.get(is_correct=True).value
+            assert correct_value in real_readings
+            self.assertEqual(
+                    real_readings.intersection(distractor_values), set()
+                )
+            question.options.all().delete()
+            question.delete()
     
     def tearDown(self):
         pass
