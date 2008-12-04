@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from kanji_test.user_model import models
 from kanji_test.plugins import reading_alt
+from kanji_test.lexicon.models import LexemeReading
 
 def suite():
     testSuite = unittest.TestSuite((
@@ -66,8 +67,8 @@ class ReadingAltQuestionTest(unittest.TestCase):
         question.options.all().delete()
         question.delete()
 
-    def test_bug_339(self):
-        "Tests that multiple correct answers aren't available."
+    def test_bug_339_kanji(self):
+        "Kanji questions have a unique correct answer."
         self._init_syllabus('jlpt 3')
         partial_kanji = models.PartialKanji.objects.get(kanji__kanji=u'家',
                 syllabus=self.syllabus)
@@ -86,6 +87,28 @@ class ReadingAltQuestionTest(unittest.TestCase):
             question.options.all().delete()
             question.delete()
     
+    def test_bug_339_words(self):
+        "Word questions have a unique correct answer."
+        self._init_syllabus('jlpt 3')
+        surface = u'家'
+        # Include readings from homographs.
+        real_readings = set(o.reading for o in LexemeReading.objects.filter(
+                lexeme__surface_set__surface=surface))
+        for partial_lexeme in models.PartialLexeme.objects.filter(
+                lexeme__surface_set__surface=surface, syllabus=self.syllabus):
+            for i in xrange(50):
+                question = self.factory.get_question(partial_lexeme,
+                        self.user)
+                distractor_values = set(o.value for o in \
+                        question.options.all() if not o.is_correct)
+                correct_value = question.options.get(is_correct=True).value
+                assert correct_value in real_readings
+                self.assertEqual(
+                        real_readings.intersection(distractor_values), set()
+                    )
+                question.options.all().delete()
+                question.delete()
+
     def tearDown(self):
         pass
 
