@@ -46,8 +46,11 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
                 pivot_id=partial_lexeme.id, stimulus=surface,
                 annotation=u'|'.join(surface))
         segments = list(surface)
-        real_readings = set([r.reading for r in 
-                partial_lexeme.lexeme.reading_set.all()])
+        # [339] Include homographs in real reading set
+        real_readings = set([
+                r.reading for r in lexicon_models.LexemeReading.objects.filter( 
+                        lexeme__surface_set__surface=surface)
+            ])
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
         distractor_values, annotation_map = support.build_word_options(

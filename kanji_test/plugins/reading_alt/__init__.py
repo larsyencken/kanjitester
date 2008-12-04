@@ -154,10 +154,14 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
 
         error_dist = usermodel_models.ErrorDist.objects.get(user=user,
                 tag=self.uses_dist)
-        exclude_set = set(r.reading for r in 
-                partial_lexeme.lexeme.reading_set.all())
-
         surface = alignment.surface.surface
+
+        # [339] Include homographs in real reading set
+        exclude_set = set([
+                r.reading for r in lexicon_models.LexemeReading.objects.filter( 
+                        lexeme__surface_set__surface=surface)
+            ])
+
         answer_reading = alignment.reading.reading
         pivot = alignment.surface.surface
         assert answer_reading in exclude_set
