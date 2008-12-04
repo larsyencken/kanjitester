@@ -9,6 +9,7 @@
 
 import re
 import datetime
+import random
 
 from django import forms
 from django.utils.safestring import mark_safe
@@ -26,13 +27,16 @@ class TestSetForm(forms.Form):
         self.ordered_questions = self.test_set.ordered_questions
         self.question_map = {}
 
+        random.seed(test_set.random_seed)
         for question in self.ordered_questions:
+            options = list(question.options.all())
+            random.shuffle(options)
             question_key = 'question_%d' % question.id
             self.question_map[question_key] = question
             self.fields[question_key] = forms.ChoiceField(
                     choices=tuple([
                             (unicode(opt.id), unicode(opt.value))\
-                            for opt in question.options.all()
+                            for opt in options
                         ]),
                     widget=forms.RadioSelect,
                     help_text=question.instructions,
