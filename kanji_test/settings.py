@@ -111,6 +111,7 @@ INSTALLED_APPS = (
     'kanji_test.plugins.reading_alt',
     'kanji_test.plugins.reading_alt.hierarchy',
     'kanji_test.user_profile',
+    'kanji_test.analysis',
     'checksum',
 )
 

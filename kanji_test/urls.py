@@ -15,7 +15,7 @@ import settings
 admin.autodiscover()
 
 base_patterns = ('',
-        url(r'^admin/(.*)', admin.site.root, name='admin'),
+        url(r'^admin/(.*)', admin.site.root, name='admin_home'),
         (r'^accounts/', include('kanji_test.registration.urls')),
     )
 
@@ -29,6 +29,7 @@ if not settings.DEPLOYED:
 base_patterns += (
         (r'', include('kanji_test.tutor.urls')),
         (r'^profile/', include('kanji_test.user_profile.urls')),
+        (r'^analysis/', include('kanji_test.analysis.urls')),
     )
 
 urlpatterns = patterns(*base_patterns)

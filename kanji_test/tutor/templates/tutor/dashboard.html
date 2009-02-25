@@ -51,5 +51,8 @@
   <form action="/admin/" method="GET">
   <input type="submit" value="Admin interface">
   </form>
+  <form action="{% url analysis_home %}" method="GET">
+  <input type="submit" value="Analysis dashboard">
+  </form>
   {% endif %}
 {% endblock %}

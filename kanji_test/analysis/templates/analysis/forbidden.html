@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Permission denied{% endblock %} 
+
+{% block content %}
+<h1>Staff only</h1>
+<p>Only staff have access to this portion of the site.</p>
+
+<form method="GET" action="{% url tutor_dashboard %}">
+  <input type="submit" value="Return to dashboard" />
+</form>
+{% endblock %}
