@@ -12,18 +12,26 @@
     {% endblock %}
   " />
 	<title>{{project_name}} | {% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{{media_url}}css/blueprint/screen.css"
+      type="text/css" media="screen, projection">
+  <link rel="stylesheet" href="{{media_url}}css/blueprint/print.css"
+      type="text/css" media="print">    
+  <!--[if IE]><link rel="stylesheet" href="css/blueprint/ie.css"
+  type="text/css" media="screen, projection"><![endif]-->
+
   <link rel="stylesheet" href="{{media_url}}css/tutor.css" type="text/css"
     charset="utf-8" />
 	{% block extra_head %}{% endblock %}
 </head>
 
 <body {% block body_attrs %}{% endblock %}>
-  <div id="container">
+  <div class="container">
     <div id="header">
-      <div id="branding">
+      <div id="branding" class="column span-10">
         <a href="/"><h1>{{project_name}}</h1></a>
       </div>
-      <div id="user-tools">
+      <div id="user-tools" class="column span-9 last">
+        &nbsp;<br/>
         {% block user_tools %}
           {% if user.is_anonymous %}
             <a href="{% url registration_register %}">Register</a> or
@@ -35,11 +43,22 @@
         {% endblock %}
       </div>
     </div>
-    <div id="content" {% block content_attrs %}class="flex"{% endblock %}>
+    <hr />
+    {% block super_content %}
+    <div id="content" {% block content_attrs %}class="column span-19 last"{% endblock %}>
       {% block content %}{% endblock %}
     </div>
+    {% endblock %}
+    <hr />
+    <div id="footer" class="column span-19 last">
+      <p class="small quiet">
+        <a class="quiet" href="{% url tutor_about %}">About</a>
+        |
+        <a class="quiet" href="mailto:lljy@csse.unimelb.edu.au">Email
+        feedback</a>
+      </p>
+    </div>
   </div>
-
 {% if analytics_code %}
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

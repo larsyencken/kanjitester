@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-  <h1>Revision</h1>
+  <h2>Revision</h2>
   {% if not partial_kanji  and not partial_lexemes %}
   <p>
     Well done! You got everything correct in your last test, so there's nothing
@@ -16,7 +16,7 @@
      words. Try to write down an example sentence using each item.</p>
   {% endif %}
   {% if partial_kanji %}
-    <h2>Kanji to study</h2>
+    <h3>Kanji to study</h3>
     <table>
       <thead>
         <tr>
@@ -40,7 +40,7 @@
   {% endif %}
   
   {% if partial_lexemes %}
-    <h2>Words to study</h2>
+    <h3>Words to study</h3>
     <table>
       <thead>
         <tr>

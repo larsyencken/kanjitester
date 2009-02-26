@@ -25,8 +25,8 @@ function plot(element, type, y_axis, x_axis) {
 {% endblock %}
 
 {% block content %}
-<h1>Graphs</h1>
-<h2>Available graphs</h2>
+<h2>Graphs</h2>
+<h3>Available graphs</h3>
 <p>Choose from the following graphs</p>
 <ul>
   <li>Language background
@@ -48,8 +48,11 @@ function plot(element, type, y_axis, x_axis) {
   </li>
 </ul>
 <div id="chartarea" style="display:none;">
-  <h2 id="charttitle">Selected graph</h2>
+  <h3 id="charttitle">Selected graph</h3>
   <div id="simplechart" style="width:600px;height:300px;">
+  </div>
+  <div id="legend">
+    &nbsp;
   </div>
 </div>
 {% endblock %}

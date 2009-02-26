@@ -4,20 +4,40 @@
 
 {% block content %}
 
-<h1>Log in</h1>
+<h2>Log in</h2>
 
 {% if form.errors %}
 <p class="error">Please correct the errors below:</p>
 {% endif %}
 
 <form method="post" action="?next={{ next|default:"/" }}">
-<dl>
-<dt><label for="id_username">Username:</label>{% if form.username.errors %} <span class="error">{{ form.username.errors|join:", " }}</span>{% endif %}</dt>
-<dd>{{ form.username }}</dd>
-<dt><label for="id_password">Password:</label>{% if form.password.errors %} <span class="error">{{ form.password.errors|join:", " }}</span>{% endif %}</dt>
-<dd>{{ form.password }}</dd>
-<dt><input type="submit" value="Log in" /></dt>
-</dl>
+<fieldset>
+<table>
+  <tr>
+    <td>
+      <label for="id_username">Username:</label>
+    </td>
+    <td>{{ form.username }}
+      {% if form.username.errors %}
+      <span class="error">{{ form.username.errors|join:", " }}</span>
+      {% endif %}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <label for="id_password">Password:</label>
+    </td>
+    <td>
+      {{ form.password }}
+      {% if form.password.errors %}
+      <span class="error">{{ form.password.errors|join:", " }}</span>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+</fieldset>
+
+<p><input type="submit" value="Log-in &rarr;" /></p>
 </form>
 
 <p>If you have forgotten your password, <a href="/accounts/password/reset/">click here</a> to reset your password.</p>

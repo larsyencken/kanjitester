@@ -4,13 +4,18 @@
   Dashboard
 {% endblock %}
 
-{% block content %}
-  <h1>Dashboard</h1>
+{% block super_content %}
+{% if user.is_staff %}
+<div id="content" class="column span-13 colborder">
+{% else %}
+<div id="content" class="column span-19 last">
+{% endif %}
+  <h2>Dashboard</h2>
   
   <p>Here is where you can monitor your progress and take new tests, or 
   <a href="{% url tutor_about %}">read about</a> the project.</p>
 
-  <h2>Progress on {{user.get_profile.syllabus.tag}}</h2>
+  <h3>Progress on {{user.get_profile.syllabus.tag}}</h3>
   {% if not stats.has_questions %}
     <p>No statistics yet. Take a test to get some results.</p>
   {% else %}
@@ -34,9 +39,10 @@
     </table>
   {% endif %}
 
-  <h2>Actions</h2>
+  <h3>Actions</h3>
   <form method="POST" action="{% url tutor_testuser %}">
-  <input type="submit" value="Take a test">
+  <p>
+  <input type="submit" value="Take a test &rarr;">
   (with 
   <select name="n_questions">
     <option value="10" selected="selected">10</option>
@@ -44,15 +50,19 @@
     <option value="30">30</option>
     <option value="50">50</option>
   </select> questions)
+  </p>
   </form>
 
+  </div>
+
   {% if user.is_staff %}
-  <h2>Admin panel</h2>
-  <form action="/admin/" method="GET">
-  <input type="submit" value="Admin interface">
-  </form>
-  <form action="{% url analysis_home %}" method="GET">
-  <input type="submit" value="Analysis dashboard">
-  </form>
+  <div class="column span-5 last">
+  <h3>Admin panel</h3>
+  <ul>
+    <li><a href="/admin/">Admin interface</a></li>
+    <li><a href="{% url analysis_home %}">Analysis dashboard</a></li>
+  </ul>
+  </div>
   {% endif %}
+
 {% endblock %}

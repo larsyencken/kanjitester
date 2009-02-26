@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>Testing {{syllabus.tag}}</h1>
+<h2>Testing {{syllabus.tag}}</h2>
 {% if form.has_answers %}
   <p class="score">Your score: {{form.n_correct}}/{{form.n_questions}}</p>
   <form method="POST" action="{% url tutor_study %}" class="navigation">

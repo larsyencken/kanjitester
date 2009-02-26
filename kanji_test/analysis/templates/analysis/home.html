@@ -3,14 +3,14 @@
 {% block title %}Analysis{% endblock %}
 
 {% block content %}
-<h1>Analysis dashboard</h1>
+<h2>Analysis dashboard</h2>
 
-<h2>Basic statistics</h2>
+<h3>Basic statistics</h3>
 
 <p>The following statistics are based on the number of active users, where an
 active user is one that has completed at least one test.</p>
 
-<table>
+<table class="results">
   <tr>
     <th>Active users:</th><td colspan="2">{{num_users}}</td>
   </tr>
@@ -44,6 +44,6 @@ active user is one that has completed at least one test.</p>
   </tr>
 </table>
 
-<h2>Graphs and advanced statistics</h2>
+<h3>Graphs and advanced statistics</h3>
 <p>Go to the <a href="{% url analysis_charts %}">charts page</a>.</p>
 {% endblock %}
