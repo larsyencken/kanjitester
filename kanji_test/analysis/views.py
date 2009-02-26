@@ -185,6 +185,8 @@ def _fetch_language_data(key):
         if 'second_languages' in profile:
             langs.update(l.strip().title() for l in \
                     profile['second_languages'].split(','))
+        if '' in langs:
+            langs.remove('') # Remove the case where no second language exists 
         data[profile['user_id']] = list(sorted(langs))
 
     return data
