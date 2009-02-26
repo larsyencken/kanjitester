@@ -1,0 +1,77 @@
+/* 
+ * tutor.css
+ *
+ * vim: set ts=2 sts=2 et:
+ */
+
+body { margin:1.5em 0; line-height:1.625em; }
+
+.container { width:750px; }
+
+#user-tools { text-align: right; vertical-align: bottom; }
+
+#footer { text-align: center; }
+
+table.results { border: 1px solid #666; border-collapse: collapse; }
+.results th { border: 1px solid #666; }
+.results td { border: 1px solid #666; }
+
+/* Pre-blueprint stuff */
+
+label {
+    color: black !important;
+}
+
+.instructions {
+/*  font-weight: bold; */
+  font-style: italic;
+  color: #666666;
+  margin: 5pt 0pt 10pt 0pt;
+}
+
+label.stimulus_roman {
+  font-size: 120%;
+}
+
+.stimulus-cjk {
+  margin: 5pt 0pt;
+}
+
+.stimulus-cjk label {
+  color: black;
+  font-size: 150%;
+}
+
+p.score {
+  font-size: 150%;
+}
+
+form.navigation {
+  display: inline;
+}
+
+.option-choices-roman {font-size:100%; vertical-align:middle;}
+.option-choices-cjk {font-size:140%; vertical-align:middle;}
+
+.success {color:blue;}
+.failure {color:red;}
+.feedback {color:red;}
+
+.mc-select {
+  color: black;
+  display: inline;
+  list-style: none inside;
+  margin: 0pt 5pt 5pt 0pt !important;
+  padding: 0pt !important;
+}
+
+td.test-set {
+  padding: 10px 0px;
+}
+
+tr.correct {
+}
+
+tr.incorrect {
+  background-color: #ffffaa !important;
+}

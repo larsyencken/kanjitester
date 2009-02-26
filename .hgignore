@@ -4,7 +4,6 @@ syntax: glob
 *.orig
 localSettings.py
 local_settings.py
-media
 .DS_Store
 *.db
 *.so
