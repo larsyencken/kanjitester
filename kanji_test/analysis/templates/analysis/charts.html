@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Graphs{% endblock %}
+
+{% block extra_head %}
+<script lang="javascript" type="text/javascript"
+  src="{{media_url}}js/jquery-1.3.2.min.js"></script>
+<script lang="javascript" type="text/javascript"
+  src="{{media_url}}js/jquery.flot.pack.js"></script>
+
+<script id="source" language="javascript" type="text/javascript">
+function plot(element, type, y_axis, x_axis) {
+    $("#chartarea")[0].style.display = "none";
+  $.getJSON(
+    "{% url analysis_data %}",
+    { type: type, y_axis: y_axis, x_axis: x_axis },
+    function(result) {
+      $("#chartarea")[0].style.display = "block";
+      $.plot($("#simplechart"), result["gdata"], result["goptions"]);
+      $("#charttitle")[0].textContent = $.trim(element.textContent);
+    }
+  );
+};
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Graphs</h1>
+<h2>Available graphs</h2>
+<p>Choose from the following graphs</p>
+<ul>
+  <li>Language background
+    <ul>
+    <li>
+      <a href="#" onclick="plot(this, 'bar', 'first_lang')">
+        First language
+      </a>
+    </li>
+    <li>
+      <a href="#" onclick="plot(this, 'bar', 'second_lang')">
+        Second language
+      </a>
+    </li>
+    <li>
+      <a href="#" onclick="plot(this, 'bar', 'lang_combined')">Combined</a>
+    </li>
+  </ul>
+  </li>
+</ul>
+<div id="chartarea" style="display:none;">
+  <h2 id="charttitle">Selected graph</h2>
+  <div id="simplechart" style="width:600px;height:300px;">
+  </div>
+</div>
+{% endblock %}

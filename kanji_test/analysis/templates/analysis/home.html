@@ -14,22 +14,25 @@ active user is one that has completed at least one test.</p>
   <tr>
     <th>Active users:</th><td colspan="2">{{num_users}}</td>
   </tr>
+
   <tr>
-    <th rowspan="3">Tests:</th><td><u>Total</u></td><td>{{num_tests}}</td>
+    <th rowspan="2">Tests:</th><td><u>Total</u></td><td>{{num_tests}}</td>
   </tr>
   <tr>
     <td>Per user</td><td>{{tests_per_user|floatformat:2}}</td>
   </tr>
+
   <tr>
-    <td>Test sizes</td>
-    <td>
-      <table>
-        {% for sample, freq in test_dist %}
-        <tr><th>{{sample}}</th><td>{{freq|floatformat:3}}</td></tr>
-        {% endfor %}
-      </table>
-    </td>
+    <th rowspan="{{test_dist|length|add:"1"}}">Test sizes</th>
+    <th># items</th>
+    <th>Proportion of tests</th><th>Completion rate</th>
   </tr>
+  {% for sample, freq in test_dist %}
+  <tr>
+    <td>{{sample}}</td><td>{{freq|floatformat:2}}%</td><td>&nbsp;</td>
+  </tr>
+  {% endfor %}
+
   <tr>
     <th rowspan="3">Responses:</th><td><u>Total</u></td><td>{{num_responses}}</td>
   </tr>
@@ -40,4 +43,7 @@ active user is one that has completed at least one test.</p>
     <td>Per test</td><td>{{responses_per_test|floatformat:2}}</td>
   </tr>
 </table>
+
+<h2>Graphs and advanced statistics</h2>
+<p>Go to the <a href="{% url analysis_charts %}">charts page</a>.</p>
 {% endblock %}
