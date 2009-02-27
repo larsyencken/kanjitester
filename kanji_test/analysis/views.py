@@ -30,7 +30,7 @@ from kanji_test import settings
 #----------------------------------------------------------------------------#
 
 @staff_only
-def home(request):
+def basic(request):
     context = {}
     
     # Number of users
@@ -53,7 +53,7 @@ def home(request):
             for k in sorted(test_dist.samples())]
     context['test_dist'] = dist_values
 
-    return render_to_response("analysis/home.html", context,
+    return render_to_response("analysis/basic.html", context,
             RequestContext(request))
 
 @staff_only
