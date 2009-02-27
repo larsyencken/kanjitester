@@ -14,11 +14,16 @@ from django.db import connection
 from django.core import serializers
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
+from django.utils.http import urlencode
+from cjktools.stats import mean
+from cjktools.sequences import unzip
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill.models import MultipleChoiceResponse, TestSet
 from kanji_test.util.probability import FreqDist
-from kanji_test.user_profile.models import UserProfile
+from kanji_test.util import charts
+from kanji_test.user_profile.models import UserProfile, Syllabus
+from kanji_test import settings
 
 #----------------------------------------------------------------------------#
 # VIEWS
@@ -53,40 +58,20 @@ def home(request):
 
 @staff_only
 def data(request):
-    if request.method != "GET" or 'type' not in request.GET:
+    if request.method != "GET" or 'name' not in request.GET:
         raise Http404
 
-    g = request.GET
-    graph_type = g['type']
+    chart = _build_graph(request.GET['name'])
 
-    data = []
-    options = {}
+    if settings.DEBUG:
+        mimetype = 'text/html'
+    else:
+        mimetype = 'application/json'
 
-    if graph_type == 'bar':
-        options['bars'] = {'show': True, 'fill': True, 'barWidth': 0.8}
-        options['xaxis'] = 2
-        y_axis = _fetch_data(g['y_axis'])
-        per_user_data = _organise_per_user(y_axis, max_shown=6)
-        for i, (label, value) in enumerate(per_user_data):
-            data.append({
-                'label': label,
-                'data': [[i, value]],
-            })
-
-    elif graph_type == 'scatter':
-        graph_data = {}
-        graph_data['points'] = {'show': True}
-        y_axis = _fetch_data(g['y_axis'])
-        x_axis = _fetch_data(g['x_axis'])
-        graphs.append(graph_data)
-
-    return HttpResponse(
-            simplejson.dumps({'gdata': data, 'goptions': options}),
-            mimetype='application/json',
-        )
+    return HttpResponse(simplejson.dumps(chart.get_url()), mimetype=mimetype)
 
 @staff_only
-def charts(request):
+def chart_dashboard(request):
     return render_to_response("analysis/charts.html", {},
             RequestContext(request))
 
@@ -126,69 +111,181 @@ def get_test_stats():
         dist.inc(n_items, count)
     return dist
 
-def _fetch_data(key):
-    if key in ['first_lang', 'second_lang', 'lang_combined']:
-        data = _fetch_language_data(key)
+def _build_graph(name):
+    parts = name.split('_')
+    first_part = parts.pop(0)
+
+    if first_part == 'lang':
+        return _build_language_graph(*parts)
+    
+    elif first_part == 'test':
+        return _build_test_graph(*parts)
+
+    elif first_part == 'response':
+        return _build_response_graph(*parts)
+
+    elif first_part == 'syllabus':
+        return _build_syllabus_graph(*parts)
+
     else:
-        data = {}
+        raise KeyError(name)
+
+def _build_language_graph(name):
+    dist = _fetch_language_data(name)
+    return charts.PieChart(dist.items(), max_options=8)
+
+def _build_syllabus_graph(name):
+    if name == 'volume':
+        return charts.PieChart(_fetch_syllabus_volume())
+
+    raise KeyError('syllabus_' + name)
+
+def _fetch_language_data(name):
+    "Fetches information about user first and second languages."
+
+    fields_needed = ['user_id']
+    if name in ['first', 'combined']:
+        fields_needed.append('first_language')
+    elif name in ['second', 'combined']:
+        fields_needed.append('second_languages')
+    else:
+        assert name == 'combined'
+
+    profiles = UserProfile.objects.values(*fields_needed)
+    
+    dist = FreqDist()
+    for profile in profiles:
+        if 'first_language' in profile:
+            lang = profile['first_language'].title()
+            dist.inc(lang)
+        if 'second_languages' in profile:
+            for lang in profile['second_languages'].split(','):
+                lang = lang.strip().title()
+                if lang == 'Japanese':
+                    continue
+                elif lang == '' and name != 'lang_combined':
+                    lang = 'None'
+                dist.inc(lang)
+
+    return dist
+
+def _build_test_graph(name):
+    if name == 'mean':
+        score_data = _get_mean_score()
+        return charts.LineChart(score_data)
+
+    elif name == 'volume':
+        user_data = _get_users_by_n_tests()
+        return charts.LineChart(user_data)
+
+    elif name == 'length':
+        return charts.PieChart(_get_test_length_volume())
+
+    else:
+        raise KeyError('test_' + name)
+
+def _get_mean_score():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT r.user_id, AVG(o.is_correct)
+        FROM drill_response AS r
+        INNER JOIN drill_multiplechoiceresponse AS mcr
+        ON r.id = mcr.response_ptr_id
+        INNER JOIN drill_multiplechoiceoption AS o
+        ON o.id = mcr.option_id
+        GROUP BY r.user_id, r.timestamp
+        ORDER BY r.user_id, r.timestamp
+    """)
+    map = {}
+    last_user_id = None
+    i = None
+    for user_id, score in cursor.fetchall():
+        if user_id != last_user_id:
+            i = 1
+            last_user_id = user_id
+
+        score = float(score)
+
+        if i in map:
+            map[i].append(score)
+        else:
+            map[i] = [score]
+
+        i += 1
+
+    results = []
+    for i, scores in sorted(map.iteritems()):
+        results.append((i, mean(scores)))
+
+    return results
+
+def _get_users_by_n_tests():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT n_tests, COUNT(*) AS n_users
+        FROM (
+            SELECT user_id, COUNT(*) AS n_tests
+            FROM drill_testset
+            GROUP BY user_id
+        ) AS tests_per_user
+        GROUP BY n_tests
+        ORDER BY n_tests ASC
+    """)
+    data = list(cursor.fetchall())
+
+    # Make cumulative
+    for i in xrange(len(data) - 1, 0, -1):
+        label, value = data[i-1]
+        data[i-1] = (label, value + data[i][1])
 
     return data
 
-def _organise_per_user(axis_data, max_shown=None):
-    """
-    Takes the data for a single_axis and plots it against the number of
-    users.
-    """
-    key_to_n_users = FreqDist()
-    for user_id, key in _iter_keys(axis_data):
-        key_to_n_users.inc(key)
-
-    result = key_to_n_users.items()
-    result.sort(key=lambda x: x[1], reverse=True)
-
-    if max_shown is not None:
-        assert max_shown >= 2
-        if len(result) > max_shown:
-            n_other = 0
-            while len(result) > max_shown - 1:
-                n_other += result.pop()[1]
-
-            result.append(['Other', n_other])
-
-    return result
-
-def _iter_keys(axis_data):
-    for user_id, maybe_key in axis_data.iteritems():
-        if type(maybe_key) == list:
-            for key in maybe_key:
-                yield user_id, key
-        else:
-            yield user_id, maybe_key
-    
-def _fetch_language_data(key):
-    "Fetches information about user first and second languages."
-
-    if key == 'first_lang':
-        profiles = list(UserProfile.objects.values('user_id', 'first_language'))
-    elif key == 'second_lang':
-        profiles = UserProfile.objects.values('user_id', 'second_languages')
+def _build_response_graph(name):
+    if name == 'volume':
+        user_data = _get_users_by_n_responses()
+        chart = charts.LineChart(user_data)
+        return chart
     else:
-        assert key == 'lang_combined'
-        profiles = UserProfile.objects.values('user_id', 'first_language',
-            'second_languages')
-    
-    data = {}
-    for profile in profiles:
-        langs = set()
-        if 'first_language' in profile:
-            langs.add(profile['first_language'].title())
-        if 'second_languages' in profile:
-            langs.update(l.strip().title() for l in \
-                    profile['second_languages'].split(','))
-        if '' in langs:
-            langs.remove('') # Remove the case where no second language exists 
-        data[profile['user_id']] = list(sorted(langs))
+        raise KeyError('response_' + name)
 
+def _get_users_by_n_responses():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT n_responses, COUNT(*) AS n_users
+        FROM (
+            SELECT user_id, COUNT(*) AS n_responses
+            FROM drill_response
+            GROUP BY user_id
+        ) AS responses_per_user
+        GROUP BY n_responses
+        ORDER BY n_responses ASC
+    """)
+    data = list(cursor.fetchall())
+
+    # Make cumulative
+    for i in xrange(len(data) - 1, 0, -1):
+        label, value = data[i-1]
+        data[i-1] = (label, value + data[i][1])
+
+    return data
+
+def _get_test_length_volume():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT n_questions, COUNT(*) AS n_tests
+        FROM (
+            SELECT testset_id, COUNT(*) AS n_questions
+            FROM drill_testset_questions
+            GROUP BY testset_id
+        ) AS questions_per_test
+        GROUP BY n_questions
+    """)
+    return cursor.fetchall()
+
+def _fetch_syllabus_volume():
+    data = []
+    for syllabus in Syllabus.objects.all():
+        data.append((syllabus.tag, syllabus.userprofile_set.count()))
     return data
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

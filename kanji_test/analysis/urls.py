@@ -11,7 +11,7 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('kanji_test.analysis.views',
     url('^$', 'home', name='analysis_home'),
-    url('^chart/$', 'charts', name='analysis_charts'),
+    url('^chart/$', 'chart_dashboard', name='analysis_charts'),
     url('^data/$', 'data', name='analysis_data'),
 )
 

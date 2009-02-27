@@ -18,7 +18,23 @@ class FreqDist(nltk_prob.FreqDist):
     >>> x.inc('a', 5)
     >>> x['a']
     5
+    >>> x.dec('a')
+    >>> x['a']
+    4
+    >>> x.N()
+    4
+    >>> x.inc('b')
+    >>> abs(x.freq('b') - 0.2) < 1e-6
+    True
     """
+    def dec(self, key, n=1):
+        self[key] -= n
+        self._N -= n
+
+    def remove(self, key):
+        self.dec(key, self[key])
+        del self[key]
+
     @staticmethod
     def from_file(filename):
         dist = FreqDist()
