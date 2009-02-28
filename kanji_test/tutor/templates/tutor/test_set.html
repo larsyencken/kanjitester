@@ -31,15 +31,21 @@
 {% if form.has_answers %}
 </form>
 <form method="POST" action="{% url tutor_study %}" class="navigation">
+<p>
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
   <input type="submit" value="Study mistakes"
     {% if all_correct %}disabled="disabled"{% endif %}>
+</p>
 </form>
 <form method="GET" action="{% url tutor_dashboard %}" class="navigation">
+<p>
   <input type="submit" value="Back to dashboard">
+</p>
 </form>
 {% else %}
+<p>
   <input type="Submit" value="Check answers">
+</p>
 </form>
 {% endif %}
 {% endblock %}

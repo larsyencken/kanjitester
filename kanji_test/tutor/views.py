@@ -25,6 +25,7 @@ from kanji_test.drill.views import TestSetForm
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
 from kanji_test.util import html
+from kanji_test.tutor import study_list
 
 #----------------------------------------------------------------------------#
 
@@ -39,7 +40,17 @@ def welcome(request):
 def dashboard(request):
     """Render the dashboard interface."""    
     context = {}
-    context['stats'] = stats.get_stats(request.user)
+    charts = study_list.get_performance_charts(request.user)
+    if charts:
+        context['has_results'] = True
+        context['stats'] = stats.get_stats(request.user)
+        word_chart, kanji_chart = charts
+        word_chart.set_size('260x200')
+        kanji_chart.set_size('260x200')
+        context['word_chart'] = word_chart
+        context['kanji_chart'] = kanji_chart
+    else:
+        context['has_results'] = False
     return render_to_response('tutor/dashboard.html', context,
             context_instance=RequestContext(request))
 
@@ -115,4 +126,3 @@ def about(request):
             context_instance=RequestContext(request))
 
 #----------------------------------------------------------------------------#
-

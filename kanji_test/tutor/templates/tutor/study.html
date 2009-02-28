@@ -77,9 +77,7 @@
     </table>
   {% endif %}
 
-  <p>
-    <form action="{% url tutor_dashboard %}" method="GET">
-      <input type="submit" value="Back to dashboard">
-    </form>
-  </p>
+  <form action="{% url tutor_dashboard %}" method="GET">
+  <p><input type="submit" value="Back to dashboard"></p>
+  </form>
 {% endblock %}
