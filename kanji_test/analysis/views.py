@@ -31,10 +31,11 @@ from kanji_test import settings
 
 @staff_only
 def basic(request):
+    "Calculates and displays some basic statistics."
     context = {}
     
     # Number of users
-    num_users = count_active_users()
+    num_users = _count_active_users()
     context['num_users'] = num_users
 
     # Number of questions answered
@@ -48,10 +49,9 @@ def basic(request):
     context['tests_per_user'] = num_tests / float(num_users)
     context['responses_per_test'] = num_responses / float(num_tests)
 
-    test_dist = get_test_stats()
-    dist_values = [(k, 100*test_dist.freq(k)) \
-            for k in sorted(test_dist.samples())]
-    context['test_dist'] = dist_values
+    test_stats = _get_test_stats()
+    pretty_results = [(k, 100*t, 100*c) for (k, t, c) in test_stats]
+    context['test_dist'] = pretty_results
 
     return render_to_response("analysis/basic.html", context,
             RequestContext(request))
@@ -79,7 +79,7 @@ def chart_dashboard(request):
 # HELPERS
 #----------------------------------------------------------------------------#
 
-def count_active_users():
+def _count_active_users():
     cursor = connection.cursor()
     cursor.execute("""
         SELECT COUNT(*) FROM (
@@ -90,26 +90,36 @@ def count_active_users():
     """)
     return cursor.fetchone()[0]
 
-def get_test_stats():
+def _get_test_stats():
     """
     Fetches the distribution of test sizes chosen by users, and the completion
     statistics for each reported size.
     """
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT n_items, COUNT(*) FROM (
-            SELECT testset_id, COUNT(*) as n_items
-            FROM drill_testset_questions
-            GROUP BY testset_id
+        SELECT n_items, COUNT(*), AVG(is_finished) FROM (
+            SELECT 
+                ts.id AS test_set_id,
+                COUNT(*) AS n_items,
+                (ts.end_time IS NOT NULL) AS is_finished
+            FROM drill_testset_questions AS tsq
+            INNER JOIN drill_testset AS ts
+            ON tsq.testset_id = ts.id
+            GROUP BY ts.id
         ) as tmp
         GROUP BY n_items
         ORDER BY n_items ASC
     """)
-    dist_counts = cursor.fetchall()
+    data = cursor.fetchall()
     dist = FreqDist()
-    for n_items, count in dist_counts:
-        dist.inc(n_items, count)
-    return dist
+    completion_rates = {}
+    for n_items, n_tests, completion_rate in data:
+        dist.inc(n_items, n_tests)
+        completion_rates[n_items] = completion_rate
+    results = []
+    for sample in sorted(dist.samples()):
+        results.append((sample, dist.freq(sample), completion_rates[sample]))
+    return results
 
 def _build_graph(name):
     parts = name.split('_')

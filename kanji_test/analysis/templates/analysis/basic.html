@@ -25,9 +25,11 @@ active user is one that has completed at least one test.</p>
     <th># items</th>
     <th>Proportion of tests</th><th>Completion rate</th>
   </tr>
-  {% for sample, freq in test_dist %}
+  {% for sample, freq, completion_rate in test_dist %}
   <tr>
-    <td>{{sample}}</td><td>{{freq|floatformat:2}}%</td><td>&nbsp;</td>
+    <td>{{sample}}</td>
+    <td>{{freq|floatformat:2}}%</td>
+    <td>{{completion_rate|floatformat:2}}%</td>
   </tr>
   {% endfor %}
 
