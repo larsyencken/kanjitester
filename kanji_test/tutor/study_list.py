@@ -11,6 +11,7 @@ import time
 
 from django.db import connection
 from django.contrib.auth.models import User
+from cjktools import scripts
 
 from kanji_test.util import charts
 
@@ -102,6 +103,15 @@ def _build_sets(study_list):
     print '%d kanji' % len(kanji)
     print '%d words' % len(words)
 
+def _embellish(response_data):
+    """Adds kanji contained in words as kanji exposed."""
+    kanji_script = scripts.Script.Kanji
+    for pivot, pivot_type, is_correct, timestamp in response_data:
+        yield (pivot, pivot_type, is_correct, timestamp)
+        if pivot_type == 'w' and scripts.containsScript(kanji_script, pivot):
+            for kanji in scripts.uniqueKanji(pivot):
+                yield kanji, 'k', is_correct, timestamp
+
 def _get_performance_analysis(response_data):
     current_time = None
     unique_w = set()
@@ -112,7 +122,7 @@ def _get_performance_analysis(response_data):
     correct_k = set()
     unique_k_t = []
     correct_k_t = []
-    for pivot, pivot_type, is_correct, timestamp in response_data:
+    for pivot, pivot_type, is_correct, timestamp in _embellish(response_data):
         if current_time != timestamp:
             # Flush previous timestamp's data
             unique_w_t.append(len(unique_w))
