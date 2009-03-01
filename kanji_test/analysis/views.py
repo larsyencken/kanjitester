@@ -7,6 +7,8 @@
 #  Copyright 2009 Lars Yencken. All rights reserved.
 #
 
+import csv
+
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.models import User
@@ -57,18 +59,31 @@ def basic(request):
             RequestContext(request))
 
 @staff_only
-def data(request):
-    if request.method != "GET" or 'name' not in request.GET:
-        raise Http404
+def data(request, name=None, format=None):
+    "Fetches data set as either a chart or as a CSV file."
+    chart = _build_graph(name)
 
-    chart = _build_graph(request.GET['name'])
+    mimetype = 'text/html'
+    if format == 'json':
+        if not settings.DEBUG:
+            mimetype = 'application/json'
+        return HttpResponse(simplejson.dumps(chart.get_url()),
+                mimetype=mimetype)
 
-    if settings.DEBUG:
-        mimetype = 'text/html'
+    elif format == 'csv':
+        if not settings.DEBUG:
+            response = HttpResponse(mimetype='text/csv')
+            response['Content-Disposition'] = \
+                    'attachment; filename=%s.csv' % name
+        else:
+            response = HttpResponse(mimetype='text/html')
+        writer = csv.writer(response)
+        for row in chart.data:
+            writer.writerow(row)
+        return response
+
     else:
-        mimetype = 'application/json'
-
-    return HttpResponse(simplejson.dumps(chart.get_url()), mimetype=mimetype)
+        raise Http404
 
 @staff_only
 def chart_dashboard(request):

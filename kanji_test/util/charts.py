@@ -11,6 +11,8 @@
 Helper classes for working with Google Charts.
 """
 
+import csv
+
 from django.utils.http import urlencode
 from cjktools.sequences import unzip
 
@@ -23,8 +25,9 @@ class Chart(dict):
     'http://chart.apis.google.com/chart?chs=750x375'
     """
 
-    def __init__(self, size=_default_size):
+    def __init__(self, data, size=_default_size):
         dict.__init__(self)
+        self.data = data
         self['chs'] = size
         self['chco'] = '3030ff' # blue colour, interpolated
 
@@ -33,6 +36,9 @@ class Chart(dict):
 
     def get_url(self):
         return _google_charts_url + dummy_urlencode(self)
+
+    def get_data(self):
+        return self.data
 
 def dummy_urlencode(val_dict):
     parts = []
@@ -51,7 +57,7 @@ class PieChart(Chart):
         except KeyError:
             max_options = None
 
-        super(PieChart, self).__init__(**kwargs)
+        super(PieChart, self).__init__(data, **kwargs)
         self['cht'] = 'p'
 
         sorted_data = sorted(data, key=lambda p: p[1], reverse=True)
@@ -79,9 +85,6 @@ class PieChart(Chart):
         return [(l, 100*v/total) for (l, v) in data]
 
 class BaseLineChart(Chart):
-    def __init__(self, *args, **kwargs):
-        pass
-
     def _axis_from_data(self, values):
         min_value = min(values)
         max_value = max(values)
@@ -166,11 +169,11 @@ class cycle(object):
 class SimpleLineChart(BaseLineChart):
     colours = cycle(['000000', '3030ff', 'ff3030', '30ff30'])
 
-    def __init__(self, *vectors, **kwargs):
-        super(SimpleLineChart, self).__init__(**kwargs)
+    def __init__(self, data, **kwargs):
+        super(SimpleLineChart, self).__init__(data, **kwargs)
         self['cht'] = 'lc'
-        self.data = vectors
-        norm_vectors, transform = Transform.many(0, 100, vectors)
+        self.data = data
+        norm_vectors, transform = Transform.many(0, 100, data)
         self['chd'] = self._data_string(norm_vectors)
         self['chco'] = ','.join(self.colours.take(len(vectors)))
         self.transform = transform
@@ -203,7 +206,7 @@ class LineChart(BaseLineChart):
         self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
                 self._axis_from_data(self.y_data)
 
-        super(LineChart, self).__init__(**kwargs)
+        super(LineChart, self).__init__(data, **kwargs)
 
         self['cht'] = 'lxy'
         self['chxt'] = 'x,y'
@@ -222,7 +225,7 @@ class LineChart(BaseLineChart):
             }
 
     def get_url(self):
-        tmp_chart = Chart()
+        tmp_chart = Chart(self.data)
         tmp_chart.update(self)
         tmp_chart.update(self.__normalize_data())
         return tmp_chart.get_url()

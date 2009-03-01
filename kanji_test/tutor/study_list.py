@@ -46,11 +46,11 @@ def get_performance_charts(user):
         return None
 
     word_data, kanji_data = _get_performance_analysis(response_data)
-    word_chart = charts.SimpleLineChart(*word_data)
+    word_chart = charts.SimpleLineChart(word_data)
     word_chart['chtt'] = 'Words'
     word_chart['chdl'] = 'Tested|Correct'
     word_chart.setup_axes(integer=True, x_min=0)
-    kanji_chart = charts.SimpleLineChart(*kanji_data)
+    kanji_chart = charts.SimpleLineChart(kanji_data)
     kanji_chart['chtt'] = 'Kanji'
     kanji_chart['chdl'] = 'Tested|Correct'
     kanji_chart.setup_axes(integer=True, x_min=0)

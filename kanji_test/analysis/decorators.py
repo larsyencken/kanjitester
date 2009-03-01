@@ -18,7 +18,7 @@ from django.core.urlresolvers import reverse
 
 def staff_only(view_f):
     "A decorator for limiting request to staff only."
-    def wrapper_f(request):
+    def wrapper_f(request, **kwargs):
         if not request.user.is_authenticated():
             return http.HttpResponseRedirect(reverse('auth_login'))
 
@@ -30,7 +30,7 @@ def staff_only(view_f):
                     mimetype="application/xhtml+xml",
                 )
 
-        return view_f(request)
+        return view_f(request, **kwargs)
 
     wrapper_f.__name__ = view_f.__name__
     wrapper_f.__doc__ = view_f.__doc__

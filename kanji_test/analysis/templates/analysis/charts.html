@@ -9,9 +9,12 @@
 <script id="source" language="javascript" type="text/javascript">
 function plot(element, name) {
     $("#chartarea")[0].style.display = "none";
-  $.getJSON("{% url analysis_data %}", { name: name }, function(url) {
+    var data_url = '{% url analysis_data_base %}' + name + '.json';
+  $.getJSON(data_url, {}, function(chart_url) {
       $("#chartarea")[0].style.display = "block";
-      $("#simplechart")[0].innerHTML = '<img src="' + url + '" width="750" height="375" />';
+      var chart_img = '<img src="' + chart_url + '" width="750" height="375" />';
+      var chart_csv = '<p style="text-align:center;"><a href="{% url analysis_data_base %}' + name + '.csv">Download as csv</a></p>';
+      $("#simplechart")[0].innerHTML = chart_img + chart_csv;
       $("#charttitle")[0].textContent = $.trim(element.textContent);
     }
   );

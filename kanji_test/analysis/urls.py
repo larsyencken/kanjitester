@@ -10,9 +10,11 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('kanji_test.analysis.views',
-    url('^basic/$', 'basic', name='analysis_basic'),
-    url('^chart/$', 'chart_dashboard', name='analysis_charts'),
-    url('^data/$', 'data', name='analysis_data'),
+    url(r'^basic/$', 'basic', name='analysis_basic'),
+    url(r'^chart/$', 'chart_dashboard', name='analysis_charts'),
+    url(r'^data/$', 'data', name='analysis_data_base'),
+    url(r'^data/(?P<name>[a-zA-Z_]+)\.(?P<format>[a-z]+)$', 
+        'data', name='analysis_data'),
 )
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
