@@ -42,6 +42,19 @@ active user is one that has completed at least one test.</p>
   <tr>
     <td>Per test</td><td>{{responses_per_test|floatformat:2}}</td>
   </tr>
+  <tr>
+    <th rowspan="4">Total responses per pivot</th>
+    <td>Combined</td><td>{{pivot_stats.combined}}</td>
+  </tr>
+  <tr>
+    <td>Words</td><td>{{pivot_stats.words}}</td>
+  </tr>
+  <tr>
+    <td>Kanji</td><td>{{pivot_stats.kanji}}</td>
+  </tr>
+  <tr>
+    <td>Kanji (incl. within words)</td><td>{{pivot_stats.kanji_inc}}</td>
+  </tr>
 </table>
 
 {% endblock %}

@@ -107,6 +107,9 @@ def _build_graph(name):
     elif first_part == 'syllabus':
         return _build_syllabus_graph(*parts)
 
+    elif first_part == 'pivot':
+        return _build_pivot_graph(*parts)
+
     else:
         raise KeyError(name)
 
@@ -142,5 +145,13 @@ def _build_response_graph(name):
         return chart
     else:
         raise KeyError('response_' + name)
+
+def _build_pivot_graph(name):
+    if name == 'exposure':
+        data = stats.get_exposures_per_pivot()
+        return charts.BarChart(data, y_axis=(0, 50, 10))
+
+    else:
+        raise KeyError('pivot_' + name)
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

@@ -13,6 +13,7 @@ Statistical analysis of user data.
 
 from django.db import connection
 from cjktools.stats import mean
+from cjktools.scripts import uniqueKanji
 
 from kanji_test.user_profile.models import UserProfile, Syllabus
 from kanji_test.util.probability import FreqDist
@@ -183,5 +184,38 @@ def count_active_users():
             ) as tmp
     """)
     return cursor.fetchone()[0]
+
+def get_exposures_per_pivot():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT pivot, pivot_type, COUNT(*) as n_exposures
+        FROM drill_question
+        GROUP BY CONCAT(pivot, "|", pivot_type)
+    """)
+    word_c = []
+    kanji_c = []
+    combined_c = []
+    kanji_inc_dist = FreqDist()
+    for pivot, pivot_type, count in cursor.fetchall():
+        combined_c.append(count)
+
+        if pivot_type == 'k':
+            kanji_c.append(count)
+            kanji_inc_dist.inc(pivot, count)
+
+        elif pivot_type == 'w':
+            word_c.append(count)
+            for kanji in uniqueKanji(pivot):
+                kanji_inc_dist.inc(kanji, count)
+
+        else:
+            raise ValueError('unknown pivot type: %s' % pivot_type)
+
+    return [
+            ('Words', mean(word_c)),
+            ('Kanji', mean(kanji_c)),
+            ('Combined', mean(combined_c)),
+            ('Kanji combined', mean(kanji_inc_dist.values())),
+        ]
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

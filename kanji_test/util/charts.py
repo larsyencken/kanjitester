@@ -20,16 +20,11 @@ _google_charts_url = "http://chart.apis.google.com/chart?"
 _default_size = '750x375'
 
 class Chart(dict):
-    """
-    >>> Chart().get_url()
-    'http://chart.apis.google.com/chart?chs=750x375'
-    """
-
     def __init__(self, data, size=_default_size):
         dict.__init__(self)
         self.data = data
         self['chs'] = size
-        self['chco'] = '3030ff' # blue colour, interpolated
+        self['chco'] = color_desc(len(data))
 
     def set_size(self, size_spec):
         self['chs'] = size_spec
@@ -40,17 +35,24 @@ class Chart(dict):
     def get_data(self):
         return self.data
 
-def dummy_urlencode(val_dict):
-    parts = []
-    for key, value in sorted(val_dict.items()):
-        parts.append('%s=%s' % (key, value))
-    return '&'.join(parts)
+    def _axis_from_data(self, values):
+        min_value = min(values)
+        max_value = max(values)
+        tick = (max_value - min_value) / 10.0
+        return min_value, max_value, tick
+
+    def _normalize_points(self, old_values, new_range=(0, 100)):
+        new_min, new_max = new_range
+        new_diff = float(new_max - new_min)
+
+        old_min = min(old_values)
+        old_max = max(old_values)
+        old_diff = float(old_max - old_min)
+        values = [new_min + (x - old_min)*new_diff/old_diff for \
+                x in old_values]
+        return values
 
 class PieChart(Chart):
-    """
-    >>> PieChart([('Hello', 60), ('World', 40)]).get_url()
-    'http://chart.apis.google.com/chart?cht=p&chd=t:60|40&chl=Hello|World&chs=750x375'
-    """
     def __init__(self, data, **kwargs):
         try:
             max_options = kwargs.pop('max_options')
@@ -68,7 +70,7 @@ class PieChart(Chart):
 
         labels, values = unzip(normalized_data)
 
-        self['chd'] = 't:' + ','.join(str(x) for x in values)
+        self['chd'] = 't:' + ','.join(smart_str(x) for x in values)
         self['chl'] = '|'.join(map(str, labels))
 
     def __truncate_options(self, sorted_data, max_options):
@@ -85,25 +87,89 @@ class PieChart(Chart):
         return [(l, 100*v/total) for (l, v) in data]
 
 class BaseLineChart(Chart):
-    def _axis_from_data(self, values):
-        min_value = min(values)
-        max_value = max(values)
-        tick = (max_value - min_value) / 10.0
-        return min_value, max_value, tick
-
     def _stringify(self, values):
         return ','.join(['%.02f' % v for v in values])
 
-    def _normalize_points(self, old_values, new_range=(0, 100)):
-        new_min, new_max = new_range
-        new_diff = float(new_max - new_min)
 
-        old_min = min(old_values)
-        old_max = max(old_values)
-        old_diff = float(old_max - old_min)
-        values = [new_min + (x - old_min)*new_diff/old_diff for \
-                x in old_values]
-        return values
+class SimpleLineChart(BaseLineChart):
+    def __init__(self, data, **kwargs):
+        super(SimpleLineChart, self).__init__(data, **kwargs)
+        self['cht'] = 'lc'
+        self.data = data
+        norm_vectors, transform = Transform.many(0, 100, data)
+        self['chd'] = self._data_string(norm_vectors)
+        self.transform = transform
+
+    def get_url(self):
+        if 'chxt' not in self:
+            self.setup_axes()
+        return super(SimpleLineChart, self).get_url()
+
+    def setup_axes(self, integer=False, x_min=0):
+        self['chxt'] = 'x,y'
+        x_max = x_min + len(self.data[0]) - 1
+        x_ticks = _choose_integer_tick(0, x_max)
+        self['chxr'] = '0,%d,%d,%.02f|1,%s' % (
+                x_min,
+                x_max,
+                x_ticks,
+                self.transform.axis_spec(integer=integer)
+            )
+
+    def _data_string(self, vectors):
+        return 't:' + '|'.join(','.join(smart_str(v) for v in vec) for vec in
+                vectors)
+
+class LineChart(BaseLineChart):
+    def __init__(self, data, **kwargs):
+        self.x_data, self.y_data = unzip(data)
+        self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
+                self._axis_from_data(self.x_data)
+        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
+                self._axis_from_data(self.y_data)
+
+        super(LineChart, self).__init__(data, **kwargs)
+
+        self['cht'] = 'lxy'
+        self['chxt'] = 'x,y'
+        self['chxr'] = self.__setup_axes()
+
+    def __setup_axes(self):
+        return '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
+
+    def __normalize_data(self, x_range=(0,100)):
+        x_values = self._normalize_points(self.x_data, new_range=x_range)
+        y_values = self._normalize_points(self.y_data)
+
+        return {
+                'chd': 't:' + self._stringify(x_values) + '|' + \
+                        self._stringify(y_values)
+            }
+
+    def get_url(self):
+        tmp_chart = Chart(self.data)
+        tmp_chart.update(self)
+        tmp_chart.update(self.__normalize_data())
+        return tmp_chart.get_url()
+
+class BarChart(Chart):
+    def __init__(self, data, **kwargs):
+        labels, points = unzip(data)
+        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
+                self._axis_from_data(points)
+
+        super(BarChart, self).__init__(data, **kwargs)
+        self['cht'] = 'bvg'
+        self['chdl'] = '|'.join(labels)
+
+        self['chxt'] = 'y'
+        self['chxr'] = '0,%s,%s,%s' % tuple((map(smart_str, self.y_axis)))
+
+        t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
+        norm_points = t.transform(points)
+        self['chd'] = 't:' + ('|'.join(map(smart_str, norm_points)))
+
+#----------------------------------------------------------------------------#
 
 class Transform(object):
     "A vector scaling and offset which can be applied multiple times."
@@ -150,86 +216,6 @@ class Transform(object):
 
         return results, t
 
-class cycle(object):
-    def __init__(self, items):
-        self.items = items
-
-    def __iter__(self):
-        while True:
-            for item in self.items:
-                yield item
-
-    def take(self, n):
-        for item in self:
-            yield item
-            n -= 1
-            if n <= 0:
-                break
-
-class SimpleLineChart(BaseLineChart):
-    colours = cycle(['000000', '3030ff', 'ff3030', '30ff30'])
-
-    def __init__(self, data, **kwargs):
-        super(SimpleLineChart, self).__init__(data, **kwargs)
-        self['cht'] = 'lc'
-        self.data = data
-        norm_vectors, transform = Transform.many(0, 100, data)
-        self['chd'] = self._data_string(norm_vectors)
-        self['chco'] = ','.join(self.colours.take(len(data)))
-        self.transform = transform
-
-    def get_url(self):
-        if 'chxt' not in self:
-            self.setup_axes()
-        return super(SimpleLineChart, self).get_url()
-
-    def setup_axes(self, integer=False, x_min=0):
-        self['chxt'] = 'x,y'
-        x_max = x_min + len(self.data[0]) - 1
-        x_ticks = _choose_integer_tick(0, x_max)
-        self['chxr'] = '0,%d,%d,%.02f|1,%s' % (
-                x_min,
-                x_max,
-                x_ticks,
-                self.transform.axis_spec(integer=integer)
-            )
-
-    def _data_string(self, vectors):
-        return 't:' + '|'.join(','.join('%.02f' % v for v in vec) for vec in
-                vectors)
-
-class LineChart(BaseLineChart):
-    def __init__(self, data, **kwargs):
-        self.x_data, self.y_data = unzip(data)
-        self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
-                self._axis_from_data(self.x_data)
-        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                self._axis_from_data(self.y_data)
-
-        super(LineChart, self).__init__(data, **kwargs)
-
-        self['cht'] = 'lxy'
-        self['chxt'] = 'x,y'
-        self['chxr'] = self.__setup_axes()
-
-    def __setup_axes(self):
-        return '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
-
-    def __normalize_data(self, x_range=(0,100)):
-        x_values = self._normalize_points(self.x_data, new_range=x_range)
-        y_values = self._normalize_points(self.y_data)
-
-        return {
-                'chd': 't:' + self._stringify(x_values) + '|' + \
-                        self._stringify(y_values)
-            }
-
-    def get_url(self):
-        tmp_chart = Chart(self.data)
-        tmp_chart.update(self)
-        tmp_chart.update(self.__normalize_data())
-        return tmp_chart.get_url()
-
 def _choose_integer_tick(min_value, max_value, max_ticks=10):
     diff = int(max_value - min_value)
     for tick in _iter_ranges():
@@ -243,5 +229,69 @@ def _iter_ranges():
         for x in base:
             yield x * multiplier
         multiplier *= 10
-    
+
+def smart_str(value):
+    val_type = type(value)
+    if val_type == int:
+        return str(value)
+    elif val_type in (unicode, str):
+        return val_type
+    elif val_type == float:
+        # Fixed decimal precision for charting (after scaling)
+        n_sig = '%.02f' % value
+        simple = str(value)
+        return (len(n_sig) < len(simple)) and n_sig or simple
+    else:
+        raise ValueError('unknown value type')
+
+def color_desc(n_steps):
+    return ','.join(interpolate_color(n_steps))
+
+def interpolate_color(n_steps, start_color=(30, 30, 255),
+        end_color=(214, 214, 255)):
+    sr, sg, sb = start_color
+    er, eg, eb = end_color
+
+    if n_steps < 1:
+        raise ValueError('need at least one colour')
+
+    if n_steps == 1:
+        return [to_hex(*start_color)]
+    elif n_steps == 2:
+        return [to_hex(*start_color), to_hex(*end_color)]
+
+    results = []
+    for colour in zip(
+                interpolate(sr, er, n_steps),
+                interpolate(sg, eg, n_steps),
+                interpolate(sb, eb, n_steps),
+            ):
+        results.append(to_hex(*colour))
+
+    return results
+
+def interpolate(start, end, n_steps):
+    """
+    >>> interpolate(0, 10, 6)
+    [0, 2, 4, 6, 8, 10]
+    >>> interpolate(1, 7, 5)
+    [1, 2, 4, 5, 7]
+    """
+    diff = (end - start) / float(n_steps-1)
+    eps = 1e-6
+    results = []
+    for i in xrange(n_steps):
+        results.append(int(start + i*diff + eps))
+
+    return results
+
+def to_hex(r, g, b):
+    return (hex(r) + hex(g) + hex(b)).replace('0x', '')
+
+def dummy_urlencode(val_dict):
+    parts = []
+    for key, value in sorted(val_dict.items()):
+        parts.append('%s=%s' % (key, value))
+    return '&'.join(parts)
+
 # vim: ts=4 sw=4 sts=4 et tw=78:
