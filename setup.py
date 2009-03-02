@@ -41,6 +41,7 @@ setup(
                 [path.join('kanji_test', 'plugins',
                     'visual_similarity', 'metrics', 'stroke.pyx')]
             )],
+        include_package_data=True,
     )
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
