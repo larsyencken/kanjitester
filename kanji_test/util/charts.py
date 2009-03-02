@@ -160,15 +160,15 @@ class BarChart(Chart):
 
         super(BarChart, self).__init__(data, **kwargs)
         self['cht'] = 'bvg'
-        self['chdl'] = '|'.join(labels)
+        self['chxl'] = '1:' + ('|%s|' % '|'.join(labels))
 
-        self['chxt'] = 'y'
+        self['chxt'] = 'y,x'
         self['chxr'] = '0,%s,%s,%s' % tuple((map(smart_str, self.y_axis)))
         self['chbh'] = 'a'
 
         t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
         norm_points = t.transform(points)
-        self['chd'] = 't:' + ('|'.join(map(smart_str, norm_points)))
+        self['chd'] = 't:' + (','.join(map(smart_str, norm_points)))
 
 #----------------------------------------------------------------------------#
 
