@@ -22,12 +22,12 @@ from os import path
 def get_revision():
     revision = None
     if os.system('which hg >/dev/null 2>&1') == 0:
-        revision = os.popen('hg id -n 2>/dev/null').read().strip()
+        revision = os.popen('hg id -i 2>/dev/null').read().strip().rstrip('+')
     return revision or 'unknown'
 
 setup(
         name='kanji_test',
-        version='0.1.%s' % get_revision(),
+        version='1.6alpha.r%s' % get_revision(),
         description='Kanji testing framework',
         author='Lars Yencken',
         author_email='lljy@csse.unimelb.edu.au',
@@ -36,9 +36,9 @@ setup(
 
         packages=find_packages(),
         ext_modules=[Extension(
-                path.join('kanji_test', 'user_model_plugins',
+                path.join('kanji_test', 'plugins',
                     'visual_similarity', 'metrics', 'stroke'),
-                [path.join('kanji_test', 'user_model_plugins',
+                [path.join('kanji_test', 'plugins',
                     'visual_similarity', 'metrics', 'stroke.pyx')]
             )],
     )
