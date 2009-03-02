@@ -45,14 +45,17 @@ def get_performance_charts(user):
     if not response_data:
         return None
 
+    colours = '000000,3030ff'
     word_data, kanji_data = _get_performance_analysis(response_data)
     word_chart = charts.SimpleLineChart(word_data)
     word_chart['chtt'] = 'Words'
     word_chart['chdl'] = 'Tested|Correct'
+    word_chart['chco'] = colours
     word_chart.setup_axes(integer=True, x_min=0)
     kanji_chart = charts.SimpleLineChart(kanji_data)
     kanji_chart['chtt'] = 'Kanji'
     kanji_chart['chdl'] = 'Tested|Correct'
+    kanji_chart['chco'] = colours
     kanji_chart.setup_axes(integer=True, x_min=0)
     return word_chart, kanji_chart
 
