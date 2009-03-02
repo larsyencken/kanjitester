@@ -33,6 +33,7 @@ class ReadingQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = True
     uses_dist = 'reading | kanji'
     is_adaptive = False
+    verbose_name = 'random readings'
 
     def get_word_question(self, partial_lexeme, user):
         "See parent."
@@ -86,6 +87,7 @@ class SurfaceQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     requires_kanji = True
     uses_dist = "kanji' | kanji"
     is_adaptive = False
+    verbose_name = 'random surfaces'
 
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji
@@ -132,6 +134,7 @@ class GlossQuestionFactory(plugin_api.MultipleChoiceFactoryI):
     question_type = 'pg'
     uses_dist = None
     is_adaptive = False
+    verbose_name = 'random glosses'
 
     def get_kanji_question(self, partial_kanji, user):
         kanji_row = partial_kanji.kanji

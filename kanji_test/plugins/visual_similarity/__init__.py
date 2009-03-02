@@ -106,6 +106,7 @@ class VisualSimilarityDrills(drill_api.MultipleChoiceFactoryI):
     requires_kanji = True
     uses_dist = "kanji' | kanji"
     is_adaptive = True
+    verbose_name = 'visual similarity'
 
     def get_kanji_question(self, partial_kanji, user):
         self.error_dist = usermodel_models.ErrorDist.objects.get(user=user,

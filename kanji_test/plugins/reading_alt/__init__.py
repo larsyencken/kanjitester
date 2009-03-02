@@ -144,6 +144,7 @@ class ReadingAlternationQuestions(drill_api.MultipleChoiceFactoryI):
     description = 'A reading alternation model is used to generate' \
         ' distractors.'
     is_adaptive = True
+    verbose_name = 'reading alternations'
 
     def get_word_question(self, partial_lexeme, user):
         "See parent."
