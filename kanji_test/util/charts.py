@@ -175,7 +175,7 @@ class SimpleLineChart(BaseLineChart):
         self.data = data
         norm_vectors, transform = Transform.many(0, 100, data)
         self['chd'] = self._data_string(norm_vectors)
-        self['chco'] = ','.join(self.colours.take(len(vectors)))
+        self['chco'] = ','.join(self.colours.take(len(data)))
         self.transform = transform
 
     def get_url(self):
