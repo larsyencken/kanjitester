@@ -24,3 +24,4 @@ doc/*.{pdf,out,aux,toc}
 *.output
 *.input
 tags
+*.egg

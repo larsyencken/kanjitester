@@ -34,6 +34,9 @@ setup(
         license='GPL',
         url='http://www.csse.unimelb.edu.au/~lljy/',
 
+        setup_requires=['setuptools_hg'],
+        install_requires=['django >= 1.0', 'consoleLog', 'cjktools'],
+
         packages=find_packages(),
         ext_modules=[Extension(
                 path.join('kanji_test', 'plugins',
