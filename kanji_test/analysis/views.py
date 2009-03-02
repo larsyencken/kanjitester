@@ -18,7 +18,7 @@ from django.utils import simplejson
 from django.utils.http import urlencode
 
 from kanji_test.analysis.decorators import staff_only
-from kanji_test.drill.models import MultipleChoiceResponse, TestSet
+from kanji_test.drill import models
 from kanji_test.util import charts
 from kanji_test import settings
 
@@ -38,11 +38,11 @@ def basic(request):
     context['num_users'] = num_users
 
     # Number of questions answered
-    num_responses = MultipleChoiceResponse.objects.count()
+    num_responses = models.MultipleChoiceResponse.objects.count()
     context['num_responses'] = num_responses
     context['responses_per_user'] = num_responses / float(num_users)
 
-    num_tests = TestSet.objects.exclude(end_time=None).count()
+    num_tests = models.TestSet.objects.exclude(end_time=None).count()
     context['num_tests'] = num_tests
 
     context['tests_per_user'] = num_tests / float(num_users)
@@ -107,8 +107,8 @@ def _build_graph(name):
     elif first_part == 'syllabus':
         return _build_syllabus_graph(*parts)
 
-    elif first_part == 'pivot':
-        return _build_pivot_graph(*parts)
+    elif first_part == 'question':
+        return _build_question_graph(*parts)
 
     else:
         raise KeyError(name)
@@ -121,7 +121,7 @@ def _build_syllabus_graph(name):
     if name == 'volume':
         return charts.PieChart(stats.get_syllabus_volume())
 
-    raise KeyError('syllabus_' + name)
+    raise KeyError(name)
 
 def _build_test_graph(name):
     if name == 'mean':
@@ -136,7 +136,7 @@ def _build_test_graph(name):
         return charts.PieChart(stats.get_test_length_volume())
 
     else:
-        raise KeyError('test_' + name)
+        raise KeyError(name)
 
 def _build_response_graph(name):
     if name == 'volume':
@@ -144,14 +144,24 @@ def _build_response_graph(name):
         chart = charts.LineChart(user_data)
         return chart
     else:
-        raise KeyError('response_' + name)
+        raise KeyError(name)
 
-def _build_pivot_graph(name):
-    if name == 'exposure':
+def _build_question_graph(name):
+    if name == 'pivot':
         data = stats.get_exposures_per_pivot()
         return charts.BarChart(data, y_axis=(0, 50, 10))
 
+    elif name == 'plugin':
+        data = []
+        for plugin in models.QuestionPlugin.objects.all():
+            data.append((
+                    plugin.name + \
+                    ((plugin.is_adaptive) and ' [adaptive]' or ' [simple]'),
+                    plugin.question_set.count(),
+                ))
+        return charts.PieChart(data)
+
     else:
-        raise KeyError('pivot_' + name)
+        raise KeyError(name)
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
