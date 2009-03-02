@@ -164,6 +164,7 @@ class BarChart(Chart):
 
         self['chxt'] = 'y'
         self['chxr'] = '0,%s,%s,%s' % tuple((map(smart_str, self.y_axis)))
+        self['chbh'] = 'a'
 
         t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
         norm_points = t.transform(points)
