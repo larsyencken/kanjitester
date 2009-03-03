@@ -17,13 +17,19 @@ from django.contrib.auth.models import User
 import consoleLog
 
 from kanji_test.drill import models
+from kanji_test.user_profile.models import UserProfile
 
 _log = consoleLog.default
 
-def clean_data(email_address): 
-    _log.start('Cleaning address %s' % email_address)
+def clean_user_data(email=None, username=None): 
+    if not email:
+        raise Exception('need email for now')
+    elif username:
+        raise Exception("don't support username yet")
+
+    _log.start('Cleaning address %s' % email)
     _log.start('Checking database')
-    users = User.objects.filter(email=email_address)
+    users = User.objects.filter(email=email)
     _log.finish('Found %d user%s: %s' % (
             len(users), 
             (len(users) != 1) and 's' or '', # pluralize
@@ -44,6 +50,16 @@ def clean_data(email_address):
         _log.finish()
     _log.finish()
 
+def clean_languages():
+    _log.start('Cleaning languages')
+    n_cleaned = 0
+    for profile in UserProfile.objects.all():
+        if profile.second_languages == 'No':
+            profile.second_languages = None
+            profile.save()
+            n_cleaned += 1
+    _log.finish('Cleaned %d profiles' % n_cleaned)
+
 #----------------------------------------------------------------------------#
 
 def _create_option_parser():
@@ -57,6 +73,16 @@ address."""
 
     parser.add_option('--debug', action='store_true', dest='debug',
             default=False, help='Enables debugging mode [False]')
+    
+    parser.add_option('-e', action='store', dest='email',
+            help='Clean user by email address')
+
+    parser.add_option('-u', action='store', dest='username',
+            help='Clean user by username')
+
+    parser.add_option('-l', '--lang', action='store_true',
+            dest='clean_languages',
+            help='Clean reported languages')
 
     return parser
 
@@ -64,9 +90,7 @@ def main(argv):
     parser = _create_option_parser()
     (options, args) = parser.parse_args(argv)
 
-    try:
-        email_address, = args
-    except ValueError:
+    if args:
         parser.print_help()
         sys.exit(1)
 
@@ -78,7 +102,14 @@ def main(argv):
         except:
             pass
 
-    clean_data(email_address)
+    if options.email:
+        clean_user_data(email=options.email)
+
+    if options.username:
+        clean_user_data(username=options.username)
+
+    if options.clean_languages:
+        clean_languages()
     
     return
 
