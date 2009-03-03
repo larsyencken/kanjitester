@@ -30,6 +30,13 @@ class Chart(dict):
         self['chs'] = size_spec
 
     def get_url(self):
+        # Set label colours to black if possible
+        parts = []
+        if 'chxs' not in self and 'chxt' in self:
+            for i in range(len(self['chxt'].split(','))):
+                parts.append('%d,000000' % i)
+            self['chxs'] = '|'.join(parts)
+
         return _google_charts_url + dummy_urlencode(self)
 
     def get_data(self):
@@ -61,6 +68,7 @@ class PieChart(Chart):
 
         super(PieChart, self).__init__(data, **kwargs)
         self['cht'] = 'p'
+        self['chxt'] = 'x'
 
         sorted_data = sorted(data, key=lambda p: p[1], reverse=True)
         if max_options is not None and len(sorted_data) > max_options:
