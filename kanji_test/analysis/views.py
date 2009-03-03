@@ -8,6 +8,7 @@
 #
 
 import csv
+import operator
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -16,6 +17,7 @@ from django.db import connection
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.utils.http import urlencode
+from django.conf import settings
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
@@ -83,37 +85,65 @@ def data(request, name=None, format=None):
         raise Http404
 
 @staff_only
-def chart_dashboard(request):
-    return render_to_response("analysis/charts.html", {},
+def chart_dashboard(request, name=None):
+    context = {}
+    context['column_1'], context['column_2'], context['column_3'] = \
+            available_charts
+    if name is not None:
+        context['name'] = name
+        context['desc'] = name_to_desc[name]
+
+        chart = _build_graph(name)
+        context['chart'] = chart
+
+    return render_to_response("analysis/charts.html", context,
             RequestContext(request))
 
 #----------------------------------------------------------------------------#
 # HELPERS
 #----------------------------------------------------------------------------#
 
+class Column(object):
+    def __init__(self, title, charts_v):
+        self.title = title
+        self.charts = charts_v
+
+available_charts = (
+        Column('User information', [
+            ('lang_first',      'First language'),
+            ('lang_second',     'Second language'),
+            ('lang_combined',   'Combined languages'),
+            ('syllabus_volume', 'Syllabus by # users'),
+        ]),
+        Column('Tests and responses', [
+            ('test_mean',       'Mean score by # tests'),
+            ('test_volume',     'Users by # tests'),
+            ('response_volume', 'Users by # responses'),
+            ('test_length',     'Test length by volume'),
+        ]),
+        Column('Questions and plugins', [
+            ('pivot_exposures',     'Mean # exposures per pivot'),
+            ('plugin_questions',    'Plugin by # questions'),
+            ('plugin_error',        'Mean error by plugin'),
+            ('pivot_type',          'Accuracy by word type'),
+        ])
+    )
+
+name_to_desc = dict(reduce(operator.add, (c.charts for c in \
+        available_charts)))
+
 def _build_graph(name):
     parts = name.split('_')
     first_part = parts.pop(0)
 
-    if first_part == 'lang':
-        return _build_language_graph(*parts)
-    
-    elif first_part == 'test':
-        return _build_test_graph(*parts)
-
-    elif first_part == 'response':
-        return _build_response_graph(*parts)
-
-    elif first_part == 'syllabus':
-        return _build_syllabus_graph(*parts)
-
-    elif first_part == 'question':
-        return _build_question_graph(*parts)
-
-    else:
+    try:
+        method = globals()['_build_%s_graph' % first_part]
+    except KeyError:
         raise KeyError(name)
 
-def _build_language_graph(name):
+    return method(*parts)
+
+def _build_lang_graph(name):
     dist = stats.get_language_data(name)
     return charts.PieChart(dist.items(), max_options=8)
 
@@ -135,23 +165,29 @@ def _build_test_graph(name):
     elif name == 'length':
         return charts.PieChart(stats.get_test_length_volume())
 
-    else:
-        raise KeyError(name)
+    raise KeyError(name)
 
 def _build_response_graph(name):
     if name == 'volume':
         user_data = stats.get_users_by_n_responses()
         chart = charts.LineChart(user_data)
         return chart
-    else:
-        raise KeyError(name)
 
-def _build_question_graph(name):
-    if name == 'pivot':
+    raise KeyError(name)
+
+def _build_pivot_graph(name):
+    if name == 'exposures':
         data = stats.get_exposures_per_pivot()
         return charts.BarChart(data, y_axis=(0, 50, 10))
 
-    elif name == 'plugin':
+    if name == 'type':
+        data = stats.get_accuracy_by_pivot_type()
+        return charts.BarChart(data, y_axis=(0, 1, 0.1))
+    
+    raise KeyError(name)
+
+def _build_plugin_graph(name):
+    if name == 'questions':
         data = []
         for plugin in models.QuestionPlugin.objects.all():
             data.append((
@@ -161,7 +197,11 @@ def _build_question_graph(name):
                 ))
         return charts.PieChart(data)
 
-    else:
-        raise KeyError(name)
+    elif name == 'error':
+        data = stats.get_mean_error_by_plugin()
+        data.append(('[random guess]', 1.0/(1 + settings.N_DISTRACTORS)))
+        return charts.BarChart(data, y_axis=(0,0.25,0.05))
+
+    raise KeyError(name)
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
