@@ -13,7 +13,7 @@ Statistical analysis of user data.
 
 from django.db import connection
 from cjktools.stats import mean
-from cjktools.scripts import uniqueKanji
+from cjktools import scripts
 
 from kanji_test.user_profile.models import UserProfile, Syllabus
 from kanji_test.util.probability import FreqDist
@@ -205,7 +205,7 @@ def get_exposures_per_pivot():
 
         elif pivot_type == 'w':
             word_c.append(count)
-            for kanji in uniqueKanji(pivot):
+            for kanji in scripts.uniqueKanji(pivot):
                 kanji_inc_dist.inc(kanji, count)
 
         else:
@@ -217,5 +217,79 @@ def get_exposures_per_pivot():
             ('Combined', mean(combined_c)),
             ('Kanji combined', mean(kanji_inc_dist.values())),
         ]
+
+def get_mean_error_by_plugin():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT plugin.name, 1 - plugin_score.score
+        FROM (
+            SELECT
+                question.question_plugin_id,
+                AVG(chosen_option.is_correct) as score
+            FROM (
+                SELECT mco.question_id, mco.is_correct
+                FROM drill_multiplechoiceresponse AS mcr
+                INNER JOIN drill_multiplechoiceoption AS mco
+                ON mcr.option_id = mco.id
+            ) as chosen_option
+            INNER JOIN drill_question AS question
+            ON chosen_option.question_id = question.id
+            GROUP BY question.question_plugin_id
+        ) AS plugin_score
+        INNER JOIN drill_questionplugin AS plugin
+        ON plugin_score.question_plugin_id = plugin.id
+        ORDER BY plugin.name ASC
+    """)
+    return [(l, float(v)) for (l, v) in cursor.fetchall()] 
+
+def get_accuracy_by_pivot_type():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT
+            question.pivot,
+            SUM(chosen_option.is_correct) as n_correct,
+            COUNT(*) as n_responses
+        FROM (
+            SELECT mco.question_id, mco.is_correct
+            FROM drill_multiplechoiceresponse AS mcr
+            INNER JOIN drill_multiplechoiceoption AS mco
+            ON mcr.option_id = mco.id
+        ) as chosen_option
+        INNER JOIN drill_question AS question
+        ON chosen_option.question_id = question.id
+        WHERE question.pivot_type = "w"
+        GROUP BY question.pivot
+    """)
+    raw_data = cursor.fetchall()
+    counts = {'Hiragana': FreqDist(), 'Katakana': FreqDist(), 'Kanji':
+        FreqDist()}
+    complex_scripts = set([scripts.Script.Kanji, scripts.Script.Unknown])
+    kanji_script = scripts.Script.Kanji
+    only_hiragana = set([scripts.Script.Hiragana])
+    only_katakana = set([scripts.Script.Katakana])
+    for word, n_correct, n_responses in raw_data:
+        scripts_found = scripts.scriptTypes(word)
+        if scripts_found.intersection(complex_scripts):
+            dist = counts['Kanji']
+        elif scripts_found.intersection(only_katakana):
+            dist = counts['Katakana']
+        else:
+            dist = counts['Hiragana']
+
+        dist.inc(True, int(n_correct))
+        dist.inc(False, int(n_responses - n_correct))
+
+    keys = ('Hiragana', 'Katakana', 'Kanji')
+
+    data = [(key, counts[key].freq(True)) for key in keys]
+
+    average = FreqDist()
+    for key in keys:
+        average.inc(True, counts[key][True])
+        average.inc(False, counts[key][False])
+
+    data.append(('Average', average.freq(True)))
+
+    return data
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
