@@ -116,7 +116,7 @@ class SimpleLineChart(BaseLineChart):
     def setup_axes(self, integer=False, x_min=0):
         self['chxt'] = 'x,y'
         x_max = x_min + len(self.data[0]) - 1
-        x_ticks = _choose_integer_tick(0, x_max)
+        x_ticks = choose_integer_tick(0, x_max)
         self['chxr'] = '0,%d,%d,%.02f|1,%s' % (
                 x_min,
                 x_max,
@@ -141,24 +141,19 @@ class LineChart(BaseLineChart):
         self['cht'] = 'lxy'
         self['chxt'] = 'x,y'
         self['chxr'] = self.__setup_axes()
+        self['chco'] = color_desc(1)
+
+        x_t = Transform(0, 100, self.x_axis[0], self.x_axis[1])
+        y_t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
+
+        x_values = x_t.transform(self.x_data)
+        y_values = y_t.transform(self.y_data)
+
+        self['chd'] = 't:' + self._stringify(x_values) + '|' + \
+                        self._stringify(y_values)
 
     def __setup_axes(self):
         return '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
-
-    def __normalize_data(self, x_range=(0,100)):
-        x_values = self._normalize_points(self.x_data, new_range=x_range)
-        y_values = self._normalize_points(self.y_data)
-
-        return {
-                'chd': 't:' + self._stringify(x_values) + '|' + \
-                        self._stringify(y_values)
-            }
-
-    def get_url(self):
-        tmp_chart = Chart(self.data)
-        tmp_chart.update(self)
-        tmp_chart.update(self.__normalize_data())
-        return tmp_chart.get_url()
 
 class BarChart(Chart):
     def __init__(self, data, **kwargs):
@@ -181,7 +176,12 @@ class BarChart(Chart):
 #----------------------------------------------------------------------------#
 
 class Transform(object):
-    "A vector scaling and offset which can be applied multiple times."
+    """
+    A vector scaling and offset which can be applied multiple times.
+
+    >>> Transform.single(0, 100, [0.0, 0.5, 1.0])[0]
+    [0.0, 50.0, 100.0]
+    """
     def __init__(self, target_min, target_max, orig_min, orig_max):
         self.target_min = target_min
         self.target_max = target_max
@@ -199,7 +199,7 @@ class Transform(object):
 
     def axis_spec(self, ticks=10, integer=False):
         if integer:
-            tick_diff = _choose_integer_tick(self.orig_min, self.orig_max)
+            tick_diff = choose_integer_tick(self.orig_min, self.orig_max)
         else:
             tick_diff = (self.orig_max - self.orig_min)/float(ticks)
 
@@ -225,11 +225,34 @@ class Transform(object):
 
         return results, t
 
-def _choose_integer_tick(min_value, max_value, max_ticks=10):
+def choose_integer_tick(min_value, max_value, max_ticks=10):
+    """
+    >>> choose_integer_tick(0, 20)
+    2
+    >>> choose_integer_tick(0, 80)
+    10
+    >>> choose_integer_tick(2000, 2080)
+    10
+    """
     diff = int(max_value - min_value)
     for tick in _iter_ranges():
         if diff / tick <= max_ticks:
             return tick
+
+def choose_max_value(current_max, multiple=5):
+    """
+    >>> choose_max_value(7)
+    10
+    >>> choose_max_value(22.3)
+    25
+    >>> choose_max_value(76, multiple=10)
+    80
+    >>> choose_max_value(70, multiple=10)
+    70
+    """
+    if current_max % multiple == 0:
+        return current_max
+    return ((int(current_max) / multiple) + 1) * multiple
 
 def _iter_ranges():
     base = [1, 2, 5]
@@ -240,11 +263,19 @@ def _iter_ranges():
         multiplier *= 10
 
 def smart_str(value):
+    """
+    >>> smart_str(1)
+    '1'
+    >>> smart_str('dog')
+    'dog'
+    >>> smart_str(10.23421)
+    '10.23'
+    """
     val_type = type(value)
     if val_type == int:
         return str(value)
     elif val_type in (unicode, str):
-        return val_type
+        return value
     elif val_type == float:
         # Fixed decimal precision for charting (after scaling)
         n_sig = '%.02f' % value
@@ -254,10 +285,19 @@ def smart_str(value):
         raise ValueError('unknown value type')
 
 def color_desc(n_steps):
+    """
+    >>> color_desc(1) == to_hex(*_default_start_color)
+    True
+    >>> color_desc(2).split(',')[1] == to_hex(*_default_end_color)
+    True
+    """
     return ','.join(interpolate_color(n_steps))
 
-def interpolate_color(n_steps, start_color=(30, 30, 255),
-        end_color=(214, 214, 255)):
+_default_start_color = (30, 30, 255)
+_default_end_color = (214, 214, 255)
+
+def interpolate_color(n_steps, start_color=_default_start_color,
+        end_color=_default_end_color):
     sr, sg, sb = start_color
     er, eg, eb = end_color
 
@@ -295,7 +335,20 @@ def interpolate(start, end, n_steps):
     return results
 
 def to_hex(r, g, b):
-    return (hex(r) + hex(g) + hex(b)).replace('0x', '')
+    """
+    >>> to_hex(48, 48, 255)
+    '3030ff'
+    >>> to_hex(0, 0, 0)
+    '000000'
+    """
+    results = []
+    for c in (r, g, b):
+        if c == 0:
+            results.append('00')
+        else:
+            results.append(hex(c).replace('0x', ''))
+
+    return ''.join(results)
 
 def dummy_urlencode(val_dict):
     parts = []
