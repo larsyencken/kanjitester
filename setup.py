@@ -22,7 +22,7 @@ from os import path
 def get_revision():
     revision = None
     if os.system('which hg >/dev/null 2>&1') == 0:
-        revision = os.popen('hg id -i 2>/dev/null').read().strip().rstrip('+')
+        revision = os.popen('hg id -n 2>/dev/null').read().strip().rstrip('+')
     return revision or 'unknown'
 
 setup(
@@ -35,7 +35,8 @@ setup(
         url='http://www.csse.unimelb.edu.au/~lljy/',
 
         setup_requires=['setuptools_hg'],
-        install_requires=['django >= 1.0', 'consoleLog', 'cjktools'],
+        install_requires=['django >= 1.0', 'consoleLog', 'cjktools',
+                'mysql-python'],
 
         packages=find_packages(),
         ext_modules=[Extension(
