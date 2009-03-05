@@ -14,6 +14,7 @@ Helper classes for working with Google Charts.
 import csv
 
 from django.utils.http import urlencode
+from django.conf import settings
 from cjktools.sequences import unzip
 
 _google_charts_url = "http://chart.apis.google.com/chart?"
@@ -47,17 +48,6 @@ class Chart(dict):
         max_value = max(values)
         tick = (max_value - min_value) / 10.0
         return min_value, max_value, tick
-
-    def _normalize_points(self, old_values, new_range=(0, 100)):
-        new_min, new_max = new_range
-        new_diff = float(new_max - new_min)
-
-        old_min = min(old_values)
-        old_max = max(old_values)
-        old_diff = float(old_max - old_min)
-        values = [new_min + (x - old_min)*new_diff/old_diff for \
-                x in old_values]
-        return values
 
 class PieChart(Chart):
     def __init__(self, data, **kwargs):
@@ -104,7 +94,7 @@ class SimpleLineChart(BaseLineChart):
         super(SimpleLineChart, self).__init__(data, **kwargs)
         self['cht'] = 'lc'
         self.data = data
-        norm_vectors, transform = Transform.many(0, 100, data)
+        norm_vectors, transform = Transform.many(0, 100, data, strict=True)
         self['chd'] = self._data_string(norm_vectors)
         self.transform = transform
 
@@ -142,13 +132,13 @@ class LineChart(BaseLineChart):
         self['chxt'] = 'x,y'
         self['chxr'] = self.__setup_axes()
         self['chco'] = color_desc(1)
-
-        x_t = Transform(0, 100, self.x_axis[0], self.x_axis[1])
-        y_t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
-
+        
+        x_t = Transform(0, 100, self.x_axis[0], self.x_axis[1], strict=True)
+        y_t = Transform(0, 100, self.y_axis[0], self.y_axis[1], strict=True)
+        
         x_values = x_t.transform(self.x_data)
         y_values = y_t.transform(self.y_data)
-
+        
         self['chd'] = 't:' + self._stringify(x_values) + '|' + \
                         self._stringify(y_values)
 
@@ -169,8 +159,9 @@ class BarChart(Chart):
         self['chxr'] = '0,%s,%s,%s' % tuple((map(smart_str, self.y_axis)))
         self['chbh'] = 'a'
 
-        t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
+        t = Transform(0, 100, self.y_axis[0], self.y_axis[1], strict=True)
         norm_points = t.transform(points)
+
         self['chd'] = 't:' + (','.join(map(smart_str, norm_points)))
 
 #----------------------------------------------------------------------------#
@@ -181,12 +172,27 @@ class Transform(object):
 
     >>> Transform.single(0, 100, [0.0, 0.5, 1.0])[0]
     [0.0, 50.0, 100.0]
+    
+    >>> t = Transform(0, 1, 1, 2, strict=True)
+    >>> result = t.transform([1.1, 1.2])
+    >>> abs(result[0] - 0.1) < 1e-8
+    True
+    >>> abs(result[1] - 0.2) < 1e-8
+    True
+
+    >>> t = Transform(0, 1, 1, 2, strict=True)
+    >>> t.transform([1.1, 1.2, 3]) #doctest: +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    ValueError:
     """
-    def __init__(self, target_min, target_max, orig_min, orig_max):
+    def __init__(self, target_min, target_max, orig_min, orig_max,
+            strict=False):
         self.target_min = target_min
         self.target_max = target_max
         self.orig_min = orig_min
         self.orig_max = orig_max
+        self.strict = strict
 
         target_diff = target_max - target_min
         orig_diff = orig_max - orig_min
@@ -195,7 +201,15 @@ class Transform(object):
         self.multiplier = target_diff / float(orig_diff)
 
     def transform(self, vector):
-        return [(v - self.offset)*self.multiplier for v in vector] 
+        if self.strict:
+            checkRange(self.orig_min, self.orig_max, vector)
+            
+        result = [(v + self.offset)*self.multiplier for v in vector]
+        
+        if self.strict:
+            checkRange(self.target_min, self.target_max, result)
+        
+        return result
 
     def axis_spec(self, ticks=10, integer=False):
         if integer:
@@ -206,25 +220,32 @@ class Transform(object):
         return ','.join(map(str, [self.orig_min, self.orig_max, tick_diff]))
 
     @staticmethod
-    def single(target_min, target_max, vector):
+    def single(target_min, target_max, vector, strict=False):
         vector_min = min(vector)
         vector_max = max(vector)
 
-        t = Transform(target_min, target_max, vector_min, vector_max)
+        t = Transform(target_min, target_max, vector_min, vector_max,
+                strict=strict)
 
         return t.transform(vector), t
 
     @staticmethod
-    def many(target_min, target_max, vectors):
+    def many(target_min, target_max, vectors, strict=False):
         vector_min = min(min(v) for v in vectors)
         vector_max = max(max(v) for v in vectors)
-        t = Transform(target_min, target_max, vector_min, vector_max)
+        t = Transform(target_min, target_max, vector_min, vector_max,
+                strict=strict)
         results = []
         for v in vectors:
             results.append(t.transform(v))
 
         return results, t
-
+    
+    def __repr__(self):
+        return '<Transform: offset %f, multiplier %f>' % (
+                self.offset, self.multiplier
+            )
+    
 def choose_integer_tick(min_value, max_value, max_ticks=10):
     """
     >>> choose_integer_tick(0, 20)
@@ -255,6 +276,12 @@ def choose_max_value(current_max, multiple=5):
     return ((int(current_max) / multiple) + 1) * multiple
 
 def _iter_ranges():
+    """
+    Returns a generator for an infinite sequence of salient tick values.
+    
+    >>> itr = _iter_ranges(); [itr.next() for i in xrange(7)]
+    [1, 2, 5, 10, 20, 50, 100]
+    """
     base = [1, 2, 5]
     multiplier = 1
     while True:
@@ -264,12 +291,22 @@ def _iter_ranges():
 
 def smart_str(value):
     """
+    Converts basic types to strings, but floating point values with limited
+    precision.
+    
     >>> smart_str(1)
     '1'
+    
     >>> smart_str('dog')
     'dog'
+    
     >>> smart_str(10.23421)
     '10.23'
+    
+    >>> smart_str({})
+    Traceback (most recent call last):
+        ...
+    TypeError: unknown value type
     """
     val_type = type(value)
     if val_type == int:
@@ -282,7 +319,7 @@ def smart_str(value):
         simple = str(value)
         return (len(n_sig) < len(simple)) and n_sig or simple
     else:
-        raise ValueError('unknown value type')
+        raise TypeError('unknown value type')
 
 def color_desc(n_steps):
     """
@@ -355,5 +392,22 @@ def dummy_urlencode(val_dict):
     for key, value in sorted(val_dict.items()):
         parts.append('%s=%s' % (key, value))
     return '&'.join(parts)
+
+def checkRange(start, end, values):
+    """
+    Checks that the values are within the given range, throwing an exception 
+    if any are outside that range.
+    
+    >>> checkRange(0, 1, [0.2, 0.5]) # succeeds silently
+    >>> checkRange(0, 1, [0.2, 2, 0.5])
+    Traceback (most recent call last):
+        ...
+    ValueError: value 2.000000 out of expected range [0.000000, 1.000000]
+    """
+    for value in values:
+        if start > value or end < value:
+            raise ValueError('value %f out of expected range [%f, %f]' % (
+                value, start, end
+            ))
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
