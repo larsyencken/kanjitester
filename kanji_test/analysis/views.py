@@ -22,6 +22,7 @@ from django.conf import settings
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
 from kanji_test.util import charts
+from kanji_test.tutor import study_list
 from kanji_test import settings
 
 import stats
@@ -97,6 +98,62 @@ def chart_dashboard(request, name=None):
         context['chart'] = chart
 
     return render_to_response("analysis/charts.html", context,
+            RequestContext(request))
+
+_default_num_raters = 10
+
+@staff_only
+def raters(request):
+    context = {}
+    n = 'n' in request.GET and int(request.GET['n']) or _default_num_raters
+    context['n'] = n
+    context['raters'] = stats.get_top_n_raters(n)
+    return render_to_response("analysis/raters.html", context,
+            RequestContext(request))
+
+_default_num_pivots = 10
+
+@staff_only
+def rater_detail(request, rater_id=None):
+    context = {'use_nav': True}
+    rater = User.objects.get(id=rater_id)
+    context['rater'] = rater
+    word_chart, kanji_chart = study_list.get_performance_charts(rater)
+    word_chart.set_size('350x250')
+    kanji_chart.set_size('350x250')
+    context['word_chart'] = word_chart
+    context['kanji_chart'] = kanji_chart
+    context['stats'] = stats.get_rater_stats(rater)
+    context['word_ratio'] = word_chart.data[1][-1] / \
+            float(word_chart.data[0][-1])
+    context['kanji_ratio'] = kanji_chart.data[1][-1] / \
+            float(kanji_chart.data[0][-1])
+    return render_to_response('analysis/rater_detail.html', context,
+            RequestContext(request))
+
+@staff_only
+def pivots(request):
+    context = {}
+    n = 'n' in request.GET and int(request.GET['n']) or _default_num_pivots
+    context['n'] = n
+    
+    combined_pivot_counts = stats.get_exposures_per_pivot()
+    words = []
+    kanji = []
+    for pivot, pivot_type, n_responses in combined_pivot_counts:
+        if pivot_type == 'w':
+            words.append((pivot, n_responses))
+        elif pivot_type == 'k':
+            kanji.append((pivot, n_responses))
+        else:
+            raise ValueError('unknown pivot type: %s' % pivot_type)
+    
+    words.sort(key=lambda x: x[1], reverse=True)
+    kanji.sort(key=lambda x: x[1], reverse=True)
+    
+    context['word_results'] = words[:n]
+    context['kanji_results'] = kanji[:n]
+    return render_to_response("analysis/pivots.html", context,
             RequestContext(request))
 
 #----------------------------------------------------------------------------#
@@ -177,7 +234,7 @@ def _build_response_graph(name):
 
 def _build_pivot_graph(name):
     if name == 'exposures':
-        data = stats.get_exposures_per_pivot()
+        data = stats.get_mean_exposures_per_pivot()
         return charts.BarChart(data, y_axis=(0, 50, 10))
 
     if name == 'type':

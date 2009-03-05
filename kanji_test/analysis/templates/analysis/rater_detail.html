@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Rater analysis | {{rater.username}}
+{% endblock %}
+
+{% block content %}
+<h2>Rater analysis: {{rater.username}}</h2>
+
+<h3>Profile</h3>
+<table class="span-11" style="border: 1px solid #ddd">
+  <tr>
+    <th>First language:</th>
+    <td>{{rater.get_profile.first_language}}</td>
+  </tr>
+  <tr>
+    <th>Second languages:</th>
+    <td>{{rater.get_profile.second_languages}}</td>
+  </tr>
+  <tr>
+    <th># of responses:</th>
+    <td>{{stats.n_responses}}</td>
+  </tr>
+  <tr>
+    <th># of tests:</th>
+    <td>{{stats.n_tests}}</td>
+  </tr>
+  <tr>
+    <th>Mean accuracy:</th>
+    <td>{{stats.mean_accuracy|floatformat:3}}</td>
+  </tr>
+  <tr>
+    <th>Final word ratio:</th>
+    <td>{{word_ratio|floatformat:3}}</td>
+  </tr>
+  <tr>
+    <th>Final kanji ratio:</th>
+    <td>{{kanji_ratio|floatformat:3}}</td>
+  </tr>
+</table>
+
+<h3>Performance charts</h3>
+<p>
+<table>
+  <tr>
+    <td><img src="{{word_chart.get_url}}"></td>
+    <td><img src="{{kanji_chart.get_url}}"></td>
+  </tr>
+</table>
+<form method="GET" action="{% url analysis_raters %}">
+  <p><input type="submit" value="Back to raters"></input></p>
+</form>
+{% endblock %}

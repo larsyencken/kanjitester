@@ -12,10 +12,12 @@ Statistical analysis of user data.
 """
 
 from django.db import connection
+from django.contrib.auth.models import User
 from cjktools.stats import mean
 from cjktools import scripts
 
 from kanji_test.user_profile.models import UserProfile, Syllabus
+from kanji_test.drill.models import TestSet, Response, MultipleChoiceOption
 from kanji_test.util.probability import FreqDist
 
 def get_mean_score():
@@ -133,13 +135,14 @@ def get_language_data(name):
             lang = profile['first_language'].title()
             dist.inc(lang)
         if 'second_languages' in profile:
-            for lang in profile['second_languages'].split(','):
-                lang = lang.strip().title()
-                if lang == 'Japanese':
-                    continue
-                elif lang == '' and name != 'lang_combined':
-                    lang = 'None'
-                dist.inc(lang)
+            if profile['second_languages']:
+                for lang in profile['second_languages'].split(','):
+                    lang = lang.strip().title()
+                    if lang == 'Japanese':
+                        continue
+                    dist.inc(lang)
+            elif name != 'lang_combined':
+                dist.inc('None')
 
     return dist
 
@@ -186,17 +189,22 @@ def count_active_users():
     return cursor.fetchone()[0]
 
 def get_exposures_per_pivot():
+    "Returns the number of exposures each pivot received."
     cursor = connection.cursor()
     cursor.execute("""
         SELECT pivot, pivot_type, COUNT(*) as n_exposures
         FROM drill_question
         GROUP BY CONCAT(pivot, "|", pivot_type)
     """)
+    return cursor.fetchall()
+
+def get_mean_exposures_per_pivot():
+    data = get_exposures_per_pivot()
     word_c = []
     kanji_c = []
     combined_c = []
     kanji_inc_dist = FreqDist()
-    for pivot, pivot_type, count in cursor.fetchall():
+    for pivot, pivot_type, count in data:
         combined_c.append(count)
 
         if pivot_type == 'k':
@@ -291,5 +299,41 @@ def get_accuracy_by_pivot_type():
     data.append(('Average', average.freq(True)))
 
     return data
+
+def get_top_n_raters(n):
+    "Fetches the top n users by number of responses."
+    if n < 1:
+        raise ValueError('need at least one user')
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT r.user_id, COUNT(*) as n_responses, AVG(o.is_correct) as score
+        FROM drill_response AS r
+        INNER JOIN drill_multiplechoiceresponse AS mcr
+        ON r.id = mcr.response_ptr_id
+        INNER JOIN drill_multiplechoiceoption AS o
+        ON o.id = mcr.option_id
+        GROUP BY r.user_id
+        ORDER BY n_responses DESC
+        LIMIT %s
+    """, (n,))
+    query_results = cursor.fetchall()
+    user_ids = []
+    for user_id, n_responses, score in query_results:
+        user_ids.append(user_id)
+    user_map = User.objects.in_bulk(user_ids)
+
+    return [(user_map[user_id], nr, s) for (user_id, nr, s) in \
+            query_results]
+
+def get_rater_stats(rater):
+    responses = MultipleChoiceOption.objects.filter(
+            multiplechoiceresponse__user=rater).values('is_correct')
+    mean_accuracy = mean((r['is_correct'] and 1 or 0) for r in responses)
+    
+    return {
+        'n_responses':      Response.objects.filter(user=rater).count(),
+        'n_tests':          TestSet.objects.filter(user=rater).count(),
+        'mean_accuracy':    mean_accuracy,
+    }
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

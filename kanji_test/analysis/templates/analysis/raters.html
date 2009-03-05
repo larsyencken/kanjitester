@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Rater analysis{% endblock %}
+
+{% block content %}
+<h2>Top {{n}} raters</h2>
+<p>Here are the top {{n}} raters, as measured by number of responses.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Username</th>
+      <th># of responses</th>
+      <th>Mean accuracy</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for rater, n_responses, score in raters %}
+      <tr>
+        <td>{{forloop.counter}}</td>
+        <td>
+          <a href="{% url analysis_rater_detail rater_id=rater.id %}">{{rater.username}}</a>
+        </td>
+        <td>{{n_responses}}</td>
+        <td>{{score|floatformat:3}}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

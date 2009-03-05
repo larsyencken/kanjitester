@@ -17,6 +17,10 @@ urlpatterns = patterns('kanji_test.analysis.views',
     url(r'^data/$', 'data', name='analysis_data_base'),
     url(r'^data/(?P<name>[a-zA-Z_]+)\.(?P<format>[a-z]+)$', 
         'data', name='analysis_data'),
+    url(r'^raters/$', 'raters', name='analysis_raters'),
+    url(r'^raters/(?P<rater_id>[0-9]+)/$', 'rater_detail', 
+            name='analysis_rater_detail'),
+    url(r'^pivots/$', 'pivots', name='analysis_pivots'),
 )
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
