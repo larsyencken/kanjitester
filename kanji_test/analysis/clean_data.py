@@ -49,15 +49,58 @@ def clean_user_data(email=None, username=None):
 
         _log.finish()
     _log.finish()
+    
+language_map = {
+    'En':           'English',
+    'Eng':          'English',
+    'Frenc':        'French',
+    'Deutsch':      'German',
+    'Malaysian':    'Malay',
+    'Mongolia':     'Mongolian',
+    'Indonesia':    'Indonesian',
+    'Viet Nam':     'Vietnamese',
+    'Vietnamemese': 'Vietnamese',
+    'Sweden':       'Swedish',
+    'No':           '',
+    'In':           '',
+    'None':         '',
+    'A':            '',
+}
 
 def clean_languages():
     _log.start('Cleaning languages')
     n_cleaned = 0
     for profile in UserProfile.objects.all():
-        if profile.second_languages == 'No':
-            profile.second_languages = None
-            profile.save()
+        dirty = False
+        first_language = profile.first_language
+        first_language = first_language.strip().title()
+        if first_language in language_map:
+            first_language = language_map[first_language]
+        
+        if first_language != profile.first_language:
+            profile.first_language = first_language
+            dirty = True
+            
+        if profile.second_languages is not None:
+            second_languages = [l.strip().title() for l in
+                profile.second_languages.strip().split(',')]
+            second_languages = filter(None, second_languages)
+            second_languages = [language_map.get(l, l) for l in \
+                    second_languages]
+            
+            if second_languages:
+                second_languages = ', '.join(second_languages)
+            else:
+                second_languages = None
+            
+            if second_languages != profile.second_languages:
+                profile.second_languages = second_languages
+                dirty = True
+        
+        if dirty:
             n_cleaned += 1
+            profile.save()
+
     _log.finish('Cleaned %d profiles' % n_cleaned)
 
 #----------------------------------------------------------------------------#
