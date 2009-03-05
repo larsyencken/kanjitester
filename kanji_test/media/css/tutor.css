@@ -6,6 +6,10 @@
 
 body { margin:1.5em 0; line-height:1.625em; }
 
+h1 { text-decoration: none; }
+
+a { text-decoration: none; }
+
 .container { width:750px; }
 
 #user-tools { text-align: right; vertical-align: bottom; }

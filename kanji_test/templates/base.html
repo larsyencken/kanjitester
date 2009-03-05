@@ -28,10 +28,11 @@
   <div class="container">
     <div id="header">
       <div id="branding" class="column span-10">
-        <a href="/"><h1>{{project_name}}</h1></a>
+        <a href="/"><h1 class="bottom">{{project_name}}</h1></a>
       </div>
       <div id="user-tools" class="column span-9 last">
-        &nbsp;<br/>
+        <p class="bottom" style="line-height:1.1em">&nbsp;</p>
+        <p class="top bottom">
         {% block user_tools %}
           {% if user.is_anonymous %}
             <a href="{% url registration_register %}">Register</a> or
@@ -41,9 +42,12 @@
             <a href="{% url auth_logout %}">Log-out</a>
           {% endif %}
         {% endblock %}
+        </p>
       </div>
     </div>
-    <hr />
+    
+    <hr/>
+        
     {% block super_content %}
     <div id="content" {% block content_attrs %}class="column span-19 last"{% endblock %}>
       {% block content %}{% endblock %}
