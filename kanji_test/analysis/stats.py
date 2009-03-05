@@ -30,7 +30,7 @@ def get_mean_score():
         GROUP BY r.user_id, r.timestamp
         ORDER BY r.user_id, r.timestamp
     """)
-    map = {}
+    scores_by_n_tests = {}
     last_user_id = None
     i = None
     for user_id, score in cursor.fetchall():
@@ -40,15 +40,15 @@ def get_mean_score():
 
         score = float(score)
 
-        if i in map:
-            map[i].append(score)
+        if i in scores_by_n_tests:
+            scores_by_n_tests[i].append(score)
         else:
-            map[i] = [score]
+            scores_by_n_tests[i] = [score]
 
         i += 1
 
     results = []
-    for i, scores in sorted(map.iteritems()):
+    for i, scores in sorted(scores_by_n_tests.iteritems()):
         results.append((i, mean(scores)))
 
     return results
