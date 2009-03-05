@@ -156,7 +156,7 @@ def _build_syllabus_graph(name):
 def _build_test_graph(name):
     if name == 'mean':
         score_data = stats.get_mean_score()
-        return charts.LineChart(score_data)
+        return charts.LineChart(score_data, y_axis=(0, 1, 0.1))
 
     elif name == 'volume':
         user_data = stats.get_users_by_n_tests()

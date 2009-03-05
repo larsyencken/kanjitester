@@ -12,6 +12,7 @@ Helper classes for working with Google Charts.
 """
 
 import csv
+import operator
 
 from django.utils.http import urlencode
 from django.conf import settings
@@ -42,12 +43,6 @@ class Chart(dict):
 
     def get_data(self):
         return self.data
-
-    def _axis_from_data(self, values):
-        min_value = min(values)
-        max_value = max(values)
-        tick = (max_value - min_value) / 10.0
-        return min_value, max_value, tick
 
 class PieChart(Chart):
     def __init__(self, data, **kwargs):
@@ -92,26 +87,23 @@ class BaseLineChart(Chart):
 class SimpleLineChart(BaseLineChart):
     def __init__(self, data, **kwargs):
         super(SimpleLineChart, self).__init__(data, **kwargs)
+        self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
+                automatic_axis(range(len(data[0]) + 1))
+        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
+                automatic_axis(*data)
+        
         self['cht'] = 'lc'
         self.data = data
-        norm_vectors, transform = Transform.many(0, 100, data, strict=True)
+
+        t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
+        
+        norm_vectors = map(t.transform, data)
         self['chd'] = self._data_string(norm_vectors)
-        self.transform = transform
-
-    def get_url(self):
-        if 'chxt' not in self:
-            self.setup_axes()
-        return super(SimpleLineChart, self).get_url()
-
-    def setup_axes(self, integer=False, x_min=0):
+        self.transform = t
+        
         self['chxt'] = 'x,y'
-        x_max = x_min + len(self.data[0]) - 1
-        x_ticks = choose_integer_tick(0, x_max)
-        self['chxr'] = '0,%d,%d,%.02f|1,%s' % (
-                x_min,
-                x_max,
-                x_ticks,
-                self.transform.axis_spec(integer=integer)
+        self['chxr'] = '0,%d,%d,%.02f|1,%.02f,%.02f,%.02f' % (
+                self.x_axis + self.y_axis
             )
 
     def _data_string(self, vectors):
@@ -122,9 +114,9 @@ class LineChart(BaseLineChart):
     def __init__(self, data, **kwargs):
         self.x_data, self.y_data = unzip(data)
         self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
-                self._axis_from_data(self.x_data)
+                automatic_axis(self.x_data)
         self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                self._axis_from_data(self.y_data)
+                automatic_axis(self.y_data)
 
         super(LineChart, self).__init__(data, **kwargs)
 
@@ -149,7 +141,7 @@ class BarChart(Chart):
     def __init__(self, data, **kwargs):
         labels, points = unzip(data)
         self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                self._axis_from_data(points)
+                automatic_axis(points)
 
         super(BarChart, self).__init__(data, **kwargs)
         self['cht'] = 'bvg'
@@ -231,8 +223,8 @@ class Transform(object):
 
     @staticmethod
     def many(target_min, target_max, vectors, strict=False):
-        vector_min = min(min(v) for v in vectors)
-        vector_max = max(max(v) for v in vectors)
+        vector_min = minmin(vectors)
+        vector_max = maxmax(vectors)
         t = Transform(target_min, target_max, vector_min, vector_max,
                 strict=strict)
         results = []
@@ -245,7 +237,59 @@ class Transform(object):
         return '<Transform: offset %f, multiplier %f>' % (
                 self.offset, self.multiplier
             )
+
+def automatic_axis(*vectors):
+    """
+    Returns an automatically determined axis specification for the given 
+    values.
+    """
+    min_value = minmin(vectors)
+    max_value = maxmax(vectors)
+
+    if is_all_integer(*vectors):
+        return choose_integer_axis(min_value, max_value)
+    else:
+        return choose_float_axis(min_value, max_value)
+
+def is_all_integer(*vectors):
+    for vector in vectors:
+        for value in vector:
+            if type(value) not in (int, long):
+                return False
     
+    return True
+
+def choose_float_axis(min_value, max_value):
+    """
+    Returns a full axis specification for floating point values.
+    """
+    diff = max_value - min_value
+    
+    # If within 10% of 0, clamp the minimum value to 0
+    if min_value > 0 and min_value < 0.1 * diff:
+        min_value = 0.0
+
+    tick = (max_value - min_value) / 10.0
+    return min_value, max_value, tick
+
+def choose_integer_axis(min_value, max_value):
+    """
+    Returns a full axis specification given a minimum and maximum range for
+    the original data.
+    """
+    tick = choose_integer_tick(min_value, max_value)
+    if min_value % tick == 0:
+        new_min = min_value
+    else:
+        new_min = tick * (min_value / tick)
+        
+    if max_value % tick == 0:
+        new_max = max_value
+    else:
+        new_max = tick * ((max_value / tick) + 1)
+    
+    return new_min, new_max, tick
+
 def choose_integer_tick(min_value, max_value, max_ticks=10):
     """
     >>> choose_integer_tick(0, 20)
@@ -309,7 +353,7 @@ def smart_str(value):
     TypeError: unknown value type
     """
     val_type = type(value)
-    if val_type == int:
+    if val_type in (int, long):
         return str(value)
     elif val_type in (unicode, str):
         return value
@@ -409,5 +453,12 @@ def checkRange(start, end, values):
             raise ValueError('value %f out of expected range [%f, %f]' % (
                 value, start, end
             ))
+
+def minmin(vectors):
+    return min(min(vec) for vec in vectors)
+
+def maxmax(vectors):
+    return max(max(vec) for vec in vectors)
+
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
