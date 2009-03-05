@@ -20,11 +20,12 @@ import re
 #----------------------------------------------------------------------------#
 
 # Default include path for python, version inspecific.
-pythonVersion = sysconfig.get_config_var('VERSION')
+scons_python_version = sysconfig.get_config_var('VERSION')
+python_version = ARGUMENTS.get('python') or scons_python_version
 
 #----------------------------------------------------------------------------#
 
-def checkLibraries(env):
+def check_libraries(env):
     """ Check whether the correct libraries exist, and thus whether building
         is possible.
     """
@@ -49,12 +50,13 @@ def checkLibraries(env):
 #----------------------------------------------------------------------------#
 
 # Set up the compilation environment.
-pythonVersion = sysconfig.get_config_var('VERSION')
 env = Environment(
-        CPPPATH=sysconfig.get_python_inc(),
-        LIBPATH=[sysconfig.get_config_var('LIBPL')],
+        CPPPATH=sysconfig.get_python_inc().replace(scons_python_version,
+                python_version),
+        LIBPATH=[sysconfig.get_config_var('LIBPL').replace(
+                scons_python_version, python_version)],
         SHLIBPREFIX='',
-        LIBS=['python%s' % pythonVersion],
+        LIBS=['python%s' % python_version],
     )
 
 environmentVars = (
@@ -79,7 +81,7 @@ else:
            CFLAGS='-O3 -DNDEBUG -Wall ')
 
 # Configure the environment.
-env = checkLibraries(env)
+env = check_libraries(env)
 
 pyxbuild = Builder(action='cython -o $TARGET $SOURCE')
 env.Append(BUILDERS={'Pyrex': pyxbuild})
