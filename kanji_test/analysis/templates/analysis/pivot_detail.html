@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}
+Pivot Analysis | 
+{% ifequal pivot_type "w" %}Word:{% else %}Kanji:{% endifequal %}
+{{pivot}}
+{% endblock %}
+
+{% block content %}
+<h2>Pivot analysis: {{pivot}}</h2>
+
+<h3>Basic statistics</h3>
+
+{% ifequal pivot_type "w" %}
+
+  {% for lexeme in lexemes %}
+    <h4>Lexeme {{lexeme.id}}</h4>
+    <table class="span-16 results">
+      <tr>
+        <th width="25%">Senses:</th>
+        <td colspan="2">
+          <ul class="bottom">
+          {% for sense in lexeme.sense_set.all %}
+            <li>{{sense.gloss}}</li>
+          {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% for partial_lexeme in lexeme.partiallexeme_set.all %}
+      <tr>
+        <th rowspan="2">{{partial_lexeme.syllabus.tag.title}}:</th>
+        <th>Readings:</th>
+        <td>
+          <ul class="bottom">
+          {% for lexeme_reading in partial_lexeme.reading_set.all %}
+          <li>{{lexeme_reading.reading}}</li>
+          {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th>Surfaces:</th>
+        <td>
+          {% if partial_lexeme.surface_set.count %}
+            <ul class="bottom">
+            {% for lexeme_surface in partial_lexeme.surface_set.all %}
+              <li>{{lexeme_surface.surface}}</li>
+            {% endfor %}
+            </ul>
+          {% else %}
+            None
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endfor %}
+  
+{% else %}
+  <table class="span-16 results">
+    <tr>
+      <th width="25%">Gloss</th>
+      <td colspan="2">{{kanji.gloss}}</td>
+    </tr>
+    {% for partial_kanji in kanji.partialkanji_set.all %}
+      <tr>
+        <th>{{partial_kanji.syllabus.tag.title}}</th>
+        <th>Readings</th>
+        <td>
+          <ul class="bottom">
+          {% for reading in partial_kanji.reading_set.all %}
+            <li>{{reading.reading}}</li>
+          {% endfor %}
+          </ul>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  {% for partial_kanji in partial_kanjis %}
+  <h4>{{partial_kanji.syllabus.tag}}</h4>
+    <tr>
+      <th width="25%">Readings:</th>
+      <td>
+        <ul class="bottom">
+        {% for reading in partial_kanji.reading_set.all %}
+          <li>{{reading.reading}}</li>
+        {% endfor %}
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Gloss</th>
+      <td>{{partial_kanji.kanji.gloss}}</td>
+    </tr>
+  </table>
+  {% endfor %}
+  
+{% endifequal %}
+{% endblock %}

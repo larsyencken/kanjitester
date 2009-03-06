@@ -14,7 +14,11 @@
   <tbody>
     {% for word, num_responses in word_results %}
       <tr>
-        <td>{{word}}</td>
+        <td>
+          <a href="{% url analysis_pivot_detail pivot_type="w" %}?pivot={{word}}">
+            {{word}}
+          </a>
+        </td>
         <td>{{num_responses}}</td>
       </tr>
     {% endfor %}
@@ -29,7 +33,11 @@
   <tbody>
     {% for kanji, num_responses in kanji_results %}
       <tr>
-        <td>{{kanji}}</td>
+        <td>
+          <a href="{% url analysis_pivot_detail pivot_type="k" %}?pivot={{kanji}}">
+            {{kanji}}
+          </a>
+        </td>
         <td>{{num_responses}}</td>
       </tr>
     {% endfor %}

@@ -14,16 +14,19 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.models import User
 from django.db import connection
+from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.utils.http import urlencode
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
 from kanji_test.util import charts
 from kanji_test.tutor import study_list
-from kanji_test import settings
+from kanji_test.user_model import models as usermodel_models
+from kanji_test.lexicon import models as lexicon_models
 
 import stats
 
@@ -154,6 +157,32 @@ def pivots(request):
     context['word_results'] = words[:n]
     context['kanji_results'] = kanji[:n]
     return render_to_response("analysis/pivots.html", context,
+            RequestContext(request))
+
+@staff_only
+def pivot_detail(request, pivot_type=None):
+    if 'pivot' not in request.GET:
+        raise Http404
+    
+    context = {}
+    pivot = request.GET['pivot']
+    context['pivot'] = pivot
+    context['pivot_type'] = pivot_type
+    
+    if pivot_type == 'w':
+        lexemes = lexicon_models.Lexeme.objects.filter(
+                Q(partiallexeme__surface_set__surface=pivot) |
+                Q(partiallexeme__reading_set__reading=pivot)
+            ).distinct().order_by('id')
+        context['lexemes'] = lexemes
+        
+    elif pivot_type == 'k':
+        
+        context['kanji'] = lexicon_models.Kanji.objects.get(kanji=pivot)
+    else:
+        raise Http404
+
+    return render_to_response('analysis/pivot_detail.html', context,
             RequestContext(request))
 
 #----------------------------------------------------------------------------#

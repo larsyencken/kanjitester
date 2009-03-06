@@ -46,14 +46,19 @@
       </div>
     </div>
     
-    <hr/>
+    <hr />
         
     {% block super_content %}
-    <div id="content" {% block content_attrs %}class="column span-19 last"{% endblock %}>
-      {% block content %}{% endblock %}
+    <div id="content" class="column span-19 last">
+      {% block content %}
+      {% endblock %}
     </div>
     {% endblock %}
+    
+    <hr class="space" />
+    
     <hr />
+    
     <div id="footer" class="column span-19 last">
       <p class="small quiet">
         <a class="quiet" href="{% url tutor_about %}">About</a>

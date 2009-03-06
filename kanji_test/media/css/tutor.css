@@ -16,9 +16,9 @@ a { text-decoration: none; }
 
 #footer { text-align: center; }
 
-table.results { border: 1px solid #666; border-collapse: collapse; }
-.results th { border: 1px solid #666; }
-.results td { border: 1px solid #666; }
+table.results { border: 1px solid #ddd; border-collapse: collapse; }
+.results th { border: 1px solid #ddd; }
+.results td { border: 1px solid #ddd; }
 
 /* Pre-blueprint stuff */
 

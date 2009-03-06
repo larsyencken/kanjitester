@@ -272,6 +272,7 @@ class KanjiReading(models.Model):
     
     class Meta:
         unique_together = (('reading', 'kanji', 'reading_type'),)
+        ordering = ['kanji', 'reading']
 
     def __unicode__(self):
         return u'%s /%s/' % (self.kanji, self.reading)

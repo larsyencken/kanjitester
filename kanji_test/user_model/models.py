@@ -27,6 +27,7 @@ class Syllabus(models.Model):
     
     class Meta:
         verbose_name_plural = 'syllabi'
+        ordering = ['tag']
     
     def __unicode__(self):
         return self.tag
@@ -168,6 +169,7 @@ class PartialLexeme(models.Model):
 
     class Meta:
         unique_together = (('syllabus', 'lexeme'),)
+        ordering = ['syllabus', 'lexeme']
 
 class SenseNote(models.Model):
     """
@@ -198,6 +200,7 @@ class PartialKanji(models.Model):
     class Meta:
         verbose_name_plural = 'partial kanji'
         unique_together = (('syllabus', 'kanji'),)
+        ordering = ['syllabus', 'kanji']
 
 #----------------------------------------------------------------------------#
 
