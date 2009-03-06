@@ -14,10 +14,12 @@
 import os, sys, optparse
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 import consoleLog
 
 from kanji_test.drill import models
 from kanji_test.user_profile.models import UserProfile
+from kanji_test.user_model.models import Syllabus
 
 _log = consoleLog.default
 
@@ -103,6 +105,27 @@ def clean_languages():
 
     _log.finish('Cleaned %d profiles' % n_cleaned)
 
+def clean_manual():
+    _log.start('Manual cleaning steps')
+    
+    # The user "anna" emailed me and asked to have her profile reset so that
+    # she could progress to JLPT 4. I did so, but she stopped using the site.
+    # Here we reset her profile to JLPT 4.
+    _log.start('Fixing user: anna')
+    try:
+        anna_profile = UserProfile.objects.get(user__username='anna')
+        _log.finish('Already fixed')
+    except ObjectDoesNotExist:
+        anna_profile = UserProfile(
+                user=User.objects.get(username='anna'),
+                syllabus=Syllabus.objects.get(tag='jlpt_4'),
+                first_language='English',
+            )
+        anna_profile.save()
+        _log.finish('Added missing profile')
+    
+    _log.finish()
+
 #----------------------------------------------------------------------------#
 
 def _create_option_parser():
@@ -126,6 +149,10 @@ address."""
     parser.add_option('-l', '--lang', action='store_true',
             dest='clean_languages',
             help='Clean reported languages')
+
+    parser.add_option('-m', '--manual', action='store_true',
+            dest='clean_manual',
+            help='Perform additional manual cleaning steps.')
 
     return parser
 
@@ -153,6 +180,9 @@ def main(argv):
 
     if options.clean_languages:
         clean_languages()
+        
+    if options.clean_manual:
+        clean_manual()
     
     return
 
