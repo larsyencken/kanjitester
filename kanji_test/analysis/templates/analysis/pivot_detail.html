@@ -60,6 +60,10 @@ Pivot Analysis |
 {% else %}
 
   <tr>
+    <th>Kanji:</th>
+    <td colspan="2"><p style="font-size:200%; margin:0.5em 0.5em 0.5em 0em">{{pivot.kanji.kanji}}</p></td>
+  </tr>
+  <tr>
     <th>Gloss:</th>
     <td colspan="2">{{pivot.kanji.gloss}}</td>
   </tr>
@@ -80,8 +84,8 @@ Pivot Analysis |
 
 <h3>Response distributions</h3>
 
-{% for plugin, chart in response_dists %}
-<h4>{{plugin.name}}</h4>
+{% for name, chart in response_dists %}
+<h4>{{name}}</h4>
 <p>
  <img src="{{chart.get_url}}">
 </p>

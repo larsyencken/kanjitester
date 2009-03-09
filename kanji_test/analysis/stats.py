@@ -400,18 +400,24 @@ def get_pivot_response_stats(pivot_id, pivot_type):
         ) AS plugin_option
         ON plugin_option.option_id = mcr.option_id
     """ % {'pivot_type': pivot_type, 'pivot_id': pivot_id})
-    results = cursor.fetchall()
+    rows = cursor.fetchall()
     dist_map = {}
-    plugin_ids_used = set(plugin_id for (plugin_id, error_value) in results)
+    plugin_ids_used = set(plugin_id for (plugin_id, error_value) in rows)
     for plugin_id in plugin_ids_used:
         dist_map[plugin_id] = FreqDist()
     
-    for plugin_id, error_value in results:
+    for plugin_id, error_value in rows:
         dist_map[plugin_id].inc(error_value)
     
     plugin_map = drill_models.QuestionPlugin.objects.in_bulk(dist_map.keys())
     
-    return [(plugin_map[plugin_id], dist) \
+    results = [(plugin_map[plugin_id].name, dist) \
             for (plugin_id, dist) in dist_map.iteritems()]
+    combined_dist = FreqDist()
+    for name, dist in results:
+        combined_dist.inc(name, dist.N())
+    results[0:0] = [('By plugin type', combined_dist)]
+    
+    return results
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
