@@ -228,7 +228,15 @@ def get_top_n_pivots(n, syllabus_id, pivot_type):
         pivot_model = PartialLexeme 
     pivot_map = pivot_model.objects.in_bulk(pivot_ids)
 
-    return [(pivot_map[pid], c) for (pid, c) in base_results]
+    return [(pivot_map[pid], c, _get_n_errors(pid)) for \
+            (pid, c) in base_results]
+    
+def _get_n_errors(pivot_id):
+    n_errors = drill_models.Response.objects.filter(
+            question__pivot_id=pivot_id).filter(
+                multiplechoiceresponse__option__is_correct=False
+            ).count()
+    return n_errors
 
 def get_mean_exposures_per_pivot():
     "Returns the number of exposures each pivot received."
