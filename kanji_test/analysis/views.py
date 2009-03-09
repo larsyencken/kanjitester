@@ -150,8 +150,15 @@ def pivots_by_syllabus(request, syllabus_tag=None):
     syllabus = usermodel_models.Syllabus.objects.get(
             tag=syllabus_tag)
     context['syllabus'] = syllabus
-    context['partial_lexemes'] = stats.get_top_n_pivots(n, syllabus.id, 'w')
-    context['partial_kanjis'] = stats.get_top_n_pivots(n, syllabus.id, 'k')
+    
+    order_by = request.GET.get('order_by', 'questions')
+    if order_by == 'questions':
+        method = stats.get_pivots_by_questions
+    elif order_by == 'errors':
+        method = stats.get_pivots_by_errors
+    
+    context['partial_lexemes'] = method(n, syllabus.id, 'w')
+    context['partial_kanjis'] = method(n, syllabus.id, 'k')
  
     return render_to_response('analysis/pivots_by_syllabus.html', context,
             RequestContext(request))

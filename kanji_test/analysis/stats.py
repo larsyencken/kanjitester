@@ -190,34 +190,26 @@ def count_active_users():
     """)
     return cursor.fetchone()[0]
 
-def get_top_n_pivots(n, syllabus_id, pivot_type):
+def get_pivots_by_questions(n, syllabus_id, pivot_type):
     """
     Fetches the n pivots of the given type and from the given syllabus which
     have been used in the most questions.
     """
+    syllabus_query = _get_syllabus_query(syllabus_id, pivot_type)
+    
     cursor = connection.cursor()
-    if pivot_type == 'k':
-        pivot_table = 'user_model_partialkanji'
-    elif pivot_type == 'w':
-        pivot_table = 'user_model_partiallexeme'
-    else:
-        raise ValueError('unexpected pivot type: %s' % pivot_type)
-        
     cursor.execute("""
-        SELECT p.id, COUNT(*) as n_exposures
-        FROM drill_question AS q
-        INNER JOIN %(pivot_table)s AS p
-        ON p.id = q.pivot_id
-        WHERE q.pivot_type = "%(pivot_type)s" 
-            AND p.syllabus_id = %(syllabus_id)d
+        SELECT pivot_id, COUNT(*) AS n_exposures
+        FROM drill_question
+        WHERE pivot_type = "%(pivot_type)s"
+            AND pivot_id IN (%(syllabus_query)s)
         GROUP BY pivot_id
         ORDER BY n_exposures DESC
         LIMIT %(n)d
     """ % {
-            'pivot_type':   pivot_type,
-            'pivot_table':  pivot_table,
-            'syllabus_id':  syllabus_id, 
-            'n':            n,
+            'syllabus_query':   syllabus_query,
+            'pivot_type':       pivot_type,
+            'n':                n,
     })
     
     base_results = cursor.fetchall()
@@ -230,13 +222,41 @@ def get_top_n_pivots(n, syllabus_id, pivot_type):
 
     return [(pivot_map[pid], c, _get_n_errors(pid)) for \
             (pid, c) in base_results]
-    
-def _get_n_errors(pivot_id):
-    n_errors = drill_models.Response.objects.filter(
-            question__pivot_id=pivot_id).filter(
-                multiplechoiceresponse__option__is_correct=False
-            ).count()
-    return n_errors
+
+def get_pivots_by_errors(n, syllabus_id, pivot_type):
+    syllabus_query = _get_syllabus_query(syllabus_id, pivot_type)
+    cursor = connection.cursor()        
+    cursor.execute("""
+        SELECT q.pivot_id, COUNT(*) AS n_errors
+        FROM (
+            SELECT mco.question_id
+            FROM drill_multiplechoiceresponse AS mcr
+            INNER JOIN drill_multiplechoiceoption AS mco
+            ON mcr.option_id = mco.id
+            WHERE NOT mco.is_correct
+        ) AS qr
+        INNER JOIN drill_question AS q
+        ON qr.question_id = q.id
+        WHERE pivot_type = "%(pivot_type)s"
+            AND pivot_id IN (%(syllabus_query)s)
+        GROUP BY pivot_id
+        ORDER BY n_errors DESC
+        LIMIT %(n)d
+    """ % {
+        'syllabus_query':   syllabus_query,
+        'pivot_type':       pivot_type,
+        'n':                n,
+    })
+    base_results = cursor.fetchall()
+    pivot_ids = unzip(base_results)[0]
+    if pivot_type == 'k':
+        pivot_model = PartialKanji
+    else:
+        pivot_model = PartialLexeme 
+    pivot_map = pivot_model.objects.in_bulk(pivot_ids)
+
+    return [(pivot_map[pivot_id], _get_n_responses(pivot_id), n_errors) for \
+            (pivot_id, n_errors) in base_results]
 
 def get_mean_exposures_per_pivot():
     "Returns the number of exposures each pivot received."
@@ -427,5 +447,39 @@ def get_pivot_response_stats(pivot_id, pivot_type):
     results[0:0] = [('By plugin type', combined_dist)]
     
     return results
+
+#----------------------------------------------------------------------------#
+
+def _get_n_errors(pivot_id):
+    return drill_models.Response.objects.filter(
+            question__pivot_id=pivot_id).filter(
+                multiplechoiceresponse__option__is_correct=False
+            ).count()
+
+def _get_n_responses(pivot_id):
+    return drill_models.Response.objects.filter(question__pivot_id=pivot_id
+            ).count()
+
+def _get_syllabus_query(syllabus_id, pivot_type):
+    """
+    Returns a query for a table containing the pivot id for each pivot of the
+    given type in the syllabus.
+    """
+    if pivot_type == 'k':
+        pivot_table = 'user_model_partialkanji'
+    elif pivot_type == 'w':
+        pivot_table = 'user_model_partiallexeme'
+    else:
+        raise ValueError('unexpected pivot type: %s' % pivot_type)
+        
+    query = """
+    SELECT id
+    FROM %(pivot_table)s
+    WHERE syllabus_id = %(syllabus_id)d
+    """ % {
+            'pivot_table':  pivot_table,
+            'syllabus_id':  syllabus_id,
+        }
+    return query
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
