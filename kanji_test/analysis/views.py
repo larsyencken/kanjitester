@@ -102,10 +102,14 @@ _default_num_raters = 10
 
 @staff_only
 def raters(request):
+    """
+    Displays the top n raters by one of several metrics.
+    """
     context = {}
+    context['raters'] = stats.get_global_rater_stats()
     n = 'n' in request.GET and int(request.GET['n']) or _default_num_raters
     context['n'] = n
-    context['raters'] = stats.get_top_n_raters(n)
+    context['order_by'] = request.REQUEST.get('order_by', 'n_responses')
     return render_to_response("analysis/raters.html", context,
             RequestContext(request))
 
@@ -138,6 +142,9 @@ def pivots(request):
 
 @staff_only
 def pivots_by_syllabus(request, syllabus_tag=None):
+    """
+    Displays the top n pivots for a given syllabus.
+    """
     if syllabus_tag is None:
         raise Http404
 
@@ -165,6 +172,9 @@ def pivots_by_syllabus(request, syllabus_tag=None):
 
 @staff_only
 def pivot_detail(request, syllabus_tag=None, pivot_type=None, pivot_id=None):
+    """
+    Describes a single pivot in detail.
+    """
     if pivot_type not in ['k', 'w'] or pivot_id is None:
         raise Http404
     pivot_id = int(pivot_id)

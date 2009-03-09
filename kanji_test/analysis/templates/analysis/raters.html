@@ -2,28 +2,53 @@
 
 {% block title %}Rater analysis{% endblock %}
 
+{% load list_extras %}
+
 {% block content %}
 <h2>Top {{n}} raters</h2>
-<p>Here are the top {{n}} raters, as measured by number of responses.</p>
+<h3>Explanation</h3>
+<p>Here are the top {{n}} raters, as measured by {% ifequal order_by "n_responses" %}number of responses{% else %}your chosen metric{% endifequal %}. Several statistics are provided:</p>
+<ul>
+  <li><em>Mean accuracy</em> -- the mean accuracy over all responses.</li>
+  <li><em>Pre-ratio</em> -- the mean accuracy over all first exposures to stimulus.</li>
+  <li><em>Post-ratio</em> -- the mean accuracy over all final exposures to stimulus.</li>
+  <li><em>Pre/post diff</em> -- the difference between post and pre accuracy. If this is positive, this suggests the user has improved their knowledge whilst using the system.
+</ul>
+<form method="GET">
+  <p>Show top
+  <input name="n" value="{{n}}" style="width:2em">
+  <input type="hidden" name="order_by" value="{{order_by}}">
+  <input type="submit" value="Update">
+  </p>
+</form>
 
+<h3>Data</h3>
 <table>
   <thead>
     <tr>
       <th>#</th>
       <th>Username</th>
-      <th># of responses</th>
-      <th>Mean accuracy</th>
+      <th><a href="?n={{n}}&order_by=n_responses"># responses</a></th>
+      <th><a href="?n={{n}}&order_by=n_errors"># errors</a></th>
+      <th><a href="?n={{n}}&order_by=mean_accuracy">Mean accuracy</a></th>
+      <th><a href="?n={{n}}&order_by=pre_ratio">Pre-ratio</a></th>
+      <th><a href="?n={{n}}&order_by=post_ratio">Post-ratio</a></th>
+      <th><a href="?n={{n}}&order_by=pre_post_diff">Pre/post diff</a></th>
     </tr>
   </thead>
   <tbody>
-    {% for rater, n_responses, score in raters %}
+    {% for rater in raters|dictsortreversed:order_by|first_n:n %}
       <tr>
         <td>{{forloop.counter}}</td>
         <td>
-          <a href="{% url analysis_rater_detail rater_id=rater.id %}">{{rater.username}}</a>
+          <a href="{% url analysis_rater_detail rater_id=rater.user_id %}">{{rater.username}}</a>
         </td>
-        <td>{{n_responses}}</td>
-        <td>{{score|floatformat:3}}</td>
+        <td>{{rater.n_responses}}</td>
+        <td>{{rater.n_errors}}</td>
+        <td>{{rater.mean_accuracy|floatformat:3}}</td>
+        <td>{{rater.pre_ratio|floatformat:3}}</td>
+        <td>{{rater.post_ratio|floatformat:3}}</td>
+        <td>{{rater.pre_post_diff|floatformat:3}}</td>
       </tr>
     {% endfor %}
   </tbody>

@@ -367,31 +367,6 @@ def get_accuracy_by_pivot_type():
 
     return data
 
-def get_top_n_raters(n):
-    "Fetches the top n users by number of responses."
-    if n < 1:
-        raise ValueError('need at least one user')
-    cursor = connection.cursor()
-    cursor.execute("""
-        SELECT r.user_id, COUNT(*) as n_responses, AVG(o.is_correct) as score
-        FROM drill_response AS r
-        INNER JOIN drill_multiplechoiceresponse AS mcr
-        ON r.id = mcr.response_ptr_id
-        INNER JOIN drill_multiplechoiceoption AS o
-        ON o.id = mcr.option_id
-        GROUP BY r.user_id
-        ORDER BY n_responses DESC
-        LIMIT %s
-    """, (n,))
-    query_results = cursor.fetchall()
-    user_ids = []
-    for user_id, n_responses, score in query_results:
-        user_ids.append(user_id)
-    user_map = User.objects.in_bulk(user_ids)
-
-    return [(user_map[user_id], nr, s) for (user_id, nr, s) in \
-            query_results]
-
 def get_rater_stats(rater):
     responses = drill_models.MultipleChoiceOption.objects.filter(
             multiplechoiceresponse__user=rater).values('is_correct')
@@ -448,6 +423,50 @@ def get_pivot_response_stats(pivot_id, pivot_type):
     
     return results
 
+def get_global_rater_stats():
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+        SELECT id, username
+        FROM auth_user
+    """)
+    id_to_username = dict(cursor.fetchall())
+    
+    cursor.execute("""
+        SELECT q_time.user_id, q.pivot, q.pivot_type, q_time.is_correct
+        FROM (
+            SELECT mco.question_id, mco.is_correct, ot.user_id, ot.timestamp
+            FROM (
+                SELECT mcr.option_id, dr.user_id, dr.timestamp
+                FROM drill_response AS dr
+                INNER JOIN drill_multiplechoiceresponse AS mcr
+                ON mcr.response_ptr_id = dr.id
+            ) AS ot
+            INNER JOIN drill_multiplechoiceoption AS mco
+            ON mco.id = ot.option_id
+        ) AS q_time
+        INNER JOIN drill_question AS q
+        ON q.id = q_time.question_id
+        ORDER BY user_id ASC, q_time.timestamp ASC
+    """)
+    results = []
+    for user_id, response_data in _separate_into_users(cursor.fetchall()):
+        user_data = {
+            'user_id':      user_id,
+            'username':     id_to_username[user_id]
+        }
+        user_data['n_responses'] = len(response_data)
+        user_data['mean_accuracy'] = mean([is_correct for (x, y, is_correct)
+                in response_data])
+        user_data['n_errors'] = len([r for r in response_data if r[2]])
+
+        pre_ratio, post_ratio = _calculate_pre_post_ratios(response_data)
+        user_data['pre_ratio'] = pre_ratio
+        user_data['post_ratio'] = post_ratio
+        user_data['pre_post_diff'] = post_ratio - pre_ratio
+        results.append(user_data)
+    return results
+
 #----------------------------------------------------------------------------#
 
 def _get_n_errors(pivot_id):
@@ -481,5 +500,37 @@ def _get_syllabus_query(syllabus_id, pivot_type):
             'syllabus_id':  syllabus_id,
         }
     return query
+
+def _separate_into_users(query_rows):
+    "Provides an iterator over query data"
+    current_id = None
+    response_data = []
+    for user_id, pivot, pivot_type, is_correct in query_rows:
+        if user_id != current_id:
+            if response_data:
+                yield current_id, response_data
+            
+            current_id = user_id
+            response_data = []
+        
+        response_data.append((pivot, pivot_type, is_correct))
+    return
+
+def _calculate_pre_post_ratios(response_data):
+    """
+    Returns the number of data which are correctly responded to on their first
+    presentation.
+    """
+    seen = set()
+    first_responses = []
+    last_responses = {}
+    for pivot_id, pivot_type, is_correct in response_data:
+        if pivot_id not in seen:
+            first_responses.append(is_correct)
+            seen.add(pivot_id)
+            
+        last_responses[pivot_id] = is_correct
+    
+    return mean(first_responses), mean(last_responses.values())
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
