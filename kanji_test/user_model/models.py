@@ -32,6 +32,9 @@ class Syllabus(models.Model):
     def __unicode__(self):
         return self.tag
 
+    def tag_without_spaces(self):
+        return self.tag.replace(' ', '_')
+
     def get_random_item(self):
         "Returns a random item from this syllabus, either kanji or lexeme."
         if random.random() < self._get_word_proportion():

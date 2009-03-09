@@ -15,9 +15,11 @@ from django.db import connection
 from django.contrib.auth.models import User
 from cjktools.stats import mean
 from cjktools import scripts
+from cjktools.sequences import unzip
 
 from kanji_test.user_profile.models import UserProfile, Syllabus
-from kanji_test.drill.models import TestSet, Response, MultipleChoiceOption
+from kanji_test.user_model.models import PartialLexeme, PartialKanji
+from kanji_test.drill import models as drill_models
 from kanji_test.util.probability import FreqDist
 
 def get_mean_score():
@@ -188,7 +190,47 @@ def count_active_users():
     """)
     return cursor.fetchone()[0]
 
-def get_exposures_per_pivot():
+def get_top_n_pivots(n, syllabus_id, pivot_type):
+    """
+    Fetches the n pivots of the given type and from the given syllabus which
+    have been used in the most questions.
+    """
+    cursor = connection.cursor()
+    if pivot_type == 'k':
+        pivot_table = 'user_model_partialkanji'
+    elif pivot_type == 'w':
+        pivot_table = 'user_model_partiallexeme'
+    else:
+        raise ValueError('unexpected pivot type: %s' % pivot_type)
+        
+    cursor.execute("""
+        SELECT p.id, COUNT(*) as n_exposures
+        FROM drill_question AS q
+        INNER JOIN %(pivot_table)s AS p
+        ON p.id = q.pivot_id
+        WHERE q.pivot_type = "%(pivot_type)s" 
+            AND p.syllabus_id = %(syllabus_id)d
+        GROUP BY pivot_id
+        ORDER BY n_exposures DESC
+        LIMIT %(n)d
+    """ % {
+            'pivot_type':   pivot_type,
+            'pivot_table':  pivot_table,
+            'syllabus_id':  syllabus_id, 
+            'n':            n,
+    })
+    
+    base_results = cursor.fetchall()
+    pivot_ids = unzip(base_results)[0]
+    if pivot_type == 'k':
+        pivot_model = PartialKanji
+    else:
+        pivot_model = PartialLexeme 
+    pivot_map = pivot_model.objects.in_bulk(pivot_ids)
+
+    return [(pivot_map[pid], c) for (pid, c) in base_results]
+
+def get_mean_exposures_per_pivot():
     "Returns the number of exposures each pivot received."
     cursor = connection.cursor()
     cursor.execute("""
@@ -196,10 +238,7 @@ def get_exposures_per_pivot():
         FROM drill_question
         GROUP BY CONCAT(pivot, "|", pivot_type)
     """)
-    return cursor.fetchall()
-
-def get_mean_exposures_per_pivot():
-    data = get_exposures_per_pivot()
+    data = cursor.fetchall()
     word_c = []
     kanji_c = []
     combined_c = []
@@ -326,14 +365,53 @@ def get_top_n_raters(n):
             query_results]
 
 def get_rater_stats(rater):
-    responses = MultipleChoiceOption.objects.filter(
+    responses = drill_models.MultipleChoiceOption.objects.filter(
             multiplechoiceresponse__user=rater).values('is_correct')
     mean_accuracy = mean((r['is_correct'] and 1 or 0) for r in responses)
     
     return {
-        'n_responses':      Response.objects.filter(user=rater).count(),
-        'n_tests':          TestSet.objects.filter(user=rater).count(),
-        'mean_accuracy':    mean_accuracy,
+        'n_responses': drill_models.Response.objects.filter(
+                user=rater).count(),
+        'n_tests': drill_models.TestSet.objects.filter(
+                user=rater).count(),
+        'mean_accuracy': mean_accuracy,
     }
+
+def get_pivot_response_stats(pivot_id, pivot_type):
+    """
+    Given a particular pivot, generate a distribution of observed erroneous 
+    responses for each type of plugin.
+    """
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+        SELECT plugin_option.plugin_id, plugin_option.value
+        FROM drill_multiplechoiceresponse AS mcr
+        INNER JOIN (
+            SELECT pivot_qn.plugin_id, mco.id AS option_id, mco.value
+            FROM (
+                SELECT id, question_plugin_id AS plugin_id
+                FROM drill_question
+                WHERE pivot_type = "%(pivot_type)s"
+                    AND pivot_id = %(pivot_id)d
+            ) AS pivot_qn
+            INNER JOIN drill_multiplechoiceoption AS mco
+            ON mco.question_id = pivot_qn.id
+        ) AS plugin_option
+        ON plugin_option.option_id = mcr.option_id
+    """ % {'pivot_type': pivot_type, 'pivot_id': pivot_id})
+    results = cursor.fetchall()
+    dist_map = {}
+    plugin_ids_used = set(plugin_id for (plugin_id, error_value) in results)
+    for plugin_id in plugin_ids_used:
+        dist_map[plugin_id] = FreqDist()
+    
+    for plugin_id, error_value in results:
+        dist_map[plugin_id].inc(error_value)
+    
+    plugin_map = drill_models.QuestionPlugin.objects.in_bulk(dist_map.keys())
+    
+    return [(plugin_map[plugin_id], dist) \
+            for (plugin_id, dist) in dist_map.iteritems()]
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

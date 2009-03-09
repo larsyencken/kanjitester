@@ -3,44 +3,15 @@
 {% block title %}Pivot analysis{% endblock %}
 
 {% block content %}
-<h2>Top {{n}} pivots</h2>
-<p>Here are the top {{n}} pivots, as measured number of responses.</p>
-
-<h3>Words</h3>
-<table>
-  <thead>
-    <th>Word</th><th># responses</th>
-  </thead>
-  <tbody>
-    {% for word, num_responses in word_results %}
-      <tr>
-        <td>
-          <a href="{% url analysis_pivot_detail pivot_type="w" %}?pivot={{word}}">
-            {{word}}
-          </a>
-        </td>
-        <td>{{num_responses}}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<h3>Kanji</h3>
-<table>
-  <thead>
-    <th>Kanji</th><th># responses</th>
-  </thead>
-  <tbody>
-    {% for kanji, num_responses in kanji_results %}
-      <tr>
-        <td>
-          <a href="{% url analysis_pivot_detail pivot_type="k" %}?pivot={{kanji}}">
-            {{kanji}}
-          </a>
-        </td>
-        <td>{{num_responses}}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<h2>Top n pivots</h2>
+<h3>Pick a syllabus</h3>
+<ul>
+  {% for syllabus in syllabi %}
+    <li>
+      <a href="{% url analysis_pivots_syllabus syllabus_tag=syllabus.tag_without_spaces %}">
+        {{syllabus.tag.title}}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
 {% endblock %}

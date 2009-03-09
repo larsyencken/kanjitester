@@ -7,94 +7,84 @@ Pivot Analysis |
 {% endblock %}
 
 {% block content %}
-<h2>Pivot analysis: {{pivot}}</h2>
+<h2>Pivot depth analysis</h2>
 
-<h3>Basic statistics</h3>
+<h3>Details</h3>
 
+<table class="span-12 results">
+  <tr>
+    <th width="25%">Id:</th>
+    <td>{{pivot.id}}</td>
+  </tr>
+  <tr>
+    <th>Type:</th>
+    <td>{% ifequal pivot_type "w" %}Word{% else %}Kanji{% endifequal %}</td>
+  </tr>
 {% ifequal pivot_type "w" %}
 
-  {% for lexeme in lexemes %}
-    <h4>Lexeme {{lexeme.id}}</h4>
-    <table class="span-16 results">
-      <tr>
-        <th width="25%">Senses:</th>
-        <td colspan="2">
-          <ul class="bottom">
-          {% for sense in lexeme.sense_set.all %}
-            <li>{{sense.gloss}}</li>
-          {% endfor %}
-          </ul>
-        </td>
-      </tr>
-      {% for partial_lexeme in lexeme.partiallexeme_set.all %}
-      <tr>
-        <th rowspan="2">{{partial_lexeme.syllabus.tag.title}}:</th>
-        <th>Readings:</th>
-        <td>
-          <ul class="bottom">
-          {% for lexeme_reading in partial_lexeme.reading_set.all %}
-          <li>{{lexeme_reading.reading}}</li>
-          {% endfor %}
-          </ul>
-        </td>
-      </tr>
-      <tr>
-        <th>Surfaces:</th>
-        <td>
-          {% if partial_lexeme.surface_set.count %}
-            <ul class="bottom">
-            {% for lexeme_surface in partial_lexeme.surface_set.all %}
-              <li>{{lexeme_surface.surface}}</li>
-            {% endfor %}
-            </ul>
-          {% else %}
-            None
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
-  {% endfor %}
-  
-{% else %}
-  <table class="span-16 results">
-    <tr>
-      <th width="25%">Gloss</th>
-      <td colspan="2">{{kanji.gloss}}</td>
-    </tr>
-    {% for partial_kanji in kanji.partialkanji_set.all %}
-      <tr>
-        <th>{{partial_kanji.syllabus.tag.title}}</th>
-        <th>Readings</th>
-        <td>
-          <ul class="bottom">
-          {% for reading in partial_kanji.reading_set.all %}
-            <li>{{reading.reading}}</li>
-          {% endfor %}
-          </ul>
-        </td>
-      </tr>
-    {% endfor %}
-  </table>
-
-  {% for partial_kanji in partial_kanjis %}
-  <h4>{{partial_kanji.syllabus.tag}}</h4>
-    <tr>
-      <th width="25%">Readings:</th>
-      <td>
+  <tr>
+    <th>Surfaces:</th>
+    <td>
+      {% if pivot.surface_set.count %}
         <ul class="bottom">
-        {% for reading in partial_kanji.reading_set.all %}
-          <li>{{reading.reading}}</li>
+        {% for lexeme_surface in pivot.surface_set.all %}
+          <li>{{lexeme_surface.surface}}</li>
         {% endfor %}
         </ul>
-      </td>
-    </tr>
-    <tr>
-      <th>Gloss</th>
-      <td>{{partial_kanji.kanji.gloss}}</td>
-    </tr>
-  </table>
-  {% endfor %}
+      {% else %}
+        None
+      {% endif %}
+    </td>
+  </tr>
+  <tr>
+    <th>Readings:</th>
+    <td>
+      <ul class="bottom">
+      {% for lexeme_reading in pivot.reading_set.all %}
+      <li>{{lexeme_reading.reading}}</li>
+      {% endfor %}
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <th>Senses:</th>
+    <td>
+      <ul class="bottom">
+      {% for sense in pivot.lexeme.sense_set.all %}
+        <li>{{sense.gloss}}</li>
+      {% endfor %}
+      </ul>
+    </td>
+  </tr>
   
+{% else %}
+
+  <tr>
+    <th>Gloss:</th>
+    <td colspan="2">{{pivot.kanji.gloss}}</td>
+  </tr>
+  <tr>
+    <th>Readings:</th>
+    <td>
+      <ul class="bottom">
+        {% for reading in pivot.reading_set.all %}
+          <li>{{reading.reading}}</li>
+        {% endfor %}
+      </ul>
+    </td>
+  </tr>
+
 {% endifequal %}
+
+</table>
+
+<h3>Response distributions</h3>
+
+{% for plugin, chart in response_dists %}
+<h4>{{plugin.name}}</h4>
+<p>
+ <img src="{{chart.get_url}}">
+</p>
+{% endfor %}
+
 {% endblock %}

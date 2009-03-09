@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Top n pivots: {{syllabus.tag.title}}</h2>
+
+<h3>Words</h3>
+<table class="results span-12">
+  <thead>
+    <tr>
+      <th width="50%">Word</th><th># responses</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for partial_lexeme, count in partial_lexemes %}
+      <tr>
+        <td>
+          <a href="{% url analysis_pivot_detail pivot_type="w",syllabus_tag=syllabus.tag_without_spaces,pivot_id=partial_lexeme.id %}">
+            {{partial_lexeme}}
+          </a>
+        </td>
+        <td>{{count}}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3>Kanji</h3>
+<table class="results span-12">
+  <thead>
+    <tr>
+      <th width="50%">Kanji</th><th># responses</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for partial_kanji, count in partial_kanjis %}
+      <tr>
+        <td>
+        <a href="{% url analysis_pivot_detail pivot_type="k",syllabus_tag=syllabus.tag_without_spaces,pivot_id=partial_kanji.id %}">
+          {{partial_kanji}}
+        </a>
+        </td>
+        <td>{{count}}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

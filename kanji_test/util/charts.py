@@ -64,7 +64,7 @@ class PieChart(Chart):
         labels, values = unzip(normalized_data)
 
         self['chd'] = 't:' + ','.join(smart_str(x) for x in values)
-        self['chl'] = '|'.join(map(str, labels))
+        self['chl'] = '|'.join(map(smart_str, labels))
 
     def __truncate_options(self, sorted_data, max_options):
         "Truncates the data to the number of options given."
@@ -355,8 +355,10 @@ def smart_str(value):
     val_type = type(value)
     if val_type in (int, long):
         return str(value)
-    elif val_type in (unicode, str):
+    elif val_type == str:
         return value
+    elif val_type == unicode:
+        return value.encode('utf8')
     elif val_type == float:
         # Fixed decimal precision for charting (after scaling)
         n_sig = '%.02f' % value

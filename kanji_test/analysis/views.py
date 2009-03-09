@@ -13,20 +13,15 @@ import operator
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.models import User
-from django.db import connection
-from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
-from django.utils.http import urlencode
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
 from kanji_test.util import charts
 from kanji_test.tutor import study_list
 from kanji_test.user_model import models as usermodel_models
-from kanji_test.lexicon import models as lexicon_models
 
 import stats
 
@@ -137,51 +132,54 @@ def rater_detail(request, rater_id=None):
 @staff_only
 def pivots(request):
     context = {}
-    n = 'n' in request.GET and int(request.GET['n']) or _default_num_pivots
-    context['n'] = n
-    
-    combined_pivot_counts = stats.get_exposures_per_pivot()
-    words = []
-    kanji = []
-    for pivot, pivot_type, n_responses in combined_pivot_counts:
-        if pivot_type == 'w':
-            words.append((pivot, n_responses))
-        elif pivot_type == 'k':
-            kanji.append((pivot, n_responses))
-        else:
-            raise ValueError('unknown pivot type: %s' % pivot_type)
-    
-    words.sort(key=lambda x: x[1], reverse=True)
-    kanji.sort(key=lambda x: x[1], reverse=True)
-    
-    context['word_results'] = words[:n]
-    context['kanji_results'] = kanji[:n]
+    context['syllabi'] = usermodel_models.Syllabus.objects.all()
     return render_to_response("analysis/pivots.html", context,
             RequestContext(request))
 
 @staff_only
-def pivot_detail(request, pivot_type=None):
-    if 'pivot' not in request.GET:
-        raise Http404
-    
-    context = {}
-    pivot = request.GET['pivot']
-    context['pivot'] = pivot
-    context['pivot_type'] = pivot_type
-    
-    if pivot_type == 'w':
-        lexemes = lexicon_models.Lexeme.objects.filter(
-                Q(partiallexeme__surface_set__surface=pivot) |
-                Q(partiallexeme__reading_set__reading=pivot)
-            ).distinct().order_by('id')
-        context['lexemes'] = lexemes
-        
-    elif pivot_type == 'k':
-        
-        context['kanji'] = lexicon_models.Kanji.objects.get(kanji=pivot)
-    else:
+def pivots_by_syllabus(request, syllabus_tag=None):
+    if syllabus_tag is None:
         raise Http404
 
+    context = {}
+
+    n = 'n' in request.GET and int(request.GET['n']) or _default_num_pivots
+    context['n'] = n
+
+    syllabus_tag = syllabus_tag.replace('_', ' ')
+    syllabus = usermodel_models.Syllabus.objects.get(
+            tag=syllabus_tag)
+    context['syllabus'] = syllabus
+    context['partial_lexemes'] = stats.get_top_n_pivots(n, syllabus.id, 'w')
+    context['partial_kanjis'] = stats.get_top_n_pivots(n, syllabus.id, 'k')
+ 
+    return render_to_response('analysis/pivots_by_syllabus.html', context,
+            RequestContext(request))
+
+@staff_only
+def pivot_detail(request, syllabus_tag=None, pivot_type=None, pivot_id=None):
+    if pivot_type not in ['k', 'w'] or pivot_id is None:
+        raise Http404
+    pivot_id = int(pivot_id)
+    
+    context = {}
+    context['pivot_type'] = pivot_type
+    context['syllabus'] = usermodel_models.Syllabus.objects.get(
+            tag=syllabus_tag.replace('_', ' '))
+
+    if pivot_type == 'k':
+        pivot = usermodel_models.PartialKanji.objects.get(id=pivot_id)
+    else:
+        assert pivot_type == 'w'
+        pivot = usermodel_models.PartialLexeme.objects.get(id=pivot_id)
+
+    context['pivot'] = pivot
+    
+    base_response_stats = stats.get_pivot_response_stats(pivot.id, pivot_type)
+    context['response_dists'] = [
+            (l, charts.PieChart(d.items(), size='750x200'))
+            for (l, d) in base_response_stats]
+    
     return render_to_response('analysis/pivot_detail.html', context,
             RequestContext(request))
 
