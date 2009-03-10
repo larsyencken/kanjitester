@@ -15,6 +15,9 @@ from cjktools import scripts
 from kanji_test import settings
 from kanji_test.user_model import models
 
+class UpdateError(Exception):
+    pass
+
 class UserModelPlugin(object):
     """
     A plugin which provides one or more prior distributions across a form
@@ -61,8 +64,21 @@ class SegmentedSeqPlugin(UserModelPlugin):
             sub_dist = models.ProbDist.from_query_set(
                     error_dist.density.filter(condition=base_seg))
             e = settings.UPDATE_EPSILON
-            m = max(imap(sub_dist.__getitem__, distractor_segs)) + e
-            if m > sub_dist[response_seg]:
+
+            try:
+                m = max(imap(sub_dist.__getitem__, distractor_segs)) + e
+                existing_score = sub_dist[response_seg]
+            except KeyError:
+                raise UpdateError(
+                    u'for user %s, dist %s, response %d: no entry for %s|%s' % (
+                            response.user.username,
+                            self.dist_name,
+                            response.id,
+                            response_seg,
+                            base_seg,
+                    ))
+
+            if m > existing_score:
                 sub_dist[response_seg] = m
                 sub_dist.normalise()
                 sub_dist.save_to(error_dist.density, condition=base_seg)
