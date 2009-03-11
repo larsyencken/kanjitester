@@ -21,7 +21,6 @@ class AlignmentAdmin(admin.ModelAdmin):
     list_display = ('syllabus', 'surface', 'reading', 'alignment')
     list_filter = ('syllabus',)
     search_fields = ('reading__reading', 'surface__surface')
-admin.site.register(models.Alignment, AlignmentAdmin)
 
 class SenseNoteAdmin(admin.ModelAdmin):
     list_display = ('partial_lexeme', 'note')
@@ -48,6 +47,7 @@ class ErrorDistAdmin(admin.ModelAdmin):
     list_filter = ('tag',)
     search_fields = ('user__username',)
 
+admin.site.register(models.Alignment, AlignmentAdmin)
 admin.site.register(models.PartialLexeme, PartialLexemeAdmin)
 admin.site.register(models.PartialKanji, PartialKanjiAdmin)
 admin.site.register(models.Syllabus)
@@ -56,4 +56,3 @@ admin.site.register(models.PriorPdf, PriorPdfAdmin)
 admin.site.register(models.ErrorDist, ErrorDistAdmin)
 admin.site.register(models.ErrorPdf, ErrorPdfAdmin)
 admin.site.register(models.SenseNote, SenseNoteAdmin)
-

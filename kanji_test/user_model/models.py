@@ -8,6 +8,7 @@
 # 
 
 import random
+import itertools
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -118,6 +119,10 @@ class Alignment(models.Model):
 
     def __unicode__(self):
         return self.alignment
+        
+    def __iter__(self):
+        for value in self.alignment_obj:
+            yield value
 
     class Meta:
         unique_together = (('syllabus', 'reading', 'surface', 'alignment'),)
@@ -218,7 +223,7 @@ class PriorDist(models.Model):
         verbose_name_plural = 'prior distributions'
 
     def __unicode__(self):
-        return self.tag
+        return '%s (%d)' % (self.tag, self.syllabus_id)
 
     def from_dist(self, dist):
         rows = []
