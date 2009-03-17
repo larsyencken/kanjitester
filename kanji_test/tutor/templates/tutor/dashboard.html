@@ -62,7 +62,11 @@
   </select> questions)
   </p>
   </form>
-
+  {% if has_results %}
+  <form method="GET" action="{% url tutor_study %}">
+    <input type="submit" value="Study last test">
+  </form>
+  {% endif %}
   </div>
 
   {% if user.is_staff %}

@@ -238,6 +238,11 @@ class TestSet(models.Model):
     def get_latest(user):
         return TestSet.objects.filter(user=user).order_by('-end_time')[0]
 
+    @staticmethod
+    def get_latest_completed(user):
+        return TestSet.objects.filter(user=user).exclude(end_time=None
+                ).order_by('-end_time')[0]
+
     def ordered_questions(self):
         question_list = list(self.questions.order_by('id'))
         random.seed(self.random_seed)

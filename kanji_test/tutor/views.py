@@ -92,12 +92,13 @@ def study(request):
     """Study the mistakes made in a test set."""
     context = {}
     if request.method != 'POST' or 'test_set_id' not in request.POST:
-        raise Http404
+        test_set = drill_models.TestSet.get_latest_completed(request.user)
+    else:
+        test_set_id = int(request.POST['test_set_id'])
+        test_set = drill_models.TestSet.objects.get(id=test_set_id)
         
     syllabus = request.user.get_profile().syllabus
     
-    test_set_id = int(request.POST['test_set_id'])
-    test_set = drill_models.TestSet.objects.get(id=test_set_id)
     failed_responses = test_set.responses.filter(option__is_correct=False)
     failed_questions = test_set.questions.filter(
             response__in=failed_responses)
