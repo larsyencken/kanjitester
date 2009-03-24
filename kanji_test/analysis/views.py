@@ -69,20 +69,11 @@ def data(request, name=None, format=None):
                 mimetype=mimetype)
 
     elif format == 'csv':
-        if not settings.DEBUG:
-            response = HttpResponse(mimetype='text/csv')
-            response['Content-Disposition'] = \
-                    'attachment; filename=%s.csv' % name
-        else:
-            response = HttpResponse(mimetype='text/html')
-        writer = csv.writer(response)
-        for row in chart.data:
-            writer.writerow(row)
-        return response
-
+        return _chart_csv_response(chart, name)
+        
     else:
         raise Http404
-
+    
 @staff_only
 def chart_dashboard(request, name=None):
     context = {}
@@ -132,6 +123,22 @@ def rater_detail(request, rater_id=None):
             float(kanji_chart.data[0][-1])
     return render_to_response('analysis/rater_detail.html', context,
             RequestContext(request))
+
+@staff_only
+def rater_csv(request, rater_id=None, data_type=None):
+    "Provide an individual rater's performance data in CSV format."
+    rater_id = int(rater_id)
+    if data_type not in ['kanji', 'word']:
+        raise Http404
+    
+    rater = User.objects.get(id=rater_id)
+    word_chart, kanji_chart = study_list.get_performance_charts(rater)
+    name = 'rater_%d_%s' % (rater_id, data_type)
+    if data_type == 'kanji':
+        return _chart_csv_response(kanji_chart, name)
+    
+    assert data_type == 'word'
+    return _chart_csv_response(word_chart, name)
 
 @staff_only
 def pivots(request):
@@ -203,6 +210,19 @@ def pivot_detail(request, syllabus_tag=None, pivot_type=None, pivot_id=None):
 #----------------------------------------------------------------------------#
 # HELPERS
 #----------------------------------------------------------------------------#
+
+def _chart_csv_response(chart, name):
+    "Respond with the data from a chart."
+    if not settings.DEBUG:
+        response = HttpResponse(mimetype='text/csv')
+        response['Content-Disposition'] = \
+                'attachment; filename=%s.csv' % name
+    else:
+        response = HttpResponse(mimetype='text/html')
+    writer = csv.writer(response)
+    for row in chart.data:
+        writer.writerow(row)
+    return response
 
 class Column(object):
     def __init__(self, title, charts_v):
