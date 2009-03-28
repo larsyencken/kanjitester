@@ -54,22 +54,22 @@ class Migration:
         # Model 'KanjiProb'
         db.create_table('lexicon_kanjiprob', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('symbol', models.CharField(max_length=50, db_index=True, unique=True)),
         ))
         # Model 'KanjiReadingProb'
         db.create_table('lexicon_kanjireadingprob', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('symbol', models.CharField(max_length=50, db_index=True, unique=True)),
         ))
         # Model 'KanjiReadingCondProb'
         db.create_table('lexicon_kanjireadingcondprob', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('condition', models.CharField(max_length=50, db_index=True)),
             ('symbol', models.CharField(max_length=50, db_index=True)),
         ))
@@ -78,15 +78,15 @@ class Migration:
         # Model 'LexemeSurfaceProb'
         db.create_table('lexicon_lexemesurfaceprob', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('symbol', models.CharField(max_length=50, db_index=True, unique=True)),
         ))
         # Model 'LexemeReadingProb'
         db.create_table('lexicon_lexemereadingprob', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('condition', models.CharField(max_length=50, db_index=True)),
             ('symbol', models.CharField(max_length=50, db_index=True)),
         ))
@@ -102,6 +102,7 @@ class Migration:
         Kanji = db.mock_model(model_name='Kanji', db_table='lexicon_kanji', db_tablespace='', pk_field_name='kanji', pk_field_type=models.CharField, pk_field_args=[], pk_field_kwargs={'max_length': 3})
         
         # Model 'KanjiReading'
+        READING_TYPES = (('o', 'on'), ('k', 'kun'))
         db.create_table('lexicon_kanjireading', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('kanji', models.ForeignKey(Kanji, related_name='reading_set')),

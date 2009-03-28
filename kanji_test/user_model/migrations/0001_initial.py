@@ -124,8 +124,8 @@ class Migration:
         # Model 'PriorPdf'
         db.create_table('user_model_priorpdf', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('condition', models.CharField(max_length=50, db_index=True)),
             ('symbol', models.CharField(max_length=50, db_index=True)),
             ('dist', models.ForeignKey(PriorDist, related_name='density')),
@@ -151,8 +151,8 @@ class Migration:
         # Model 'ErrorPdf'
         db.create_table('user_model_errorpdf', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('pdf', prob_dist.freq(symbol)),
-            ('cdf', 0.0),
+            ('pdf', models.FloatField()),
+            ('cdf', models.FloatField()),
             ('condition', models.CharField(max_length=50, db_index=True)),
             ('symbol', models.CharField(max_length=50, db_index=True)),
             ('dist', models.ForeignKey(ErrorDist, related_name='density')),
