@@ -113,6 +113,7 @@ INSTALLED_APPS = (
     'kanji_test.user_profile',
     'kanji_test.analysis',
     'checksum',
+    'south',
 )
 
 TEST_DATABASE_CHARSET = 'utf8'
