@@ -7,10 +7,10 @@
 #  Copyright 2009 Lars Yencken. All rights reserved.
 #
 
-import time 
+import datetime 
 
 from django.db import connection
-from django.contrib.auth.models import User
+from django.conf import settings
 from cjktools import scripts
 
 from kanji_test.util import charts
@@ -48,7 +48,7 @@ def get_performance_charts(user):
     colours = '000000,3030ff'
     
     word_data, kanji_data = _get_performance_analysis(response_data)
-    
+            
     word_chart = charts.SimpleLineChart(word_data)
     word_chart['chtt'] = 'Words'
     word_chart['chdl'] = 'Tested|Correct'
@@ -64,6 +64,10 @@ def get_performance_charts(user):
 #----------------------------------------------------------------------------#
 
 def _fetch_response_data(user):
+    """
+    For all responses the user has made, fetches the stimulus, timestamp
+    and correctness of the response.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT q.pivot, q.pivot_type, q_time.is_correct, q_time.timestamp
@@ -118,7 +122,13 @@ def _embellish(response_data):
                 yield kanji, 'k', is_correct, timestamp
 
 def _get_performance_analysis(response_data):
-    current_time = None
+    """
+    Groups data by timestamp and determines how many stimulus the user has
+    been exposed to, and how they performed on their last exposure to each
+    stimulus item.
+    """
+    # Dummy start time, get's overwritten quickly
+    current_time = datetime.datetime.now() - datetime.timedelta(days=10000)
     unique_w = set()
     correct_w = set()
     unique_w_t = []
@@ -127,8 +137,11 @@ def _get_performance_analysis(response_data):
     correct_k = set()
     unique_k_t = []
     correct_k_t = []
+    # Use a five-second epsilon rule
+    five_seconds = datetime.timedelta(seconds=5)
     for pivot, pivot_type, is_correct, timestamp in _embellish(response_data):
-        if current_time != timestamp:
+        if abs(current_time - timestamp) > five_seconds:
+            print current_time
             # Flush previous timestamp's data
             unique_w_t.append(len(unique_w))
             correct_w_t.append(len(correct_w))

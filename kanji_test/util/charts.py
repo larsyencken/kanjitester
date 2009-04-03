@@ -83,15 +83,14 @@ class BaseLineChart(Chart):
     def _stringify(self, values):
         return ','.join(['%.02f' % v for v in values])
 
-
 class SimpleLineChart(BaseLineChart):
     def __init__(self, data, **kwargs):
         super(SimpleLineChart, self).__init__(data, **kwargs)
         self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
-                automatic_axis(range(len(data[0]) + 1))
+                automatic_axis(range(len(data[0])))
         self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
                 automatic_axis(*data)
-        
+                
         self['cht'] = 'lc'
         self.data = data
 
