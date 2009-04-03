@@ -24,14 +24,15 @@ from kanji_test.user_model.models import Syllabus
 _log = consoleLog.default
 
 def clean_user_data(email=None, username=None): 
-    if not email:
-        raise Exception('need email for now')
-    elif username:
-        raise Exception("don't support username yet")
-
-    _log.start('Cleaning address %s' % email)
+    _log.start('Cleaning user responses')
     _log.start('Checking database')
-    users = User.objects.filter(email=email)
+    users = []
+    if email:
+        users.extend(User.objects.filter(email=email))
+    
+    if username:
+        users.append(User.objects.get(username=username))
+    
     _log.finish('Found %d user%s: %s' % (
             len(users), 
             (len(users) != 1) and 's' or '', # pluralize
