@@ -30,6 +30,14 @@ active user is one that has completed at least one test.</p>
   <tr>
     <td>Per user</td><td colspan="2">{{tests_per_user|floatformat:2}}</td>
   </tr>
+  
+  <tr>
+    <th rowspan="2">Time between tests:</th>
+    <td>Mean</td><td colspan="2">{{mean_tbt}}</td>
+  </tr>
+  <tr>
+    <td>Stddev</td><td colspan="2">{{std_tbt}}</td>
+  </tr>
 
   <tr>
     <th rowspan="{{test_dist|length|add:"1"}}">Test sizes:</th>

@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.conf import settings
+from cjktools.stats import basicStats
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
@@ -45,6 +46,11 @@ def basic(request):
 
     num_tests = models.TestSet.objects.exclude(end_time=None).count()
     context['num_tests'] = num_tests
+    
+    (
+        context['mean_tbt'],
+        context['std_tbt'],
+    ) = basicStats(stats.get_time_between_tests())
     
     context['log_start_time'] = models.TestSet.objects.order_by('start_time'
             )[0].start_time
@@ -236,13 +242,14 @@ class Column(object):
 
 available_charts = (
         Column('User information', [
-            ('lang_first',      'First language'),
-            ('lang_second',     'Second language'),
-            ('lang_combined',   'Combined languages'),
-            ('syllabus_volume', 'Syllabus by # users'),
+            ('lang_first',          'First language'),
+            ('lang_second',         'Second language'),
+            ('lang_combined',       'Combined languages'),
+            ('syllabus_volume',     'Syllabus by # users'),
+            ('time_betweentests',   'Time between tests (histogram)')
         ]),
         Column('Tests and responses', [
-            ('test_mean',       'Mean score by # tests'),
+            ('test_mean',       'Mean score on nth test'),
             ('test_normtime',   'Mean score over time [norm]'),
             ('test_time',       'Mean score over time'),
             ('test_volume',     'Users by # tests'),
@@ -279,6 +286,12 @@ def _build_syllabus_graph(name):
     if name == 'volume':
         return charts.PieChart(stats.get_syllabus_volume())
 
+    raise KeyError(name)
+
+def _build_time_graph(name):
+    if name == 'betweentests':
+        return charts.LineChart(stats.get_time_between_tests_histogram())
+    
     raise KeyError(name)
 
 def _build_test_graph(name):

@@ -27,7 +27,9 @@ from kanji_test.drill import models as drill_models
 from kanji_test.util.probability import FreqDist
 
 def get_mean_score():
-    "Fetches the mean score calculated against number of tests taken."
+    """
+    Fetches the mean score on the nth test, for increasing n.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT ur.user_id, AVG(ur.is_correct)
@@ -57,9 +59,53 @@ def get_mean_score():
 
     results = []
     for i, scores in sorted(scores_by_n_tests.iteritems()):
+        if len(scores) < 3:
+            continue
         results.append((i, mean(scores)))
 
     return results
+
+def get_time_between_tests():
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
+            'user__id')
+    
+    data = []
+    in_days = timedelta(days=1)
+    for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        last_test = user_tests.next().start_time
+        
+        for test_set in user_tests:
+            time_diff = _scale_time_delta(test_set.start_time - last_test,
+                    in_days)
+            data.append(time_diff)
+            last_test = test_set.start_time
+    
+    data.sort()
+    return data
+
+def get_time_between_tests_histogram():
+    data = get_time_between_tests()
+    n_points = float(len(data))
+
+    one_min = 1.0/(24*60)
+    rows = []
+    for bin_min in _iter_log_values(one_min):
+        freq = len([p for p in data if p > bin_min]) / n_points
+        rows.append((
+                bin_min,
+                freq
+        ))
+        if freq < 0.01:
+            break
+                    
+    return rows
+    
+def _iter_log_values(value):
+    yield 0
+    yield value
+    while True:
+        value *= 2
+        yield value
 
 def get_score_over_norm_time():
     "Fetches the score for each user normalized over the time axis."
@@ -101,7 +147,7 @@ def get_score_over_time():
     
     granularity = '%.f' # the granularity of data points
 
-    data = []
+    base_data = []
     one_day = timedelta(days=1)
     for user_id, user_tests in groupby(test_sets, user_key_f):
         user_tests = sorted(user_tests, key=lambda t: t.start_time)
@@ -130,7 +176,7 @@ def get_score_over_time():
                 n_responses += test_len
                 weighted_score += test_len * scores_by_test[interval_test.id]
                 
-            data.append((n_days, weighted_score / n_responses))
+            base_data.append((n_days, weighted_score / n_responses))
     
     # Group by up to two decimal places
     days = []
@@ -138,8 +184,9 @@ def get_score_over_time():
     mean_data = []
     high = []
     key_f = lambda row: float('%.f' % row[0])
-    data.sort(key=key_f)
-    for n_days, points in groupby(data, key_f):
+    base_data.sort(key=key_f)
+    results = []
+    for n_days, points in groupby(base_data, key_f):
         n_days = float(n_days)
         point_data = numpy.array([v for (t, v) in points])
         
@@ -155,7 +202,14 @@ def get_score_over_time():
         low.append(avg - 2*stddev)
         high.append(min(avg + 2*stddev, 1.0))
         
-    return days, mean_data, low, high
+        results.append((
+                n_days,                     # x axis
+                avg,                        # y axis
+                max(avg - 2 * stddev, 0.0), # error bar
+                min(avg + 2 * stddev, 1.0), # error bar
+            ))
+        
+    return results
 
 def get_users_by_n_tests():
     """

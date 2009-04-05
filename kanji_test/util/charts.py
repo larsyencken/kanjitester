@@ -165,15 +165,16 @@ class MultiLineChart(BaseLineChart):
         if settings.DEBUG:
             # Check data format
             assert isinstance(data, (list, tuple, numpy.ndarray))
-            for col in data:
-                assert isinstance(col, (list, tuple, numpy.ndarray))
-                for val in col:
+            for row in data:
+                assert isinstance(row, (list, tuple, numpy.ndarray))
+                for val in row:
                     assert isinstance(val, (int, float, numpy.number))
                     
         super(MultiLineChart, self).__init__(data, **kwargs)
-            
-        self.x_data = data[0]
-        self.y_data = data[1:]
+        
+        columns = unzip(data)
+        self.x_data = columns[0]
+        self.y_data = columns[1:]
         self.x_axis = x_axis or automatic_axis(self.x_data)
         self.y_axis = y_axis or automatic_axis(*self.y_data)
         
