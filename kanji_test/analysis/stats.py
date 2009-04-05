@@ -13,11 +13,11 @@ low-level SQL queries in order to calculate them efficiently.
 """
 
 from itertools import groupby
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import numpy
 from django.db import connection
-from cjktools.stats import mean
+from cjktools.stats import mean, basicStats
 from cjktools import scripts
 from cjktools.sequences import unzip
 
@@ -84,6 +84,7 @@ def get_time_between_tests():
     return data
 
 def get_time_between_tests_histogram():
+    "Fetches a reverse cumulative histogram of time between tests."
     data = get_time_between_tests()
     n_points = float(len(data))
 
@@ -99,7 +100,7 @@ def get_time_between_tests_histogram():
             break
                     
     return rows
-    
+
 def _iter_log_values(value):
     yield 0
     yield value
@@ -107,6 +108,74 @@ def _iter_log_values(value):
         value *= 2
         yield value
 
+def get_mean_score_over_sessions(n_bins=12, max_delta=timedelta(days=1)):
+    """
+    Split each user's experiences into sessions of sequential testing, where no
+    neighbouring tests are more than max_delta apart. Normalise the time
+    axis across these sessions, put the data into bins, and then provide
+    the mean score for each of these bins.
+    """
+    scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
+            'user__id', 'start_time')
+    
+    assert list(test_sets) == sorted(test_sets, 
+            key=lambda t: (t.user_id, t.start_time))
+
+    data = []
+    for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        x = _split_into_sessions(user_tests, max_delta)
+        for session_tests in x:
+            # Session is already ordered by time
+            start_session = session_tests[0].start_time
+            end_session = session_tests[-1].start_time
+            assert end_session > start_session
+            delta = end_session - start_session
+            
+            for test_set in session_tests:
+                data.append((
+                        _scale_time_delta(test_set.start_time - start_session,
+                                delta),
+                        scores_by_test[test_set.id],
+                    ))
+    data.sort()
+    
+    bin_interval = 1.0 / n_bins
+    eps = 1e-8
+    results = []
+    for bin_no in xrange(n_bins):
+        start_interval = bin_no * bin_interval
+        end_interval = (bin_no + 1) * bin_interval
+        if bin_no == n_bins - 1:
+            end_interval += eps
+        midpoint = (bin_no + 0.5) * bin_interval
+        avg, stddev = basicStats(
+                v for (t, v) in data if start_interval <= t < end_interval
+            )
+        results.append((
+            midpoint,
+            avg,
+            max(avg - 2 * stddev, 0.0),
+            min(avg + 2 * stddev, 1.0),
+        ))
+    return results
+
+def _split_into_sessions(user_tests, max_delta=timedelta(minutes=5)):
+    """
+    Returns an interator which yields lists of contiguous sessions.
+    """
+    last_test_time = datetime.now() - timedelta(days=365*20)
+    session = []
+    for test_set in user_tests:
+        if test_set.start_time - last_test_time < max_delta:
+            session.append(test_set)
+        else:
+            if len(session) >= 2:
+                yield session
+            session = [test_set]
+
+        last_test_time = test_set.start_time
+    
 def get_score_over_norm_time():
     "Fetches the score for each user normalized over the time axis."
     scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())

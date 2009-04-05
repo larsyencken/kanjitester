@@ -246,7 +246,8 @@ available_charts = (
             ('lang_second',         'Second language'),
             ('lang_combined',       'Combined languages'),
             ('syllabus_volume',     'Syllabus by # users'),
-            ('time_betweentests',   'Time between tests (histogram)')
+            ('time_betweentests',   'Time between tests [hist]'),
+            ('time_sessions',       'Mean score over sessions'),
         ]),
         Column('Tests and responses', [
             ('test_mean',       'Mean score on nth test'),
@@ -291,6 +292,16 @@ def _build_syllabus_graph(name):
 def _build_time_graph(name):
     if name == 'betweentests':
         return charts.LineChart(stats.get_time_between_tests_histogram())
+    
+    elif name == 'sessions':
+        data = stats.get_mean_score_over_sessions()
+        chart = charts.MultiLineChart(data, y_axis=(0.0, 1, 0.1),
+                x_axis=(0, 1, 0.1))
+        two_colours = charts.color_desc(2).split(',')
+        three_colours = ','.join((two_colours[0], two_colours[1],
+                two_colours[1]))
+        chart['chco'] = three_colours
+        return chart
     
     raise KeyError(name)
 
