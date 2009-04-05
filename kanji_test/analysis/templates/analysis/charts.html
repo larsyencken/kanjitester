@@ -44,9 +44,13 @@
   <div id="chartarea">
     <h3 id="charttitle" style="text-align:center">{{desc}}</h3>
     <div id="simplechart">
-      {% autoescape off %}
-      <img src="{{chart.get_url}}" width="750" height="375" />
-      {% endautoescape %}
+      {% if chart.is_too_long %}
+        <p align="center">Sorry, the url for this chart is too long. Try reducing the number of data points.</p>
+      {% else %}
+        {% autoescape off %}
+        <img src="{{chart.get_url}}" width="750" height="375" />
+        {% endautoescape %}
+      {% endif %}
       <p align="center">
         <a href="{% url analysis_data_base %}{{name}}.csv">
           Download as csv

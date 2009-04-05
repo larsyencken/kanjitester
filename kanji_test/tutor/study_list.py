@@ -141,7 +141,6 @@ def _get_performance_analysis(response_data):
     five_seconds = datetime.timedelta(seconds=5)
     for pivot, pivot_type, is_correct, timestamp in _embellish(response_data):
         if abs(current_time - timestamp) > five_seconds:
-            print current_time
             # Flush previous timestamp's data
             unique_w_t.append(len(unique_w))
             correct_w_t.append(len(correct_w))

@@ -307,6 +307,9 @@ class TestSet(models.Model):
 
         test_set.questions = questions
         return test_set
+    
+    def __len__(self):
+        return self.questions.count()
 
     @staticmethod
     def _get_plugin_set(user):

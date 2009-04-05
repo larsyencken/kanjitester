@@ -8,11 +8,15 @@
 #
 
 """
-Statistical analysis of user data. 
+This model provides a variety of analyses of usage data, many of which involve
+low-level SQL queries in order to calculate them efficiently.
 """
 
+from itertools import groupby
+from datetime import timedelta
+
+import numpy
 from django.db import connection
-from django.contrib.auth.models import User
 from cjktools.stats import mean
 from cjktools import scripts
 from cjktools.sequences import unzip
@@ -23,33 +27,33 @@ from kanji_test.drill import models as drill_models
 from kanji_test.util.probability import FreqDist
 
 def get_mean_score():
+    "Fetches the mean score calculated against number of tests taken."
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT r.user_id, AVG(o.is_correct)
-        FROM drill_response AS r
-        INNER JOIN drill_multiplechoiceresponse AS mcr
-        ON r.id = mcr.response_ptr_id
-        INNER JOIN drill_multiplechoiceoption AS o
-        ON o.id = mcr.option_id
-        GROUP BY r.user_id, r.timestamp
-        ORDER BY r.user_id, r.timestamp
+        SELECT ur.user_id, AVG(ur.is_correct)
+        FROM drill_testset_responses AS tsr
+        INNER JOIN (
+            SELECT r.user_id, r.id AS response_id, o.is_correct
+            FROM drill_response AS r
+            INNER JOIN drill_multiplechoiceresponse AS mcr
+            ON r.id = mcr.response_ptr_id
+            INNER JOIN drill_multiplechoiceoption AS o
+            ON o.id = mcr.option_id
+        ) AS ur
+        ON tsr.multiplechoiceresponse_id = ur.response_id
+        GROUP BY tsr.testset_id
+        ORDER BY ur.user_id
     """)
     scores_by_n_tests = {}
-    last_user_id = None
-    i = None
-    for user_id, score in cursor.fetchall():
-        if user_id != last_user_id:
-            i = 1
-            last_user_id = user_id
-
-        score = float(score)
-
-        if i in scores_by_n_tests:
-            scores_by_n_tests[i].append(score)
-        else:
-            scores_by_n_tests[i] = [score]
-
-        i += 1
+    
+    for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
+        for i, (_user_id, score) in enumerate(rows):
+            score_list = scores_by_n_tests.get(i + 1)
+            score = float(score)
+            if score_list:
+                score_list.append(score)
+            else:
+                scores_by_n_tests[i + 1] = [score]
 
     results = []
     for i, scores in sorted(scores_by_n_tests.iteritems()):
@@ -57,14 +61,121 @@ def get_mean_score():
 
     return results
 
+def get_score_over_norm_time():
+    "Fetches the score for each user normalized over the time axis."
+    scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None)
+    
+    data = []
+    key_f = lambda t: t.user_id
+    for user_id, user_tests in groupby(sorted(test_sets, key=key_f), key_f):
+        user_tests = sorted(user_tests, key=lambda t: t.start_time)
+        # Ignore users with only one test
+        if len(user_tests) < 2:
+            continue
+        
+        first_test = user_tests[0].start_time
+        last_test = user_tests[-1].start_time
+        max_delta = last_test - first_test
+        
+        # Ignore users who didn't use the system for 24 hours
+        if max_delta < timedelta(days=1):
+            continue
+        
+        for test_set in user_tests:
+            test_time = _scale_time_delta(test_set.start_time - first_test,
+                    max_delta)
+            data.append((test_time, scores_by_test[test_set.id]))
+    
+    
+    data.sort()
+    return data
+
+def get_score_over_time():
+    "Fetches the score for each user over time (measured in days)."
+    scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
+    
+    user_key_f = lambda t: t.user_id
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None)
+    test_sets = sorted(test_sets, key=user_key_f)
+    
+    granularity = '%.f' # the granularity of data points
+
+    data = []
+    one_day = timedelta(days=1)
+    for user_id, user_tests in groupby(test_sets, user_key_f):
+        user_tests = sorted(user_tests, key=lambda t: t.start_time)
+        # Ignore users with only one test
+        if len(user_tests) < 2:
+            continue
+            
+        first_test = user_tests[0].start_time
+        last_test = user_tests[-1].start_time
+        max_delta = last_test - first_test
+        
+        # Ignore users who didn't use the system for 24 hours
+        if max_delta < one_day:
+            continue
+    
+        # Accumulate user responses, averaging over our interval
+        time_f = lambda t: granularity % \
+                _scale_time_delta(t.start_time - first_test, one_day)
+        
+        for n_days, interval_tests in groupby(user_tests, time_f):
+            n_days = float(n_days)
+            n_responses = 0
+            weighted_score = 0.0
+            for interval_test in interval_tests:
+                test_len = len(interval_test)
+                n_responses += test_len
+                weighted_score += test_len * scores_by_test[interval_test.id]
+                
+            data.append((n_days, weighted_score / n_responses))
+    
+    # Group by up to two decimal places
+    days = []
+    low = []
+    mean_data = []
+    high = []
+    key_f = lambda row: float('%.f' % row[0])
+    data.sort(key=key_f)
+    for n_days, points in groupby(data, key_f):
+        n_days = float(n_days)
+        point_data = numpy.array([v for (t, v) in points])
+        
+        if len(point_data) < 2:
+            continue
+
+        days.append(n_days)
+        
+        avg = point_data.mean()
+        mean_data.append(avg)
+
+        stddev = point_data.std()
+        low.append(avg - 2*stddev)
+        high.append(min(avg + 2*stddev, 1.0))
+        
+    return days, mean_data, low, high
+
 def get_users_by_n_tests():
+    """
+    Fetch the number of users who have taken at least n tests, for varying n.
+    Only tests with responses are counted.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT n_tests, COUNT(*) AS n_users
         FROM (
-            SELECT user_id, COUNT(*) AS n_tests
-            FROM drill_testset
-            GROUP BY user_id
+            SELECT t.user_id, COUNT(*) AS n_tests
+            FROM (
+                SELECT ts.user_id, COUNT(*) AS n_responses
+                FROM drill_testset AS ts
+                INNER JOIN drill_testset_responses AS tsr
+                ON ts.id = tsr.testset_id
+                GROUP BY ts.id
+            ) AS t
+            WHERE t.n_responses > 0
+            GROUP BY t.user_id
         ) AS tests_per_user
         GROUP BY n_tests
         ORDER BY n_tests ASC
@@ -79,6 +190,9 @@ def get_users_by_n_tests():
     return data
 
 def get_users_by_n_responses():
+    """
+    Fetch the number of users who have at least n responses, for varying n.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT n_responses, COUNT(*) AS n_users
@@ -100,6 +214,9 @@ def get_users_by_n_responses():
     return data
 
 def get_test_length_volume():
+    """
+    Fetch the number of tests taken of each available test length.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT n_questions, COUNT(*) AS n_tests
@@ -113,6 +230,7 @@ def get_test_length_volume():
     return cursor.fetchall()
 
 def get_syllabus_volume():
+    "Fetches the number of users per syllabus."
     data = []
     for syllabus in Syllabus.objects.all():
         data.append((syllabus.tag, syllabus.userprofile_set.count()))
@@ -180,6 +298,7 @@ def get_test_stats():
     return results
 
 def count_active_users():
+    "Fetch the number of users who have finished at least one test."
     cursor = connection.cursor()
     cursor.execute("""
         SELECT COUNT(*) FROM (
@@ -224,6 +343,7 @@ def get_pivots_by_questions(n, syllabus_id, pivot_type):
             (pid, c) in base_results]
 
 def get_pivots_by_errors(n, syllabus_id, pivot_type):
+    "Get the top n pivots by the number of errors made on them."
     syllabus_query = _get_syllabus_query(syllabus_id, pivot_type)
     cursor = connection.cursor()        
     cursor.execute("""
@@ -271,17 +391,17 @@ def get_mean_exposures_per_pivot():
     kanji_c = []
     combined_c = []
     kanji_inc_dist = FreqDist()
-    for pivot, pivot_type, count in data:
-        combined_c.append(count)
+    for pivot, pivot_type, n_exposures in data:
+        combined_c.append(n_exposures)
 
         if pivot_type == 'k':
-            kanji_c.append(count)
-            kanji_inc_dist.inc(pivot, count)
+            kanji_c.append(n_exposures)
+            kanji_inc_dist.inc(pivot, n_exposures)
 
         elif pivot_type == 'w':
-            word_c.append(count)
+            word_c.append(n_exposures)
             for kanji in scripts.uniqueKanji(pivot):
-                kanji_inc_dist.inc(kanji, count)
+                kanji_inc_dist.inc(kanji, n_exposures)
 
         else:
             raise ValueError('unknown pivot type: %s' % pivot_type)
@@ -450,17 +570,20 @@ def get_global_rater_stats():
         ORDER BY user_id ASC, q_time.timestamp ASC
     """)
     results = []
-    for user_id, response_data in _separate_into_users(cursor.fetchall()):
+    for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
+        rows = [(p, pt, c) for (_u, p, pt, c) in rows] # discard user_id
+        
         user_data = {
             'user_id':      user_id,
             'username':     id_to_username[user_id]
         }
-        user_data['n_responses'] = len(response_data)
-        user_data['mean_accuracy'] = mean([is_correct for (x, y, is_correct)
-                in response_data])
-        user_data['n_errors'] = len([r for r in response_data if r[2]])
+        user_data['n_responses'] = len(rows)
+        user_data['n_tests'] = drill_models.TestSet.objects.filter(
+                user__id=user_id).exclude(end_time=None).count()
+        user_data['mean_accuracy'] = mean(r[2] for r in rows)
+        user_data['n_errors'] = _seq_len(r for r in rows if r[2])
 
-        pre_ratio, post_ratio = _calculate_pre_post_ratios(response_data)
+        pre_ratio, post_ratio = _calculate_pre_post_ratios(rows)
         user_data['pre_ratio'] = pre_ratio
         user_data['post_ratio'] = post_ratio
         user_data['pre_post_diff'] = post_ratio - pre_ratio
@@ -468,6 +591,12 @@ def get_global_rater_stats():
     return results
 
 #----------------------------------------------------------------------------#
+
+def _seq_len(seq):
+    i = 0
+    for item in seq:
+        i += 1
+    return i
 
 def _get_n_errors(pivot_id):
     return drill_models.Response.objects.filter(
@@ -501,36 +630,77 @@ def _get_syllabus_query(syllabus_id, pivot_type):
         }
     return query
 
-def _separate_into_users(query_rows):
-    "Provides an iterator over query data"
-    current_id = None
-    response_data = []
-    for user_id, pivot, pivot_type, is_correct in query_rows:
-        if user_id != current_id:
-            if response_data:
-                yield current_id, response_data
-            
-            current_id = user_id
-            response_data = []
-        
-        response_data.append((pivot, pivot_type, is_correct))
-    return
-
 def _calculate_pre_post_ratios(response_data):
     """
     Returns the number of data which are correctly responded to on their first
     presentation.
     """
-    seen = set()
-    first_responses = []
+    first_responses = {}
     last_responses = {}
     for pivot_id, pivot_type, is_correct in response_data:
-        if pivot_id not in seen:
-            first_responses.append(is_correct)
-            seen.add(pivot_id)
+        if pivot_id not in first_responses:
+            first_responses[pivot_id] = is_correct
             
         last_responses[pivot_id] = is_correct
     
-    return mean(first_responses), mean(last_responses.values())
+    return (
+            mean(first_responses.itervalues()),
+            mean(last_responses.itervalues()),
+        )
+
+def _get_test_scores():
+    """
+    Returns a list of (test_id, score) for all completed tests.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT testset_id, score
+        FROM (
+            SELECT test_option.testset_id, AVG(mco.is_correct) AS score, 
+                    COUNT(*) as n_responses
+            FROM (
+                SELECT tsr.testset_id, mcr.option_id
+                FROM drill_testset_responses AS tsr
+                INNER JOIN drill_multiplechoiceresponse AS mcr
+                ON tsr.multiplechoiceresponse_id = mcr.response_ptr_id
+            ) AS test_option
+            INNER JOIN drill_multiplechoiceoption AS mco
+            ON test_option.option_id = mco.id
+            GROUP BY test_option.testset_id
+        ) AS results
+        WHERE n_responses > 0
+    """)
+    return cursor.fetchall()
+
+_zero_delta = timedelta()
+def _scale_time_delta(value, max_value):
+    """
+    Scales a timedelta object to between 0 and 1, according to max_value.
+
+    >>> one_day = timedelta(days=1)
+    >>> ten_days = timedelta(days=10)
+    >>> twelve_days = timedelta(days=12)
+    >>> abs(_scale_time_delta(_zero_delta, ten_days) - 0) < 1e-8
+    True
+    >>> abs(_scale_time_delta(one_day, ten_days) - 0.1) < 1e-8
+    True
+    >>> abs(_scale_time_delta(ten_days, ten_days) - 1) < 1e-8
+    True
+    >>> abs(_scale_time_delta(twelve_days, ten_days) - 1.2) < 1e-8
+    True
+    """
+    return _time_delta_seconds(value) / float(_time_delta_seconds(max_value))
+
+def _time_delta_seconds(delta):
+    """
+    Reduces a timedelta object to its value in seconds.
+
+    >>> _time_delta_seconds(timedelta())
+    0
+
+    >>> _time_delta_seconds(timedelta(days=2, hours=1, minutes=4, seconds=23))
+    176663
+    """
+    return delta.seconds + delta.days*24*60*60
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

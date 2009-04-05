@@ -11,15 +11,17 @@
 Helper classes for working with Google Charts.
 """
 
-import csv
-import operator
+import re
 
-from django.utils.http import urlencode
+import numpy
 from django.conf import settings
+from django.utils.http import urlencode
 from cjktools.sequences import unzip
 
 _google_charts_url = "http://chart.apis.google.com/chart?"
 _default_size = '750x375'
+
+class UrlTooLongError(Exception): pass
 
 class Chart(dict):
     def __init__(self, data, size=_default_size):
@@ -31,19 +33,36 @@ class Chart(dict):
     def set_size(self, size_spec):
         self['chs'] = size_spec
 
-    def get_url(self):
+    def get_url(self, check_size=True):
         # Set label colours to black if possible
         parts = []
         if 'chxs' not in self and 'chxt' in self:
             for i in range(len(self['chxt'].split(','))):
                 parts.append('%d,000000' % i)
             self['chxs'] = '|'.join(parts)
+        
+        self['chd'] = compress_data(self['chd'])
+        if 'chxr' in self:
+            self['chxr'] = strip_decimals(self['chxr'])
 
-        return _google_charts_url + dummy_urlencode(self)
+        if settings.DEBUG:
+            url = _google_charts_url + dummy_urlencode(self)
+        else:
+            url = _google_charts_url + urlencode(self)
+            
+        if (settings.DEBUG or check_size) and len(url) > 2048:
+            raise UrlTooLongError(
+                    'url length %d, should be < 2048' % len(url)
+                )
+        
+        return url
+    
+    def is_too_long(self):
+        return len(self.get_url(check_size=False)) > 2048
 
     def get_data(self):
-        return self.data
-
+        return self.data        
+        
 class PieChart(Chart):
     def __init__(self, data, **kwargs):
         try:
@@ -81,15 +100,18 @@ class PieChart(Chart):
 
 class BaseLineChart(Chart):
     def _stringify(self, values):
-        return ','.join(['%.02f' % v for v in values])
-
+        result = []
+        for v in values:
+            result.append('%.02f' % v)
+        
+        return ','.join(result)
+        
 class SimpleLineChart(BaseLineChart):
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, x_axis=None, y_axis=None, **kwargs):
+        self.x_axis = x_axis or automatic_axis(range(len(data[0])))
+        self.y_axis = y_axis or automatic_axis(*data)
+
         super(SimpleLineChart, self).__init__(data, **kwargs)
-        self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
-                automatic_axis(range(len(data[0])))
-        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                automatic_axis(*data)
                 
         self['cht'] = 'lc'
         self.data = data
@@ -110,18 +132,16 @@ class SimpleLineChart(BaseLineChart):
                 vectors)
 
 class LineChart(BaseLineChart):
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, x_axis=None, y_axis=None, **kwargs):
         self.x_data, self.y_data = unzip(data)
-        self.x_axis = ('x_axis' in kwargs) and kwargs.pop('x_axis') or \
-                automatic_axis(self.x_data)
-        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                automatic_axis(self.y_data)
-
+        self.x_axis = x_axis or automatic_axis(self.x_data)
+        self.y_axis = y_axis or automatic_axis(self.y_data)
+        
         super(LineChart, self).__init__(data, **kwargs)
 
         self['cht'] = 'lxy'
         self['chxt'] = 'x,y'
-        self['chxr'] = self.__setup_axes()
+        self['chxr'] = '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
         self['chco'] = color_desc(1)
         
         x_t = Transform(0, 100, self.x_axis[0], self.x_axis[1], strict=True)
@@ -133,14 +153,51 @@ class LineChart(BaseLineChart):
         self['chd'] = 't:' + self._stringify(x_values) + '|' + \
                         self._stringify(y_values)
 
-    def __setup_axes(self):
-        return '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
+class MultiLineChart(BaseLineChart):
+    """
+    A line chart where the first data column serves as the x axis, and the
+    rest serve as lines on the y axis.
+    """
+    def __init__(self, data, x_axis=None, y_axis=None, **kwargs):
+        if len(data) < 2:
+            raise ValueError('need at least two columns of data')
+        
+        if settings.DEBUG:
+            # Check data format
+            assert isinstance(data, (list, tuple, numpy.ndarray))
+            for col in data:
+                assert isinstance(col, (list, tuple, numpy.ndarray))
+                for val in col:
+                    assert isinstance(val, (int, float, numpy.number))
+                    
+        super(MultiLineChart, self).__init__(data, **kwargs)
+            
+        self.x_data = data[0]
+        self.y_data = data[1:]
+        self.x_axis = x_axis or automatic_axis(self.x_data)
+        self.y_axis = y_axis or automatic_axis(*self.y_data)
+        
+        self['cht'] = 'lxy'
+        self['chxt'] = 'x,y'
+        self['chxr'] = '0,%f,%f,%f|1,%f,%f,%f' % (self.x_axis + self.y_axis)
+        self['chco'] = color_desc(len(self.y_data))
+        
+        x_t = Transform(0, 100, self.x_axis[0], self.x_axis[1], strict=True)
+        y_t = Transform(0, 100, self.y_axis[0], self.y_axis[1], strict=True)
+        
+        x_values = x_t.transform(self.x_data)
+        y_values = [y_t.transform(col) for col in self.y_data]
+        
+        self['chd'] = 't:' + '|'.join(
+                '|'.join((
+                    self._stringify(x_values), self._stringify(vec)
+                )) for vec in y_values
+            )
 
 class BarChart(Chart):
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, y_axis=None, **kwargs):
         labels, points = unzip(data)
-        self.y_axis = ('y_axis' in kwargs) and kwargs.pop('y_axis') or \
-                automatic_axis(points)
+        self.y_axis = y_axis or automatic_axis(points)
 
         super(BarChart, self).__init__(data, **kwargs)
         self['cht'] = 'bvg'
@@ -193,12 +250,12 @@ class Transform(object):
 
     def transform(self, vector):
         if self.strict:
-            checkRange(self.orig_min, self.orig_max, vector)
-            
-        result = [(v + self.offset)*self.multiplier for v in vector]
+            check_range(self.orig_min, self.orig_max, vector)
+        
+        result = [(v + self.offset) * self.multiplier for v in vector]
         
         if self.strict:
-            checkRange(self.target_min, self.target_max, result)
+            check_range(self.target_min, self.target_max, result)
         
         return result
 
@@ -438,19 +495,20 @@ def dummy_urlencode(val_dict):
         parts.append('%s=%s' % (key, value))
     return '&'.join(parts)
 
-def checkRange(start, end, values):
+def check_range(start, end, values):
     """
     Checks that the values are within the given range, throwing an exception 
     if any are outside that range.
     
-    >>> checkRange(0, 1, [0.2, 0.5]) # succeeds silently
-    >>> checkRange(0, 1, [0.2, 2, 0.5])
+    >>> check_range(0, 1, [0.2, 0.5]) # succeeds silently
+    >>> check_range(0, 1, [0.2, 2, 0.5])
     Traceback (most recent call last):
         ...
     ValueError: value 2.000000 out of expected range [0.000000, 1.000000]
     """
+    eps = 1e-8
     for value in values:
-        if start > value or end < value:
+        if start - value > eps or value - end > eps:
             raise ValueError('value %f out of expected range [%f, %f]' % (
                 value, start, end
             ))
@@ -461,5 +519,39 @@ def minmin(vectors):
 def maxmax(vectors):
     return max(max(vec) for vec in vectors)
 
+
+def compress_data(data_s):
+    """
+    Compresses the data string before it gets sent to Google Charts.
+    """
+    data_s = strip_decimals(data_s)
+    return data_s
+
+def strip_decimals(data_s):
+    """
+    >>> strip_decimals('t:0.00,0.10,0.20')
+    't:0,0.1,0.2'
+    >>> strip_decimals('t:0.010,0.020,0.030')
+    't:0.01,0.02,0.03'
+    """
+    data_s = re.sub(r'\.0+,', r',', data_s)
+    data_s = re.sub(r'(\.[0-9]+?)0+', r'\1', data_s)
+    return data_s
+
+def is_numeric(obj):
+    """
+    >>> is_numeric(1)
+    True
+    >>> is_numeric('1')
+    False
+    >>> is_numeric(10.0)
+    True
+    >>> import decimal; is_numeric(decimal.Decimal('10.0'))
+    True
+    >>> is_numeric([1, 2, 3])
+    False
+    """
+    attrs = ['__add__', '__sub__', '__mul__', '__div__', '__pow__']
+    return all(hasattr(obj, attr) for attr in attrs)
 
 # vim: ts=4 sw=4 sts=4 et tw=78:

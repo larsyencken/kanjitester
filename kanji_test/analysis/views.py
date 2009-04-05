@@ -45,6 +45,11 @@ def basic(request):
 
     num_tests = models.TestSet.objects.exclude(end_time=None).count()
     context['num_tests'] = num_tests
+    
+    context['log_start_time'] = models.TestSet.objects.order_by('start_time'
+            )[0].start_time
+    context['log_end_time'] = models.TestSet.objects.order_by('-start_time',
+            )[0].start_time
 
     context['tests_per_user'] = num_tests / float(num_users)
     context['responses_per_test'] = num_responses / float(num_tests)
@@ -238,6 +243,8 @@ available_charts = (
         ]),
         Column('Tests and responses', [
             ('test_mean',       'Mean score by # tests'),
+            ('test_normtime',   'Mean score over time [norm]'),
+            ('test_time',       'Mean score over time'),
             ('test_volume',     'Users by # tests'),
             ('response_volume', 'Users by # responses'),
             ('test_length',     'Test length by volume'),
@@ -285,6 +292,19 @@ def _build_test_graph(name):
 
     elif name == 'length':
         return charts.PieChart(stats.get_test_length_volume())
+        
+    elif name == 'normtime':
+        user_data = stats.get_score_over_norm_time()
+        return charts.LineChart(user_data)
+    
+    elif name == 'time':
+        user_data = stats.get_score_over_time()
+        chart = charts.MultiLineChart(user_data, y_axis=(0, 1.05, 0.1))
+        two_colours = charts.color_desc(2).split(',')
+        three_colours = ','.join((two_colours[0], two_colours[1],
+                two_colours[1]))
+        chart['chco'] = three_colours
+        return chart
 
     raise KeyError(name)
 

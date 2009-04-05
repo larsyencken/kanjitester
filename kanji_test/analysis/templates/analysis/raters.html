@@ -28,6 +28,7 @@
     <tr>
       <th>#</th>
       <th>Username</th>
+      <th><a href="?n={{n}}&order_by=n_tests"># tests</a></th>
       <th><a href="?n={{n}}&order_by=n_responses"># responses</a></th>
       <th><a href="?n={{n}}&order_by=n_errors"># errors</a></th>
       <th><a href="?n={{n}}&order_by=mean_accuracy">Mean accuracy</a></th>
@@ -43,6 +44,7 @@
         <td>
           <a href="{% url analysis_rater_detail rater_id=rater.user_id %}">{{rater.username}}</a>
         </td>
+        <td>{{rater.n_tests}}</td>
         <td>{{rater.n_responses}}</td>
         <td>{{rater.n_errors}}</td>
         <td>{{rater.mean_accuracy|floatformat:3}}</td>
