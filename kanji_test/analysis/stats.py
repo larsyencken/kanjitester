@@ -246,7 +246,7 @@ def get_score_over_time():
                 weighted_score += test_len * scores_by_test[interval_test.id]
                 
             base_data.append((n_days, weighted_score / n_responses))
-    
+        
     # Group by up to two decimal places
     days = []
     low = []
@@ -310,6 +310,39 @@ def get_users_by_n_tests():
         label, value = data[i-1]
         data[i-1] = (label, value + data[i][1])
 
+    return data
+
+def get_mean_score_by_n_tests():
+    """
+    Get data, one point per users, giving their mean score globally and the
+    number of tests they've taken. This is designed to determine if individuals
+    with better scores drop out sooner.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT t.user_id, COUNT(*) AS n_tests
+        FROM (
+            SELECT ts.user_id, COUNT(*) AS n_responses
+            FROM drill_testset AS ts
+            INNER JOIN drill_testset_responses AS tsr
+            ON ts.id = tsr.testset_id
+            GROUP BY ts.id
+        ) AS t
+        WHERE t.n_responses > 0
+        GROUP BY t.user_id
+    """)
+    user_data = cursor.fetchall()
+    
+    data = []
+    for user_id, n_tests in user_data:
+        user_responses = drill_models.Response.objects.filter(user__id=user_id)
+        n_responses = user_responses.count()
+        n_correct = user_responses.filter(
+                multiplechoiceresponse__option__is_correct=True).count()
+        data.append((
+            n_tests,
+            n_correct / float(n_responses)
+        ))
     return data
 
 def get_users_by_n_responses():

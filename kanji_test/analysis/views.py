@@ -256,6 +256,7 @@ available_charts = (
             ('test_volume',     'Users by # tests'),
             ('response_volume', 'Users by # responses'),
             ('test_length',     'Test length by volume'),
+            ('test_dropout',    'Mean score vs # tests'),
         ]),
         Column('Questions and plugins', [
             ('pivot_exposures',     'Mean # exposures per pivot'),
@@ -329,6 +330,9 @@ def _build_test_graph(name):
                 two_colours[1]))
         chart['chco'] = three_colours
         return chart
+    
+    elif name == 'dropout':
+        return charts.LineChart(stats.get_mean_score_by_n_tests())
 
     raise KeyError(name)
 
