@@ -17,6 +17,7 @@ from datetime import timedelta, datetime
 
 from django.db import connection
 from django.conf import settings
+from django.contrib.auth.models import User
 from cjktools.stats import mean, basicStats
 from cjktools import scripts
 from cjktools.sequences import unzip
@@ -427,7 +428,11 @@ def get_language_data(name):
     else:
         assert name == 'combined'
 
-    profiles = UserProfile.objects.values(*fields_needed)
+    valid_users = set(u.id for u in User.objects.all() if u.testset_set.exclude(
+            end_time=None).count() > 0)
+        
+    profiles = UserProfile.objects.filter(user__id__in=valid_users).values(
+            *fields_needed)
     
     dist = FreqDist()
     for profile in profiles:
