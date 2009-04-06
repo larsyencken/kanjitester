@@ -15,7 +15,6 @@ low-level SQL queries in order to calculate them efficiently.
 from itertools import groupby
 from datetime import timedelta, datetime
 
-import numpy
 from django.db import connection
 from cjktools.stats import mean, basicStats
 from cjktools import scripts
@@ -25,6 +24,63 @@ from kanji_test.user_profile.models import UserProfile, Syllabus
 from kanji_test.user_model.models import PartialLexeme, PartialKanji
 from kanji_test.drill import models as drill_models
 from kanji_test.util.probability import FreqDist
+
+#----------------------------------------------------------------------------#
+# DATA TRANSFORMS
+#----------------------------------------------------------------------------#
+
+def log_histogram(data, normalize=True, threshold=0.01, start=1.0):
+    "Fetches a reverse cumulative histogram of time between tests."
+    n_points = float(len(data))
+
+    rows = []
+    for bin_min in _iter_log_values(start):
+        freq = len([p for p in data if p > bin_min])
+        if normalize:
+            freq /= n_points
+        rows.append((
+                bin_min,
+                freq
+        ))
+        if freq < threshold:
+            break
+                    
+    return rows
+
+def approximate(data, n_points=10, x_min=None, x_max=None):
+    """
+    Approximates a data series by grouping points into a number of bins.
+    """
+    if x_min is None:
+        x_min = min(x for (x, y) in data)
+    if x_max is None:
+        x_max = max(x for (x, y) in data)
+
+    interval = float((x_max - x_min) / n_points)
+    eps = 1e-8
+    results = []
+    for bin_no in xrange(n_points):
+        start_interval = bin_no * interval
+        end_interval = (bin_no + 1) * interval
+        if bin_no == n_points - 1:
+            end_interval += eps
+        midpoint = (bin_no + 0.5) * interval
+        sub_data = [float(y) for (x, y) in data 
+                if start_interval <= x < end_interval]
+        if len(sub_data) < 3:
+            continue
+        avg, stddev = basicStats(sub_data)
+        results.append((
+            midpoint,
+            avg,
+            max(avg - 2 * stddev, 0.0),
+            min(avg + 2 * stddev, 1.0),
+        ))
+    return results
+
+#----------------------------------------------------------------------------#
+# ANALYSES
+#----------------------------------------------------------------------------#
 
 def get_mean_score():
     """
@@ -83,37 +139,11 @@ def get_time_between_tests():
     data.sort()
     return data
 
-def get_time_between_tests_histogram():
-    "Fetches a reverse cumulative histogram of time between tests."
-    data = get_time_between_tests()
-    n_points = float(len(data))
-
-    one_min = 1.0/(24*60)
-    rows = []
-    for bin_min in _iter_log_values(one_min):
-        freq = len([p for p in data if p > bin_min]) / n_points
-        rows.append((
-                bin_min,
-                freq
-        ))
-        if freq < 0.01:
-            break
-                    
-    return rows
-
-def _iter_log_values(value):
-    yield 0
-    yield value
-    while True:
-        value *= 2
-        yield value
-
-def get_mean_score_over_sessions(n_bins=12, max_delta=timedelta(days=1)):
+def get_mean_score_over_sessions(max_delta=timedelta(days=1)):
     """
     Split each user's experiences into sessions of sequential testing, where no
     neighbouring tests are more than max_delta apart. Normalise the time
-    axis across these sessions, put the data into bins, and then provide
-    the mean score for each of these bins.
+    axis across these sessions.
     """
     scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
     test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
@@ -139,42 +169,7 @@ def get_mean_score_over_sessions(n_bins=12, max_delta=timedelta(days=1)):
                         scores_by_test[test_set.id],
                     ))
     data.sort()
-    
-    bin_interval = 1.0 / n_bins
-    eps = 1e-8
-    results = []
-    for bin_no in xrange(n_bins):
-        start_interval = bin_no * bin_interval
-        end_interval = (bin_no + 1) * bin_interval
-        if bin_no == n_bins - 1:
-            end_interval += eps
-        midpoint = (bin_no + 0.5) * bin_interval
-        avg, stddev = basicStats(
-                v for (t, v) in data if start_interval <= t < end_interval
-            )
-        results.append((
-            midpoint,
-            avg,
-            max(avg - 2 * stddev, 0.0),
-            min(avg + 2 * stddev, 1.0),
-        ))
-    return results
-
-def _split_into_sessions(user_tests, max_delta=timedelta(minutes=5)):
-    """
-    Returns an interator which yields lists of contiguous sessions.
-    """
-    last_test_time = datetime.now() - timedelta(days=365*20)
-    session = []
-    for test_set in user_tests:
-        if test_set.start_time - last_test_time < max_delta:
-            session.append(test_set)
-        else:
-            if len(session) >= 2:
-                yield session
-            session = [test_set]
-
-        last_test_time = test_set.start_time
+    return data
     
 def get_score_over_norm_time():
     "Fetches the score for each user normalized over the time axis."
@@ -246,39 +241,9 @@ def get_score_over_time():
                 weighted_score += test_len * scores_by_test[interval_test.id]
                 
             base_data.append((n_days, weighted_score / n_responses))
-        
-    # Group by up to two decimal places
-    days = []
-    low = []
-    mean_data = []
-    high = []
-    key_f = lambda row: float('%.f' % row[0])
-    base_data.sort(key=key_f)
-    results = []
-    for n_days, points in groupby(base_data, key_f):
-        n_days = float(n_days)
-        point_data = numpy.array([v for (t, v) in points])
-        
-        if len(point_data) < 2:
-            continue
-
-        days.append(n_days)
-        
-        avg = point_data.mean()
-        mean_data.append(avg)
-
-        stddev = point_data.std()
-        low.append(avg - 2*stddev)
-        high.append(min(avg + 2*stddev, 1.0))
-        
-        results.append((
-                n_days,                     # x axis
-                avg,                        # y axis
-                max(avg - 2 * stddev, 0.0), # error bar
-                min(avg + 2 * stddev, 1.0), # error bar
-            ))
-        
-    return results
+    
+    base_data.sort()
+    return base_data
 
 def get_users_by_n_tests():
     """
@@ -746,9 +711,59 @@ def get_global_rater_stats():
         results.append(user_data)
     return results
 
+def get_dropout_figures():
+    """Get the likelihood of dropout as a function of last score."""
+    scores_by_test = dict(_get_test_scores())
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
+            'user__id')
+    data = []
+    for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        user_tests = list(user_tests)
+        n_tests = len(user_tests)
+        if n_tests < 3:
+            continue
+        for i, test_set in enumerate(user_tests):
+            score = scores_by_test[test_set.id]
+            if i == n_tests - 1:
+                data.append((score, 1))
+            else:
+                data.append((score, 0))
+    
+    data.sort()
+    return data
+
 #----------------------------------------------------------------------------#
 
+def _iter_log_values(value):
+    yield 0
+    yield value
+    while True:
+        value *= 2
+        yield value
+
+def _split_into_sessions(user_tests, max_delta=timedelta(minutes=5)):
+    """
+    Returns an interator which yields lists of contiguous sessions.
+    """
+    last_test_time = datetime.now() - timedelta(days=365*20)
+    session = []
+    for test_set in user_tests:
+        if test_set.start_time - last_test_time < max_delta:
+            session.append(test_set)
+        else:
+            if len(session) >= 2:
+                yield session
+            session = [test_set]
+
+        last_test_time = test_set.start_time
+
 def _seq_len(seq):
+    """
+    Returns the length of a sequence (by iterating over it).
+    
+    >>> _seq_len(xrange(100))
+    100
+    """
     i = 0
     for item in seq:
         i += 1
@@ -826,7 +841,7 @@ def _get_test_scores():
         ) AS results
         WHERE n_responses > 0
     """)
-    return cursor.fetchall()
+    return [(i, float(s)) for (i, s) in cursor.fetchall()]
 
 _zero_delta = timedelta()
 def _scale_time_delta(value, max_value):

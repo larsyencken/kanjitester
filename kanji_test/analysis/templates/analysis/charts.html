@@ -52,9 +52,13 @@
         {% endautoescape %}
       {% endif %}
       <p align="center">
-        <a href="{% url analysis_data_base %}{{name}}.csv">
-          Download as csv
-        </a>
+        Available data sets:
+        {% for data_name in chart.available_data %}
+          <a href="{% url analysis_data_base %}{{name}}_{{data_name}}.csv">
+            {{data_name}}
+          </a>
+          {% if not forloop.last %},{% endif %}
+        {% endfor %}
       </p>
     </div>
   </div>

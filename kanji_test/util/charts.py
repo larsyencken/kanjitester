@@ -23,12 +23,16 @@ _default_size = '750x375'
 
 class UrlTooLongError(Exception): pass
 
+_default_data_name = 'charted'
+
 class Chart(dict):
-    def __init__(self, data, size=_default_size):
+    """An abstract chart, and associated data."""
+    def __init__(self, data, size=_default_size, data_name=_default_data_name):
         dict.__init__(self)
-        self.data = data
         self['chs'] = size
         self['chco'] = color_desc(len(data))
+
+        self._data = {data_name: data}
 
     def set_size(self, size_spec):
         self['chs'] = size_spec
@@ -59,10 +63,19 @@ class Chart(dict):
     
     def is_too_long(self):
         return len(self.get_url(check_size=False)) > 2048
-
-    def get_data(self):
-        return self.data        
+    
+    def add_data(self, name, data):
+        self._data[name] = data
+    
+    def get_data(self, name=_default_data_name):
+        return self._data[name]
         
+    def available_data(self):
+        return sorted(self._data.keys())
+    
+    def get_all_data(self):
+        return self._data.copy()
+            
 class PieChart(Chart):
     def __init__(self, data, **kwargs):
         try:
@@ -114,7 +127,6 @@ class SimpleLineChart(BaseLineChart):
         super(SimpleLineChart, self).__init__(data, **kwargs)
                 
         self['cht'] = 'lc'
-        self.data = data
 
         t = Transform(0, 100, self.y_axis[0], self.y_axis[1])
         

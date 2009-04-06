@@ -71,10 +71,13 @@ def basic(request):
 def data(request, name=None, format=None):
     "Fetches data set as either a chart or as a CSV file."
     chart = _build_graph(name)
+    if name.count('_') > 2:
+        raise Http404
 
-    mimetype = 'text/html'
     if format == 'json':
-        if not settings.DEBUG:
+        if settings.DEBUG:
+            mimetype = 'text/html'
+        else:
             mimetype = 'application/json'
         return HttpResponse(simplejson.dumps(chart.get_url()),
                 mimetype=mimetype)
@@ -90,7 +93,11 @@ def chart_dashboard(request, name=None):
     context = {}
     context['column_1'], context['column_2'], context['column_3'] = \
             available_charts
+    
     if name is not None:
+        if name.count('_') > 1:
+            raise Http404
+        
         context['name'] = name
         context['desc'] = name_to_desc[name]
 
@@ -128,10 +135,10 @@ def rater_detail(request, rater_id=None):
     context['word_chart'] = word_chart
     context['kanji_chart'] = kanji_chart
     context['stats'] = stats.get_rater_stats(rater)
-    context['word_ratio'] = word_chart.data[1][-1] / \
-            float(word_chart.data[0][-1])
-    context['kanji_ratio'] = kanji_chart.data[1][-1] / \
-            float(kanji_chart.data[0][-1])
+    context['word_ratio'] = word_chart.get_data()[1][-1] / \
+            float(word_chart.get_data()[0][-1])
+    context['kanji_ratio'] = kanji_chart.get_data()[1][-1] / \
+            float(kanji_chart.get_data()[0][-1])
     return render_to_response('analysis/rater_detail.html', context,
             RequestContext(request))
 
@@ -224,6 +231,7 @@ def pivot_detail(request, syllabus_tag=None, pivot_type=None, pivot_id=None):
 
 def _chart_csv_response(chart, name):
     "Respond with the data from a chart."
+    data_set_name = name.split('_')[2]
     if not settings.DEBUG:
         response = HttpResponse(mimetype='text/csv')
         response['Content-Disposition'] = \
@@ -231,25 +239,26 @@ def _chart_csv_response(chart, name):
     else:
         response = HttpResponse(mimetype='text/html')
     writer = csv.writer(response)
-    for row in chart.data:
+    for row in chart.get_data(data_set_name):
         writer.writerow(row)
     return response
 
-class Column(object):
+class _Column(object):
     def __init__(self, title, charts_v):
         self.title = title
         self.charts = charts_v
 
 available_charts = (
-        Column('User information', [
-            ('lang_first',          'First language'),
-            ('lang_second',         'Second language'),
-            ('lang_combined',       'Combined languages'),
+        _Column('User information', [
+            ('user_firstlang',      'First language'),
+            ('user_secondlang',     'Second language'),
+            ('user_combinedlang',   'Combined languages'),
+            ('user_dropout',        'User dropout'),
             ('syllabus_volume',     'Syllabus by # users'),
             ('time_betweentests',   'Time between tests [hist]'),
             ('time_sessions',       'Mean score over sessions'),
         ]),
-        Column('Tests and responses', [
+        _Column('Tests and responses', [
             ('test_mean',       'Mean score on nth test'),
             ('test_normtime',   'Mean score over time [norm]'),
             ('test_time',       'Mean score over time'),
@@ -258,7 +267,7 @@ available_charts = (
             ('test_length',     'Test length by volume'),
             ('test_dropout',    'Mean score vs # tests'),
         ]),
-        Column('Questions and plugins', [
+        _Column('Questions and plugins', [
             ('pivot_exposures',     'Mean # exposures per pivot'),
             ('plugin_questions',    'Plugin by # questions'),
             ('plugin_error',        'Mean error by plugin'),
@@ -270,7 +279,8 @@ name_to_desc = dict(reduce(operator.add, (c.charts for c in \
         available_charts)))
 
 def _build_graph(name):
-    parts = name.split('_')
+    "Builds a graph using the given name."
+    parts = name.split('_')[:2] # ignore trailing components
     first_part = parts.pop(0)
 
     try:
@@ -280,9 +290,21 @@ def _build_graph(name):
 
     return method(*parts)
 
-def _build_lang_graph(name):
-    dist = stats.get_language_data(name)
-    return charts.PieChart(dist.items(), max_options=8)
+def _build_user_graph(name):
+    if name.endswith('lang'):
+        name = name[:-len('lang')]
+        dist = stats.get_language_data(name)
+        return charts.PieChart(dist.items(), max_options=8)
+    
+    elif name == 'dropout':
+        data = stats.get_dropout_figures()
+        approx_data = stats.approximate(data)
+        chart = charts.MultiLineChart(approx_data, data_name='histogram',
+                x_axis=(0.4, 1.0, 0.1), y_axis=(0, 1.0, 0.1))
+        chart.add_data('raw', data)
+        return chart
+    
+    raise KeyError(name)
 
 def _build_syllabus_graph(name):
     if name == 'volume':
@@ -292,12 +314,18 @@ def _build_syllabus_graph(name):
 
 def _build_time_graph(name):
     if name == 'betweentests':
-        return charts.LineChart(stats.get_time_between_tests_histogram())
+        data = stats.get_time_between_tests()
+        hist_data = stats.log_histogram(data, start=1.0/(24*60))
+        chart = charts.LineChart(hist_data, data_name='histogram')
+        chart.add_data('raw', [(x,) for x in data])
+        return chart
     
     elif name == 'sessions':
         data = stats.get_mean_score_over_sessions()
-        chart = charts.MultiLineChart(data, y_axis=(0.0, 1, 0.1),
-                x_axis=(0, 1, 0.1))
+        approx_data = stats.approximate(data, n_points=12)
+        chart = charts.MultiLineChart(approx_data, y_axis=(0.0, 1, 0.1),
+                x_axis=(0, 1, 0.1), data_name='approximate')
+        chart.add_data('raw', data)
         two_colours = charts.color_desc(2).split(',')
         three_colours = ','.join((two_colours[0], two_colours[1],
                 two_colours[1]))
@@ -323,8 +351,11 @@ def _build_test_graph(name):
         return charts.LineChart(user_data)
     
     elif name == 'time':
-        user_data = stats.get_score_over_time()
-        chart = charts.MultiLineChart(user_data, y_axis=(0, 1.05, 0.1))
+        base_data = stats.get_score_over_time()
+        data = stats.approximate(base_data)
+        chart = charts.MultiLineChart(data, y_axis=(0, 1.05, 0.1), 
+                data_name='approximate')
+        chart.add_data('raw', base_data)
         two_colours = charts.color_desc(2).split(',')
         three_colours = ','.join((two_colours[0], two_colours[1],
                 two_colours[1]))
