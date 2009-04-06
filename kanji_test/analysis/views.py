@@ -61,10 +61,10 @@ def basic(request):
     context['responses_per_test'] = num_responses / float(num_tests)
     
     all_responses = models.MultipleChoiceResponse.objects
-    context['mean_score'] = (all_responses.filter(option__is_correct=True).count() /
-            float(all_responses.count()))
+    context['mean_score'] = (all_responses.filter(option__is_correct=True
+            ).count() / float(all_responses.count()))
 
-    test_stats = stats.get_test_stats()
+    test_stats = stats.get_test_size_stats()
     pretty_results = [(k, 100*t, 100*c) for (k, t, c) in test_stats]
     context['test_dist'] = pretty_results
 
@@ -262,6 +262,8 @@ available_charts = (
             ('time_betweentests',   'Time between tests [hist]'),
             ('time_sessions',       'Mean score over sessions'),
             ('user_prepostdiff',    'Pre-post diff'),
+            ('user_abilityjlpt3',   'User ability [JLPT 3]'),
+            ('user_abilityjlpt4',   'User ability [JLPT 4]'),
         ]),
         _Column('Tests and responses', [
             ('test_mean',       'Mean score on nth test'),
@@ -317,6 +319,22 @@ def _build_user_graph(name):
                 x_min=-0.7, x_max=0.7)
         chart = charts.LineChart(hist_data, data_name='histogram',
             x_axis=(-0.8, 0.8, 0.2))
+        chart.add_data('raw', data)
+        return chart
+    
+    elif name == 'abilityjlpt3':
+        data = stats.get_user_scores('jlpt 3')
+        hist_data = stats.histogram(data, x_min=0.0, x_max=1.0, normalize=False)
+        chart = charts.LineChart(hist_data, data_name='histogram',
+                x_axis=(0.0, 1.0, 0.1))
+        chart.add_data('raw', data)
+        return chart
+    
+    elif name == 'abilityjlpt4':
+        data = stats.get_user_scores('jlpt 4')
+        hist_data = stats.histogram(data, x_min=0.0, x_max=1.0, normalize=False)
+        chart = charts.LineChart(hist_data, data_name='histogram',
+                x_axis=(0.0, 1.0, 0.1))
         chart.add_data('raw', data)
         return chart
         

@@ -451,7 +451,24 @@ def get_language_data(name):
 
     return dist
 
-def get_test_stats():
+def get_user_scores(syllabus_tag):
+    """
+    Returns the overall user scores for each user on this syllabus.
+    """
+    syllabus = Syllabus.objects.get(tag=syllabus_tag)
+    data = []
+    for user in User.objects.filter(userprofile__syllabus=syllabus):
+        if user.response_set.count() == 0:
+            continue
+        
+        user_responses = user.response_set
+        n_correct = user_responses.filter(
+                multiplechoiceresponse__option__is_correct=True).count()
+        n_responses = user_responses.count()
+        data.append(n_correct / float(n_responses))
+    return data
+
+def get_test_size_stats():
     """
     Fetches the distribution of test sizes chosen by users, and the completion
     statistics for each reported size.
