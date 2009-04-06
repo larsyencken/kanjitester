@@ -370,8 +370,12 @@ def _build_time_graph(name):
 
 def _build_test_graph(name):
     if name == 'mean':
-        score_data = stats.get_mean_score()
-        return charts.LineChart(score_data, y_axis=(0, 1, 0.1))
+        score_data = stats.get_mean_score_nth_test()
+        data = stats.group_by_points(score_data, y_max=1.0, y_min=0.0)
+        chart = charts.MultiLineChart(data, y_axis=(0, 1, 0.1),
+                data_name='grouped')
+        chart.add_data('raw', score_data)
+        return chart
 
     elif name == 'volume':
         user_data = stats.get_users_by_n_tests()

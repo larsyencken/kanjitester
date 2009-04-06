@@ -12,6 +12,7 @@ This model provides a variety of analyses of usage data, many of which involve
 low-level SQL queries in order to calculate them efficiently.
 """
 
+import sys
 from itertools import groupby
 from datetime import timedelta, datetime
 
@@ -125,11 +126,35 @@ def approximate(data, n_points=10, x_min=None, x_max=None):
         ))
     return results
 
+def group_by_points(data, y_max=sys.maxint, y_min=None):
+    """
+    Similar to approximate(), but more useful when the x axis is discrete.
+    Instead of quantizing the x axis, we just group points by x values, and
+    average across them.
+    """
+    data.sort()
+    new_data = []
+    for x, rows in groupby(data, lambda r: r[0]):
+        rows = list(rows)
+        
+        if len(rows) < 3:
+            continue
+    
+        avg, std = basicStats(y for (x, y) in rows)
+        new_data.append((
+                x,
+                avg,
+                min(avg + 2 * std, y_max),
+                max(avg - 2 * std, y_min)
+            ))
+            
+    return new_data
+
 #----------------------------------------------------------------------------#
 # ANALYSES
 #----------------------------------------------------------------------------#
 
-def get_mean_score():
+def get_mean_score_nth_test():
     """
     Fetches the mean score on the nth test, for increasing n.
     """
@@ -149,26 +174,16 @@ def get_mean_score():
         GROUP BY tsr.testset_id
         ORDER BY ur.user_id
     """)
-    scores_by_n_tests = {}
     ignore_users = _get_user_ignore_set()
+    data = []
     for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
         if user_id in ignore_users:
             continue
         for i, (_user_id, score) in enumerate(rows):
-            score_list = scores_by_n_tests.get(i + 1)
-            score = float(score)
-            if score_list:
-                score_list.append(score)
-            else:
-                scores_by_n_tests[i + 1] = [score]
+            data.append((i + 1, float(score)))
 
-    results = []
-    for i, scores in sorted(scores_by_n_tests.iteritems()):
-        if len(scores) < 3:
-            continue
-        results.append((i, mean(scores)))
-
-    return results
+    data.sort()
+    return data
 
 def get_time_between_tests():
     test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
