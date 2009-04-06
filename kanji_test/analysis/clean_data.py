@@ -15,6 +15,7 @@ import sys, optparse
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 import consoleLog
 
 from kanji_test.drill import models
@@ -23,11 +24,27 @@ from kanji_test.user_model.models import Syllabus
 
 _log = consoleLog.default
 
+def clean_all():
+    _log.start('Performing default cleaning steps')
+    if hasattr(settings, 'CLEAN_USERNAMES'):
+        for username in settings.CLEAN_USERNAMES:
+            clean_user_data(username=username)
+    
+    if hasattr(settings, 'CLEAN_EMAILS'):
+        for email in settings.CLEAN_EMAILS:
+            clean_user_data(email=email)
+    
+    clean_languages()
+    clean_manual()
+    
+    _log.finish()
+
 def clean_user_data(email=None, username=None): 
     _log.start('Cleaning user responses')
     _log.start('Checking database')
     users = []
     if email:
+        _log.log("Email: %s" % email)
         users.extend(User.objects.filter(email=email))
     
     if username:
@@ -138,8 +155,8 @@ address."""
 
     parser = optparse.OptionParser(usage)
 
-    parser.add_option('--debug', action='store_true', dest='debug',
-            default=False, help='Enables debugging mode [False]')
+    parser.add_option('-a', '--all', action='store_true', dest='clean_all',
+            help='Perform all default cleaning steps')
     
     parser.add_option('-e', action='store', dest='email',
             help='Clean user by email address')
@@ -164,26 +181,23 @@ def main(argv):
     if args:
         parser.print_help()
         sys.exit(1)
+    
+    if options.clean_all:
+        clean_all()
+    
+    else:
 
-    # Avoid psyco in debugging mode, since it merges stack frames.
-    if not options.debug:
-        try:
-            import psyco
-            psyco.profile()
-        except:
-            pass
+        if options.email:
+            clean_user_data(email=options.email)
 
-    if options.email:
-        clean_user_data(email=options.email)
+        if options.username:
+            clean_user_data(username=options.username)
 
-    if options.username:
-        clean_user_data(username=options.username)
-
-    if options.clean_languages:
-        clean_languages()
+        if options.clean_languages:
+            clean_languages()
         
-    if options.clean_manual:
-        clean_manual()
+        if options.clean_manual:
+            clean_manual()
     
     return
 
