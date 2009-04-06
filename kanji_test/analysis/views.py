@@ -59,6 +59,10 @@ def basic(request):
 
     context['tests_per_user'] = num_tests / float(num_users)
     context['responses_per_test'] = num_responses / float(num_tests)
+    
+    all_responses = models.MultipleChoiceResponse.objects
+    context['mean_score'] = (all_responses.filter(option__is_correct=True).count() /
+            float(all_responses.count()))
 
     test_stats = stats.get_test_stats()
     pretty_results = [(k, 100*t, 100*c) for (k, t, c) in test_stats]
