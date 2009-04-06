@@ -770,7 +770,10 @@ def get_global_rater_stats():
         pre_ratio, post_ratio = _calculate_pre_post_ratios(rows)
         user_data['pre_ratio'] = pre_ratio
         user_data['post_ratio'] = post_ratio
-        user_data['pre_post_diff'] = post_ratio - pre_ratio
+        if pre_ratio and post_ratio:
+            user_data['pre_post_diff'] = post_ratio - pre_ratio
+        else:
+            user_data['pre_post_diff'] = None
         results.append(user_data)
     return results
 
@@ -793,6 +796,29 @@ def get_dropout_figures():
                 data.append((score, 0))
     
     data.sort()
+    return data
+
+def get_first_last_test():
+    scores_by_test = dict(_get_test_scores())
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
+            'user__id')
+    ignore_users = _get_user_ignore_set()
+    data = []
+    for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        user_tests = list(user_tests)
+        if user_id in ignore_users or len(user_tests) < 2:
+            continue
+        
+        user_tests.sort(key=lambda t: t.start_time)
+        first_test = user_tests[0]
+        last_test = user_tests[-1]
+        
+        if last_test.start_time - first_test.start_time < timedelta(hours=1):
+            continue
+        
+        data.append(
+                scores_by_test[last_test.id] - scores_by_test[first_test.id]
+            )
     return data
 
 #----------------------------------------------------------------------------#
@@ -873,17 +899,26 @@ def _calculate_pre_post_ratios(response_data):
     Returns the number of data which are correctly responded to on their first
     presentation.
     """
-    first_responses = {}
-    last_responses = {}
-    for pivot_id, pivot_type, is_correct in response_data:
-        if pivot_id not in first_responses:
-            first_responses[pivot_id] = is_correct
-            
-        last_responses[pivot_id] = is_correct
+    response_data = [(pid, pt, i, ic) for (i, (pid, pt, ic)) in 
+            enumerate(response_data)]
+    response_data.sort()
+    
+    first_responses = []
+    last_responses = []
+    for (pivot_id, pivot_type), responses in groupby(response_data,
+            lambda r: (r[0], r[1])):
+        responses = list(responses)
+        if len(responses) < 2:
+            continue
+        first_responses.append(responses[0][3])
+        last_responses.append(responses[-1][3])
+        
+    if not first_responses:
+        return None, None
     
     return (
-            mean(first_responses.itervalues()),
-            mean(last_responses.itervalues()),
+            mean(first_responses),
+            mean(last_responses),
         )
 
 def _get_test_scores():

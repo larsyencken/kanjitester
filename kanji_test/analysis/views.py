@@ -271,6 +271,7 @@ available_charts = (
             ('response_volume', 'Users by # responses'),
             ('test_length',     'Test length by volume'),
             ('test_dropout',    'Mean score vs # tests'),
+            ('test_firstlast',  'Last vs first test difference'),
         ]),
         _Column('Questions and plugins', [
             ('pivot_exposures',     'Mean # exposures per pivot'),
@@ -311,14 +312,14 @@ def _build_user_graph(name):
         
     elif name == 'prepostdiff':
         data = [r['pre_post_diff'] for r in stats.get_global_rater_stats()
-                if r['n_tests'] > 3]
-        hist_data = stats.histogram(data, n_bins=11, x_min=-0.035, x_max=0.035,
-                normalize=False)
+                if r['n_tests'] > 2 and r['pre_post_diff']]
+        hist_data = stats.histogram(data, n_bins=11, normalize=False,
+                x_min=-0.7, x_max=0.7)
         chart = charts.LineChart(hist_data, data_name='histogram',
-                x_axis=(-0.04, 0.04, 0.01))
+            x_axis=(-0.8, 0.8, 0.2))
         chart.add_data('raw', data)
         return chart
-    
+        
     raise KeyError(name)
 
 def _build_syllabus_graph(name):
@@ -379,6 +380,15 @@ def _build_test_graph(name):
     
     elif name == 'dropout':
         return charts.LineChart(stats.get_mean_score_by_n_tests())
+
+    elif name == 'firstlast':
+        data = stats.get_first_last_test()
+        hist_data = stats.histogram(data, n_bins=11, normalize=False,
+                x_min=-0.5, x_max=0.5)
+        chart = charts.LineChart(hist_data, data_name='histogram',
+                x_axis=(-0.5, 0.5, 0.1))
+        chart.add_data('raw', data)
+        return chart
 
     raise KeyError(name)
 
