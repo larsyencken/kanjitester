@@ -16,6 +16,7 @@ from itertools import groupby
 from datetime import timedelta, datetime
 
 from django.db import connection
+from django.conf import settings
 from cjktools.stats import mean, basicStats
 from cjktools import scripts
 from cjktools.sequences import unzip
@@ -46,6 +47,51 @@ def log_histogram(data, normalize=True, threshold=0.01, start=1.0):
             break
                     
     return rows
+
+def histogram(data, n_bins=10, x_min=None, x_max=None, normalize=True):
+    "Generates a histogram of the data."
+    if x_min is None:
+        x_min = min(data)
+    if x_max is None:
+        x_max = max(data)
+    
+    n_points = float(len(data))
+    
+    if settings.DEBUG:
+        for x in data:
+            assert x_min <= x <= x_max
+
+    interval = float((x_max - x_min) / n_bins)
+    eps = 1e-8
+    results = []
+    for bin_min, bin_max in _bin_sequence(x_min, x_max, n_bins):
+        midpoint = (bin_max + bin_min) / 2
+        freq = len([x for x in data if bin_min <= x < bin_max])
+        results.append((midpoint, freq))
+    
+    n_binned = sum(f for (v, f) in results)
+    assert len(data) == n_binned, 'expected %d, but only %d binned' % (
+            len(data), n_binned)
+    
+    if normalize:
+        results = [(v, f/n_points) for (v, f) in results]
+    
+    return results
+
+def _bin_sequence(x_min, x_max, n_bins):
+    if x_min >= x_max:
+        raise ValueError('need x_min < x_max')
+        
+    eps = 1e-8
+    interval = (x_max - x_min) / float(n_bins)
+    bin_boundaries = []
+    for i in xrange(n_bins + 1):
+        bin_boundaries.append(x_min + i*interval)
+    bin_boundaries[0] -= eps
+    bin_boundaries[-1] += eps
+    
+    for i in xrange(n_bins):
+        yield bin_boundaries[i], bin_boundaries[i + 1]
 
 def approximate(data, n_points=10, x_min=None, x_max=None):
     """
@@ -103,8 +149,10 @@ def get_mean_score():
         ORDER BY ur.user_id
     """)
     scores_by_n_tests = {}
-    
+    ignore_users = _get_user_ignore_set()
     for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
+        if user_id in ignore_users:
+            continue
         for i, (_user_id, score) in enumerate(rows):
             score_list = scores_by_n_tests.get(i + 1)
             score = float(score)
@@ -124,10 +172,13 @@ def get_mean_score():
 def get_time_between_tests():
     test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
             'user__id')
+    ignore_users = _get_user_ignore_set()
     
     data = []
     in_days = timedelta(days=1)
     for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        if user_id in ignore_users:
+            continue
         last_test = user_tests.next().start_time
         
         for test_set in user_tests:
@@ -152,8 +203,13 @@ def get_mean_score_over_sessions(max_delta=timedelta(days=1)):
     assert list(test_sets) == sorted(test_sets, 
             key=lambda t: (t.user_id, t.start_time))
 
+    ignore_users = _get_user_ignore_set()
+
     data = []
     for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        if user_id in ignore_users:
+            continue
+            
         x = _split_into_sessions(user_tests, max_delta)
         for session_tests in x:
             # Session is already ordered by time
@@ -204,6 +260,7 @@ def get_score_over_norm_time():
 def get_score_over_time():
     "Fetches the score for each user over time (measured in days)."
     scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
+    ignore_users = _get_user_ignore_set()
     
     user_key_f = lambda t: t.user_id
     test_sets = drill_models.TestSet.objects.exclude(end_time=None)
@@ -214,6 +271,8 @@ def get_score_over_time():
     base_data = []
     one_day = timedelta(days=1)
     for user_id, user_tests in groupby(test_sets, user_key_f):
+        if user_id in ignore_users:
+            continue
         user_tests = sorted(user_tests, key=lambda t: t.start_time)
         # Ignore users with only one test
         if len(user_tests) < 2:
@@ -691,7 +750,11 @@ def get_global_rater_stats():
         ORDER BY user_id ASC, q_time.timestamp ASC
     """)
     results = []
+    ignore_users = _get_user_ignore_set()
+    
     for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
+        if user_id in ignore_users:
+            continue
         rows = [(p, pt, c) for (_u, p, pt, c) in rows] # discard user_id
         
         user_data = {
@@ -733,6 +796,10 @@ def get_dropout_figures():
     return data
 
 #----------------------------------------------------------------------------#
+
+def _get_user_ignore_set():
+    return set(p.user_id for p in 
+            UserProfile.objects.filter(first_language__contains='Japanese'))
 
 def _iter_log_values(value):
     yield 0

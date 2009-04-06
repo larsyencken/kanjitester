@@ -261,6 +261,7 @@ available_charts = (
             ('syllabus_volume',     'Syllabus by # users'),
             ('time_betweentests',   'Time between tests [hist]'),
             ('time_sessions',       'Mean score over sessions'),
+            ('user_prepostdiff',    'Pre-post diff'),
         ]),
         _Column('Tests and responses', [
             ('test_mean',       'Mean score on nth test'),
@@ -305,6 +306,16 @@ def _build_user_graph(name):
         approx_data = stats.approximate(data)
         chart = charts.MultiLineChart(approx_data, data_name='histogram',
                 x_axis=(0.4, 1.0, 0.1), y_axis=(0, 1.0, 0.1))
+        chart.add_data('raw', data)
+        return chart
+        
+    elif name == 'prepostdiff':
+        data = [r['pre_post_diff'] for r in stats.get_global_rater_stats()
+                if r['n_tests'] > 3]
+        hist_data = stats.histogram(data, n_bins=11, x_min=-0.035, x_max=0.035,
+                normalize=False)
+        chart = charts.LineChart(hist_data, data_name='histogram',
+                x_axis=(-0.04, 0.04, 0.01))
         chart.add_data('raw', data)
         return chart
     
