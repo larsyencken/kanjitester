@@ -9,6 +9,7 @@
 
 import csv
 import operator
+import numpy
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -244,7 +245,11 @@ def _chart_csv_response(chart, name):
         response = HttpResponse(mimetype='text/html')
     writer = csv.writer(response)
     for row in chart.get_data(data_set_name):
-        writer.writerow(row)
+        if isinstance(row, (float, int, numpy.number)):
+            writer.writerow([row])
+        else:
+            writer.writerow(row)
+                        
     return response
 
 class _Column(object):
