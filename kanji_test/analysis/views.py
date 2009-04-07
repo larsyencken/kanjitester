@@ -69,6 +69,8 @@ def basic(request):
     pretty_results = [(k, 100*t, 100*c) for (k, t, c) in test_stats]
     context['test_dist'] = pretty_results
 
+    context['mean_time_used'] = stats.get_mean_time_used()
+
     return render_to_response("analysis/basic.html", context,
             RequestContext(request))
 
@@ -138,6 +140,11 @@ def rater_detail(request, rater_id=None):
     word_chart.set_size('350x250')
     kanji_chart.set_size('350x250')
     context['word_chart'] = word_chart
+    context['first_test'] = rater.testset_set.order_by('start_time'
+            )[0].start_time
+    context['last_test'] = rater.testset_set.order_by('-start_time'
+            )[0].end_time
+    context['time_tested'] = context['last_test'] - context['first_test']
     context['kanji_chart'] = kanji_chart
     context['stats'] = stats.get_rater_stats(rater)
     context['word_ratio'] = word_chart.get_data()[1][-1] / \

@@ -634,6 +634,22 @@ def get_mean_exposures_per_pivot():
             ('Kanji combined', mean(kanji_inc_dist.values())),
         ]
 
+def get_mean_time_used():
+    "Gets the mean time in days for which the system was used."
+    test_sets = drill_models.TestSet.objects.exclude(end_time=None).order_by(
+            'user__id')
+    
+    rows = []
+    one_day = timedelta(days=1)
+    for user_id, user_tests in groupby(test_sets, lambda t: t.user_id):
+        user_tests = sorted(user_tests, key=lambda t: t.start_time)
+        time_used = user_tests[-1].end_time - user_tests[0].start_time
+        days = _scale_time_delta(time_used, one_day)
+        rows.append(days)
+    
+    return mean(rows)
+        
+
 def get_mean_error_by_plugin():
     cursor = connection.cursor()
     cursor.execute("""
