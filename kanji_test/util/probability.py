@@ -141,6 +141,10 @@ class ConditionalFreqDist(nltk_prob.ConditionalFreqDist):
             cond_dist = self[condition]
             for symbol in cond_dist.samples():
                 yield condition, symbol, cond_dist[symbol]
+    
+    def add_counts(self, other_dist):
+        for condition, symbol, count in other_dist.itercounts():
+            self[condition].inc(symbol, count)
 
 class UnsupportedMethodError(Exception):
     pass

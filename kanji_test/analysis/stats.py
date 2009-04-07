@@ -26,7 +26,7 @@ from cjktools.sequences import unzip
 from kanji_test.user_profile.models import UserProfile, Syllabus
 from kanji_test.user_model.models import PartialLexeme, PartialKanji
 from kanji_test.drill import models as drill_models
-from kanji_test.util.probability import FreqDist
+from kanji_test.util.probability import FreqDist, ConditionalFreqDist
 
 #----------------------------------------------------------------------------#
 # DATA TRANSFORMS
@@ -274,6 +274,10 @@ def get_score_over_norm_time():
     return data
 
 def get_score_over_time():
+    """
+    Fetches thes score for each user over time (measured in days). Each user's
+    score is averaged across that day.
+    """
     "Fetches the score for each user over time (measured in days)."
     scores_by_test = dict((t, float(s)) for (t, s) in _get_test_scores())
     ignore_users = _get_user_ignore_set()
@@ -807,6 +811,9 @@ def get_global_rater_stats():
         pre_ratio, post_ratio = _calculate_pre_post_ratios(rows)
         user_data['pre_ratio'] = pre_ratio
         user_data['post_ratio'] = post_ratio
+
+        user_data['state_machine'] = _calculated_item_change(rows)
+
         if pre_ratio and post_ratio:
             user_data['pre_post_diff'] = post_ratio - pre_ratio
         else:
@@ -858,6 +865,16 @@ def get_first_last_test():
             )
     return data
 
+def get_state_machine():
+    """Gets state transition probabilities for items."""
+    user_stats = get_global_rater_stats()
+    state_transitions = ConditionalFreqDist()
+    for user_data in user_stats:
+        state_transitions.add_counts(user_data['state_machine'])
+    return state_transitions
+
+#----------------------------------------------------------------------------#
+# HELPERS
 #----------------------------------------------------------------------------#
 
 def _get_user_ignore_set():
@@ -957,6 +974,29 @@ def _calculate_pre_post_ratios(response_data):
             mean(first_responses),
             mean(last_responses),
         )
+
+def _calculated_item_change(response_data):
+    """
+    Calculates how many items were forgotten and how many were learned.
+    """
+    fs = ConditionalFreqDist()
+    
+    response_data = [(pid, pt, i, ic) for (i, (pid, pt, ic)) in 
+            enumerate(response_data)]
+    response_data.sort()
+
+    for (pivot_id, pivot_type), responses in groupby(response_data,
+            lambda r: (r[0], r[1])):
+        responses = list(responses)
+        if len(responses) < 2:
+            continue
+        
+        for i in xrange(len(responses) - 1):
+            from_state = responses[i][-1] and 'k' or 'u'
+            to_state = responses[i + 1][-1] and 'k' or 'u'
+            fs[from_state].inc(to_state)
+
+    return fs
 
 def _get_test_scores():
     """
