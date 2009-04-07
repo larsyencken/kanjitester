@@ -142,8 +142,8 @@ def rater_detail(request, rater_id=None):
     context['word_chart'] = word_chart
     context['first_test'] = rater.testset_set.order_by('start_time'
             )[0].start_time
-    context['last_test'] = rater.testset_set.order_by('-start_time'
-            )[0].end_time
+    context['last_test'] = rater.testset_set.exclude(end_time=None
+            ).order_by('-start_time')[0].end_time
     context['time_tested'] = context['last_test'] - context['first_test']
     context['kanji_chart'] = kanji_chart
     context['stats'] = stats.get_rater_stats(rater)
