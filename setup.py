@@ -36,7 +36,7 @@ setup(
 
         setup_requires=['setuptools_hg'],
         install_requires=['django >= 1.0', 'consoleLog', 'cjktools',
-                'mysql-python', 'south'],
+                'mysql-python', 'south', 'django-checksum'],
 
         packages=find_packages(),
         ext_modules=[Extension(
