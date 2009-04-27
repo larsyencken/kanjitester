@@ -33,7 +33,7 @@ class RawReadingModel(ConditionalFreqDist):
         for line in i_stream:
             alignment = Alignment.from_line(line)
             for (g, p) in alignment:
-                if scripts.containsScript(kanji_script, g):
-                    self[g].inc(scripts.toHiragana(p))
+                if scripts.contains_script(kanji_script, g):
+                    self[g].inc(scripts.to_hiragana(p))
         i_stream.close()
         return

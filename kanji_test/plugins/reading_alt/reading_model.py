@@ -14,7 +14,7 @@ import math
 
 from django.conf import settings
 from cjktools.common import sopen
-from cjktools import kanaTable, scripts, smartCache
+from cjktools import scripts
 
 from kanji_test.util.probability import ConditionalFreqDist
 import raw_reading_model
@@ -58,12 +58,12 @@ class VoicingAndGeminationModel(object):
         Returns the probability of P(r|k), using the formula:
         P(r|k) ~ (alpha)P_raw(r|k) + (1-alpha)P(r|r*)P(r*|k).
         """
-        if scripts.toHiragana(grapheme) == scripts.toHiragana(alt_reading):
+        if scripts.to_hiragana(grapheme) == scripts.to_hiragana(alt_reading):
             # Special case: where the segment is phonetic.
             return 1.0
 
         # We only handle entire kanji segments.
-        assert scripts.scriptTypes(grapheme) == set([scripts.Script.Kanji])
+        assert scripts.script_types(grapheme) == set([scripts.Script.Kanji])
 
         alpha = settings.ALTERNATION_ALPHA
         assert 0 <= alpha <= 1

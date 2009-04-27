@@ -9,7 +9,7 @@
 # 
 
 import sys
-from cjktools.shell import setScreenTitle
+from cjktools.shell import set_screen_title
 
 from django.core.management import execute_manager
 try:
@@ -20,5 +20,5 @@ except ImportError:
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
-        setScreenTitle('%s (manage.py)' % sys.argv[1])
+        set_screen_title('%s (manage.py)' % sys.argv[1])
     execute_manager(settings)

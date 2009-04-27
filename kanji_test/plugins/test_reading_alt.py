@@ -11,7 +11,6 @@
 import unittest
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from kanji_test.user_model import models
 from kanji_test.plugins import reading_alt

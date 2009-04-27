@@ -17,7 +17,7 @@ from django.conf import settings
 from django.db.models import Q
 
 from cjktools import scripts
-from cjktools.scripts import containsScript, Script
+from cjktools.scripts import contains_script, Script
 
 from kanji_test.drill import models as drill_models
 from kanji_test.drill import plugin_api, load_plugins, stats

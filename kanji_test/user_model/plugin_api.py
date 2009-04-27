@@ -59,7 +59,7 @@ class SegmentedSeqPlugin(UserModelPlugin):
 
         for base_seg, response_seg, distractor_segs in \
                     izip(base_segs, response_segs, distractor_sets):
-            if scripts.scriptType(base_seg) != scripts.Script.Kanji:
+            if scripts.script_types(base_seg) != scripts.Script.Kanji:
                 continue
             sub_dist = models.ProbDist.from_query_set(
                     error_dist.density.filter(condition=base_seg))

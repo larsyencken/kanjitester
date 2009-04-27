@@ -11,8 +11,6 @@
 Supporting methods for drill plugins.
 """
 
-from cjktools.scripts import Script, scriptType, containsScript
-
 from kanji_test import settings
 
 def build_kanji_options(kanji, error_dist, exclude_set=None, adaptive=True):

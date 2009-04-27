@@ -117,8 +117,8 @@ def _embellish(response_data):
     kanji_script = scripts.Script.Kanji
     for pivot, pivot_type, is_correct, timestamp in response_data:
         yield (pivot, pivot_type, is_correct, timestamp)
-        if pivot_type == 'w' and scripts.containsScript(kanji_script, pivot):
-            for kanji in scripts.uniqueKanji(pivot):
+        if pivot_type == 'w' and scripts.contains_script(kanji_script, pivot):
+            for kanji in scripts.unique_kanji(pivot):
                 yield kanji, 'k', is_correct, timestamp
 
 def _get_performance_analysis(response_data):

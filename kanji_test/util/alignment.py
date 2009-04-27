@@ -14,7 +14,7 @@ Resouces for parsing and utilising alignments.
 from itertools import izip
 
 from cjktools.common import sopen
-from cjktools.scripts import containsScript, Script
+from cjktools.scripts import contains_script, Script
 
 class FormatError(Exception): pass
 
@@ -40,7 +40,7 @@ class Alignment(object):
     phoneme = property(phoneme)
 
     def has_kanji(self):
-        return containsScript(Script.Kanji, self.grapheme)
+        return contains_script(Script.Kanji, self.grapheme)
 
     def __len__(self):
         return len(self.g_segs)

@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 
 from kanji_test.user_model import models
 from kanji_test.plugins import basic_drills
-from kanji_test.lexicon.models import LexemeReading, KanjiReading
+from kanji_test.lexicon.models import LexemeReading
 
 def suite():
     testSuite = unittest.TestSuite((

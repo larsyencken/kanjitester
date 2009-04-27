@@ -29,7 +29,7 @@ class StrokeTestCase(unittest.TestCase):
 
     def testData(self):
         """Verifies the stroke data using kanjidic."""
-        kjd = kanjidic.Kanjidic.getCached()
+        kjd = kanjidic.Kanjidic.get_cached()
         signatures = self.dist.signatures
         for kanji, signature in signatures.iteritems():
             actualCount = len(signature)

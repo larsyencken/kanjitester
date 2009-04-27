@@ -16,8 +16,7 @@ import sys, optparse
 import math
 from django.db import connection
 
-from cjktools import scripts
-from cjktools.sequences import groupsOfN
+from cjktools.sequences import groups_of_n
 from cjktools.resources import kanjidic
 import consoleLog
 from checksum.models import Checksum
@@ -97,10 +96,11 @@ class ReadingDatabase(object):
         for kanji_node in root_node.children.values():
             kanji = kanji_node.label
             if kanji in kjdic:
-                for reading in kjdic[kanji].allReadings:
+                for reading in kjdic[kanji].all_readings:
                     kanji_node.add_child(AltTreeNode(reading, 'b'))
 
-        log.start('Adding alternation models', nSteps=len(_alternation_models))
+        log.start('Adding alternation models',
+                nSteps=len(_alternation_models))
         i = 0
         max_len = max(len(n) for (n, c, cl) in _alternation_models)
         pattern = '%%-%ds ' % max_len
@@ -176,7 +176,7 @@ class ReadingDatabase(object):
         max_per_run = 10000
         all_results = iter_results(root_node)
 
-        for results in groupsOfN(max_per_run, all_results):
+        for results in groups_of_n(max_per_run, all_results):
             cursor.executemany(
                     """
                     INSERT INTO reading_alt_readingalternation 
@@ -269,7 +269,7 @@ class ReadingDatabase(object):
         quoted_fields = tuple(connection.ops.quote_name(f) for f in
             ['condition', 'symbol', 'alternations', 'pdf', 'cdf',
             'reading_alternation_id'])
-        for results in groupsOfN(max_per_insert, all_results):
+        for results in groups_of_n(max_per_insert, all_results):
             cursor.executemany(
                     """
                     INSERT INTO reading_alt_kanjireading

@@ -12,9 +12,8 @@ Plugin for visual similarity.
 """
 
 import consoleLog
-from cjktools.stats import iuniquePairs
+from simplestats.comb import iunique_pairs
 from cjktools.exceptions import DomainError
-from cjktools import scripts
 from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.user_model import plugin_api as user_model_api
@@ -63,7 +62,7 @@ class VisualSimilarity(user_model_api.SegmentedSeqPlugin):
         graph = threshold_graph.ThresholdGraph(settings.MAX_GRAPH_DEGREE)
         ignore_set = set()
         for kanji_a, kanji_b in consoleLog.withProgress(
-                    iuniquePairs(kanji_set), 100):
+                    iunique_pairs(kanji_set), 100):
             if kanji_a in ignore_set or kanji_b in ignore_set:
                 continue
 

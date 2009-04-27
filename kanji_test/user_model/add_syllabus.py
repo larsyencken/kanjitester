@@ -15,14 +15,11 @@ from cjktools import scripts
 from cjktools import alternations
 import consoleLog
 from django.contrib.auth import models as auth_models
-from django.core.exceptions import ObjectDoesNotExist
 from checksum.models import Checksum
 
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_model import plugin_api
-from kanji_test.util.alignment import Alignment
-from kanji_test import settings
 
 import bundle
 
@@ -155,7 +152,7 @@ def _store_word_surfaces(syllabus, syllabus_bundle):
             continue
 
         for lexeme_surface in partial_lexeme.lexeme.surface_set.all():
-            if scripts.uniqueKanji(lexeme_surface.surface).issubset(
+            if scripts.unique_kanji(lexeme_surface.surface).issubset(
                     syllabus_bundle.chars):
                 partial_lexeme.surface_set.add(lexeme_surface)
 
@@ -187,7 +184,7 @@ def _store_reduced_surfaces(syllabus, syllabus_bundle):
         surface = partial_lexeme.lexeme.surface_set.get(
             surface=alignment.grapheme)
 
-        if scripts.uniqueKanji(surface.surface).issubset(
+        if scripts.unique_kanji(surface.surface).issubset(
                     syllabus_bundle.chars):
             partial_lexeme.surface_set.add(surface)
             syllabus.alignment_set.get_or_create(
@@ -285,7 +282,7 @@ def _get_kanji_readings(alignments):
         alignment_len = len(alignment)
         for i, (g_seg, p_seg) in enumerate(zip(alignment.g_segs,
                     alignment.p_segs)):
-            if len(g_seg) > 1 or scripts.scriptType(g_seg) != kanji_script:
+            if len(g_seg) > 1 or scripts.script_types(g_seg) != kanji_script:
                 continue
             reading_set = readings.setdefault(g_seg, set())
             reading_set.add(p_seg)
@@ -302,7 +299,7 @@ def _get_kanji_readings(alignments):
 def _format_alignment(alignment):
     result = []
     for g_seg, p_seg in zip(alignment.g_segs, alignment.p_segs):
-        if scripts.scriptType(g_seg) == scripts.Script.Kanji:
+        if scripts.script_types(g_seg) == scripts.Script.Kanji:
             result.append(p_seg)
         else:
             result.extend(p_seg)

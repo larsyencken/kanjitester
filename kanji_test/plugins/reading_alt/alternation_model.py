@@ -11,8 +11,8 @@
 
 #----------------------------------------------------------------------------#
 
-import re, math
-from cjktools import kanaTable
+import math
+from cjktools import kana_table
 from cjktools.exceptions import AbstractMethodError
 
 from django.conf import settings
@@ -34,8 +34,8 @@ class AlternationModelI(object):
 
 class SimpleAlternationModel(AlternationModelI):
     """
-    An alternation model based on readings which are subsets of things. To use,
-    subclass this model and implement the _buildPairs() method.
+    An alternation model based on readings which are subsets of things. To
+    use, subclass this model and implement the _build_pairs() method.
     """
     #------------------------------------------------------------------------#
     # PUBLIC
@@ -43,20 +43,20 @@ class SimpleAlternationModel(AlternationModelI):
 
     def __init__(self, alpha):
         self.alpha = alpha
-        self.pairs = self._buildPairs()
-        map = {}
+        self.pairs = self._build_pairs()
+        mapping = {}
         for keyA, keyB in self.pairs:
-            if keyA in map:
-                map[keyA].append(keyB)
+            if keyA in mapping:
+                mapping[keyA].append(keyB)
             else:
-                map[keyA] = [keyB]
+                mapping[keyA] = [keyB]
 
-            if keyB in map:
-                map[keyB].append(keyA)
+            if keyB in mapping:
+                mapping[keyB].append(keyA)
             else:
-                map[keyB] = [keyA]
+                mapping[keyB] = [keyA]
 
-        self.map = map
+        self.mapping = mapping
 
     #------------------------------------------------------------------------#
 
@@ -74,7 +74,7 @@ class SimpleAlternationModel(AlternationModelI):
         Returns the probability of the given reading variant being shown
         given the canonical reading.
         """
-        uniformProb = 1.0 / self._numVariants(reading)
+        uniformProb = 1.0 / self._num_variants(reading)
         if reading == readingVariant:
             return (1-self.alpha) + \
                     self.alpha*uniformProb
@@ -89,8 +89,8 @@ class SimpleAlternationModel(AlternationModelI):
         model.
         """
         variants = [reading]
-        if reading in self.map:
-            variants.extend(self.map[reading])
+        if reading in self.mapping:
+            variants.extend(self.mapping[reading])
 
         results = []
         for readingVariant in variants:
@@ -104,7 +104,7 @@ class SimpleAlternationModel(AlternationModelI):
     # PRIVATE
     #------------------------------------------------------------------------#
 
-    def _buildPairs(self):
+    def _build_pairs(self):
         """
         Builds a list of (short form, long form) pairs for this type of
         alternation.
@@ -113,15 +113,15 @@ class SimpleAlternationModel(AlternationModelI):
 
     #------------------------------------------------------------------------#
 
-    def _numVariants(self, reading):
+    def _num_variants(self, reading):
         """
         Returns the number of variants for this particular reading.
 
         Sometimes calculating this is useful without generating the
         actual candidate list, which might be exponentially large.
         """
-        if reading in self.map:
-            return 1 + len(self.map[reading])
+        if reading in self.mapping:
+            return 1 + len(self.mapping[reading])
         else:
             return 1
 
@@ -139,12 +139,12 @@ class VowelLengthModel(SimpleAlternationModel):
     def __init__(self):
         SimpleAlternationModel.__init__(self, settings.VOWEL_LENGTH_ALPHA)
 
-    def _buildPairs(self):
+    def _build_pairs(self):
         """
         Builds a correspondence between palatalized and unpalatalized forms
         of kana.
         """
-        vowelPairs = {
+        vowel_pairs = {
                 u'あ': u'あ',
                 u'い': u'い',
                 u'う': u'う',
@@ -152,33 +152,33 @@ class VowelLengthModel(SimpleAlternationModel):
                 u'お': u'う',
             }
 
-        vowelToYForm = {
+        vowel_to_y_form = {
                 u'あ':  u'ゃ',
                 u'う':  u'ゅ',
                 u'お':  u'ょ',
             }
 
-        table = kanaTable.KanaTable.getCached()
+        table = kana_table.KanaTable.get_cached()
         pairs = []
         for consonant in table.consonants:
             if consonant == u'あ':
                 # Plain vowels double in Japanese.
-                for vowel, longVowel in vowelPairs:
+                for vowel, long_vowel in vowel_pairs:
                     pairs.append((vowel, 2*vowel))
 
             else:
                 # Other consonants are more limited.
-                for vowel, longVowel in vowelPairs.iteritems():
-                    kana = table.fromCoords(consonant, vowel)
-                    pairs.append((kana, kana + longVowel))
+                for vowel, long_vowel in vowel_pairs.iteritems():
+                    kana = table.from_coords(consonant, vowel)
+                    pairs.append((kana, kana + long_vowel))
 
-                yPrefix = table.fromCoords(consonant, u'い')
-                assert yPrefix
-                for vowel, y_suffix in vowelToYForm.iteritems():
-                    longVowel = vowelPairs[vowel]
+                y_prefix = table.from_coords(consonant, u'い')
+                assert y_prefix
+                for vowel, y_suffix in vowel_to_y_form.iteritems():
+                    long_vowel = vowel_pairs[vowel]
                     pairs.append((
-                            yPrefix + y_suffix,
-                            yPrefix + y_suffix + longVowel,
+                            y_prefix + y_suffix,
+                            y_prefix + y_suffix + long_vowel,
                         ))
 
         return pairs
@@ -207,24 +207,24 @@ class PalatalizationModel(SimpleAlternationModel):
 
     #------------------------------------------------------------------------#
 
-    def _buildPairs(self):
+    def _build_pairs(self):
         """
         Builds a correspondence between palatalized and unpalatalized forms
         of kana.
         """
-        vowelToYForm = {
+        vowel_to_y_form = {
                 u'あ':  u'ゃ',
                 u'う':  u'ゅ',
                 u'お':  u'ょ',
             }
 
-        table = kanaTable.KanaTable.getCached()
+        table = kana_table.KanaTable.get_cached()
         pairs = []
         for consonant in table.consonants:
-            i_form = table.fromCoords(consonant, u'い')
+            i_form = table.from_coords(consonant, u'い')
             for vowel in u'あうお':
-                base_form = table.fromCoords(consonant, vowel)
-                y_form = i_form + vowelToYForm[vowel]
+                base_form = table.from_coords(consonant, vowel)
+                y_form = i_form + vowel_to_y_form[vowel]
                 pairs.append((base_form, y_form))
 
         return pairs

@@ -11,7 +11,6 @@ import random
 from os import path
 
 from django.db import models
-from cjktools.common import sopen
 from cjktools.resources import kanjidic
 from cjktools import scripts
 
@@ -225,7 +224,7 @@ class Kanji(models.Model):
     gloss = models.CharField(max_length=200)
     
     def _get_prob(self):
-        return KanjiProb.objects.get(symbol=kanji)
+        return KanjiProb.objects.get(symbol=self.kanji)
     prob = property(_get_prob)
     
     class Meta:
@@ -239,23 +238,23 @@ class Kanji(models.Model):
     def initialise(cls):
         KanjiReading.objects.all().delete()
         Kanji.objects.all().delete()
-        kjd = kanjidic.Kanjidic.getCached()
+        kjd = kanjidic.Kanjidic.get_cached()
         max_gloss_len = [f for f in cls._meta.fields \
                 if f.name == 'gloss'][0].max_length
         for entry in kjd.itervalues():
             truncated_gloss = ', '.join(entry.gloss)[:max_gloss_len]
             kanji = Kanji(kanji=entry.kanji, gloss=truncated_gloss)
             kanji.save()
-            for reading in cls._clean_readings(entry.onReadings):
+            for reading in cls._clean_readings(entry.on_readings):
                 kanji.reading_set.create(reading=reading, reading_type='o')
-            for reading in cls._clean_readings(entry.kunReadings):
+            for reading in cls._clean_readings(entry.kun_readings):
                 kanji.reading_set.create(reading=reading, reading_type='k')
         return
     
     @staticmethod
     def _clean_readings(reading_list):
         return set(
-                scripts.toHiragana(r.split('.')[0]) for r in reading_list
+                scripts.to_hiragana(r.split('.')[0]) for r in reading_list
             )
     
 class KanjiReading(models.Model):
@@ -266,8 +265,8 @@ class KanjiReading(models.Model):
     reading_type = models.CharField(max_length=1, choices=READING_TYPES)
     
     def _get_prob(self):
-        return KanjiReadingCondProb.objects.get(condition=kanji,
-                symbol=reading)
+        return KanjiReadingCondProb.objects.get(condition=self.kanji,
+                symbol=self.reading)
     prob = property(_get_prob)
     
     class Meta:

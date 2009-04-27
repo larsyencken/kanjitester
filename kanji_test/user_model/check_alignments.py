@@ -11,7 +11,7 @@
 """
 """
 
-import os, sys, optparse
+import sys, optparse
 
 import consoleLog
 from cjktools import scripts
@@ -37,7 +37,7 @@ def _check_syllabus(syllabus):
     for partial_lexeme in syllabus.partiallexeme_set.all():
         for alignment in partial_lexeme.alignments:
             for g_seg, p_seg in alignment:
-                if not scripts.containsScript(scripts.Script.Kanji, g_seg):
+                if not scripts.contains_script(scripts.Script.Kanji, g_seg):
                     continue
                 if prior_dist.density.filter(condition=g_seg, 
                         symbol=p_seg).count() != 1:

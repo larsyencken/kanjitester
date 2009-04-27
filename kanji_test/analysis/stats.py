@@ -19,7 +19,7 @@ from datetime import timedelta, datetime
 from django.db import connection
 from django.conf import settings
 from django.contrib.auth.models import User
-from cjktools.stats import mean, basicStats
+from simplestats import mean, basic_stats
 from cjktools import scripts
 from cjktools.sequences import unzip
 
@@ -117,7 +117,7 @@ def approximate(data, n_points=10, x_min=None, x_max=None):
                 if start_interval <= x < end_interval]
         if len(sub_data) < 3:
             continue
-        avg, stddev = basicStats(sub_data)
+        avg, stddev = basic_stats(sub_data)
         results.append((
             midpoint,
             avg,
@@ -140,7 +140,7 @@ def group_by_points(data, y_max=sys.maxint, y_min=None):
         if len(rows) < 3:
             continue
     
-        avg, std = basicStats(y for (x, y) in rows)
+        avg, std = basic_stats(y for (x, y) in rows)
         new_data.append((
                 x,
                 avg,
@@ -621,7 +621,7 @@ def get_mean_exposures_per_pivot():
 
         elif pivot_type == 'w':
             word_c.append(n_exposures)
-            for kanji in scripts.uniqueKanji(pivot):
+            for kanji in scripts.unique_kanji(pivot):
                 kanji_inc_dist.inc(kanji, n_exposures)
 
         else:
@@ -700,7 +700,7 @@ def get_accuracy_by_pivot_type():
     only_hiragana = set([scripts.Script.Hiragana])
     only_katakana = set([scripts.Script.Katakana])
     for word, n_correct, n_responses in raw_data:
-        scripts_found = scripts.scriptTypes(word)
+        scripts_found = scripts.script_types(word)
         if scripts_found.intersection(complex_scripts):
             dist = counts['Kanji']
         elif scripts_found.intersection(only_katakana):

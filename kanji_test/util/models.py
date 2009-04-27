@@ -12,10 +12,9 @@ Abstract models for probability distributions.
 """
 
 import random
-import operator
 
 from django.db import models, connection
-from cjktools.sequences import groupsOfN
+from cjktools.sequences import groups_of_n
 
 from kanji_test.settings import N_ROWS_PER_INSERT
 
@@ -76,7 +75,7 @@ class Prob(ProbI):
             cdf += pdf
             rows.append((symbol, pdf, cdf))
 
-        for row_set in groupsOfN(N_ROWS_PER_INSERT, rows):
+        for row_set in groups_of_n(N_ROWS_PER_INSERT, rows):
             cursor.executemany(
                     """
                     INSERT INTO `%s` (`symbol`, `pdf`, `cdf`)
@@ -125,7 +124,7 @@ class CondProb(ProbI):
                 cdf += pdf
                 rows.append((condition, symbol, pdf, cdf))
 
-        for row_set in groupsOfN(N_ROWS_PER_INSERT, rows):
+        for row_set in groups_of_n(N_ROWS_PER_INSERT, rows):
             cursor.executemany(
                     """
                     INSERT INTO `%s` (`condition`, `symbol`, `pdf`, `cdf`)

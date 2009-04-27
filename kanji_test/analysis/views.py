@@ -17,7 +17,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.conf import settings
-from cjktools.stats import basicStats
+from simplestats import basic_stats
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
@@ -51,7 +51,7 @@ def basic(request):
     (
         context['mean_tbt'],
         context['std_tbt'],
-    ) = basicStats(stats.get_time_between_tests())
+    ) = basic_stats(stats.get_time_between_tests())
     
     context['log_start_time'] = models.TestSet.objects.order_by('start_time'
             )[0].start_time

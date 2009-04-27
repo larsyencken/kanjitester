@@ -142,7 +142,7 @@ class MultipleChoiceQuestion(Question):
     answer = property(**answer())
     
     def _get_stimulus_class(self, stimulus):
-        if scripts.scriptType(stimulus) == scripts.Script.Ascii:
+        if scripts.script_types(stimulus) == scripts.Script.Ascii:
             return 'stimulus_roman'
         else:
             return 'stimulus_cjk'

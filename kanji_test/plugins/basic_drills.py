@@ -7,13 +7,8 @@
 #  Copyright 2008-06-21 Lars Yencken. All rights reserved.
 # 
 
-import random
-
-from cjktools import scripts
-from cjktools import sequences
 from django.core.exceptions import ObjectDoesNotExist
 
-from kanji_test.drill import models as api_models
 from kanji_test.drill import plugin_api, support
 from kanji_test.lexicon import models as lexicon_models
 from kanji_test.user_model import models as usermodel_models

@@ -8,13 +8,11 @@
 # 
 
 import random
-import itertools
 
-from django.db import models
+from django.db import models, connection
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
-from cjktools.stats import mean
 from cjktools import scripts
 
 from kanji_test.lexicon import models as lexicon_models
@@ -102,7 +100,7 @@ class Syllabus(models.Model):
                 )
             for partial_lexeme in syllabus.partiallexeme_set.all():
                 for lexeme_surface in partial_lexeme.surface_set.all():
-                    if not scripts.uniqueKanji(lexeme_surface.surface
+                    if not scripts.unique_kanji(lexeme_surface.surface
                             ).issubset(kanji_set):
                         raise Exception('invalid surface')
 
@@ -319,13 +317,13 @@ class ErrorDist(models.Model):
         dists = []
         kanji_script = scripts.Script.Kanji
         for segment in condition_segments:
-            if scripts.scriptType(segment) == kanji_script:
+            if scripts.script_type(segment) == kanji_script:
                 seg_dist = ProbDist.from_query_set(self.density.filter(
                     condition=segment))
                 dists.append(seg_dist)
             else:
                 dists.append(segment)
-
+        
         return SeqDist(*dists).sample_n(n, exclude_set)
 
     def sample_seq_n_uniform(self, condition_segments, n, exclude_set=None):
@@ -338,7 +336,7 @@ class ErrorDist(models.Model):
         while len(results) < n:
             result_seg_sets = []
             for segment in condition_segments:
-                if scripts.scriptType(segment) == kanji_script:
+                if scripts.script_type(segment) == kanji_script:
                     result_seg_sets.append(
                             [o['symbol'] for o in self.density.filter(
                                     condition=segment).order_by('?').values(

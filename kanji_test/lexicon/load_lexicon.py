@@ -13,10 +13,9 @@ from xml.etree import cElementTree as ElementTree
 
 from django.db import connection
 from cjktools.common import sopen
-from cjktools.sequences import groupsOfNIter
+from cjktools.sequences import groups_of_n_iter
 from cjktools import scripts
 import consoleLog
-from nltk.probability import FreqDist
 from checksum.models import Checksum
 
 from kanji_test.lexicon import models
@@ -98,7 +97,7 @@ def _populate_stacks(lexeme_node, lexeme_id, lexeme_surface_stack,
         lexeme_surface_stack.append((
                 lexeme_id,
                 surface.upper(),
-                scripts.containsScript(scripts.Script.Kanji, surface),
+                scripts.contains_script(scripts.Script.Kanji, surface),
                 in_lexicon,
             ))
     
@@ -143,12 +142,12 @@ def _store_lexemes(lexeme_nodes):
     max_rows = settings.N_ROWS_PER_INSERT
 
     log.log('Storing to lexicon_lexeme')
-    for lexeme_rows in groupsOfNIter(max_rows, xrange(1, next_lexeme_id)):
+    for lexeme_rows in groups_of_n_iter(max_rows, xrange(1, next_lexeme_id)):
         cursor.executemany('INSERT INTO lexicon_lexeme (id) VALUES (%s)',
                 lexeme_rows)
 
     log.log('Storing to lexicon_lexemesurface')
-    for lexeme_surface_rows in groupsOfNIter(max_rows, lexeme_surface_stack):
+    for lexeme_surface_rows in groups_of_n_iter(max_rows, lexeme_surface_stack):
         cursor.executemany( """
                 INSERT INTO lexicon_lexemesurface (lexeme_id, surface,
                     has_kanji, in_lexicon)
@@ -156,14 +155,14 @@ def _store_lexemes(lexeme_nodes):
             """, lexeme_surface_rows)
 
     log.log('Storing to lexicon_lexemereading')
-    for lexeme_reading_rows in groupsOfNIter(max_rows, lexeme_reading_stack):
+    for lexeme_reading_rows in groups_of_n_iter(max_rows, lexeme_reading_stack):
         cursor.executemany( """
                 INSERT INTO lexicon_lexemereading (lexeme_id, reading)
                 VALUES (%s, %s)
             """, lexeme_reading_rows)
 
     log.log('Storing to lexicon_lexemesense')
-    for lexeme_sense_rows in groupsOfNIter(max_rows, lexeme_sense_stack):
+    for lexeme_sense_rows in groups_of_n_iter(max_rows, lexeme_sense_stack):
         cursor.executemany( """
                 INSERT INTO lexicon_lexemesense (lexeme_id, gloss,
                         is_first_sense)

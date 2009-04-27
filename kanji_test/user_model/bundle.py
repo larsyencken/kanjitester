@@ -97,11 +97,11 @@ class CharFile(set):
     "A wrapper for syllabus character lists. "
     def __init__(self, filename):
         i_stream = sopen(filename)
-        uniqueKanji = scripts.uniqueKanji
+        unique_kanji = scripts.unique_kanji
         for line in i_stream:
             if line.lstrip().startswith('#'):
                 continue
-            self.update(uniqueKanji(line))
+            self.update(unique_kanji(line))
         i_stream.close()
 
 class WordEntry(object):
@@ -113,7 +113,7 @@ class WordEntry(object):
         self.notes = notes
 
     def has_kanji(self):
-        return scripts.containsScript(scripts.Script.Kanji, self.surface)
+        return scripts.contains_script(scripts.Script.Kanji, self.surface)
 
     @classmethod
     def from_line(cls, line):

@@ -11,7 +11,6 @@
 Views for the user_profile app.
 """
 
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django import forms
@@ -20,7 +19,6 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 
 from kanji_test.user_model import models as usermodel_models
-from kanji_test.util.url import urlquote
 from kanji_test.user_profile import models
 from kanji_test.user_model import add_syllabus
 

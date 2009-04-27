@@ -13,17 +13,13 @@ A django app for modelling kanji reading alternations.
 
 import consoleLog
 from django.db import connection
-from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
-from checksum.models import Checksum
-from cjktools import scripts
 
 from kanji_test.user_model import plugin_api as usermodel_api
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.drill import plugin_api as drill_api
 from kanji_test.drill import support
-from kanji_test.util.probability import CondProbDist, ProbDist
-from kanji_test.util.alignment import Alignment
+from kanji_test.util.probability import ProbDist
 from kanji_test.lexicon import models as lexicon_models
 
 _log = consoleLog.default
