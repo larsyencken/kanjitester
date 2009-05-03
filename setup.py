@@ -35,7 +35,7 @@ setup(
         url='http://www.csse.unimelb.edu.au/~lljy/',
 
         setup_requires=['setuptools_hg'],
-        install_requires=['django >= 1.0', 'consoleLog', 'cjktools',
+        install_requires=['django >= 1.0', 'consoleLog', 'cjktools >= 1.3.0',
                 'mysql-python', 'south', 'django-checksum'],
 
         packages=find_packages(),
