@@ -68,7 +68,7 @@
           </td>
           <td>
             {% for lexeme_sense in partial_lexeme.lexeme.sense_set.all %}
-              {{lexeme_sense.gloss}}{% if not forloop.last %}, {% endif %}
+              {{lexeme_sense.gloss}}{% if forloop.first %}<span class="quiet">{% endif %}{% if not forloop.last %}, {% else %}</span>{% endif %}
             {% endfor %}
           </td>
         </tr>
