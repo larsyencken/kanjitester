@@ -64,6 +64,7 @@ environmentVars = (
         'LD_LIBRARY_PATH',
         'LIBRARY_PATH',
         'PATH',
+        'PYTHONPATH',
     )
 
 envDict = env['ENV']
