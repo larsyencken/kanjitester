@@ -10,6 +10,7 @@
 import csv
 import operator
 import numpy
+import itertools
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -17,7 +18,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.conf import settings
-from simplestats import basic_stats
+from simplestats import basic_stats, mean
 
 from kanji_test.analysis.decorators import staff_only
 from kanji_test.drill import models
@@ -457,9 +458,15 @@ def _build_plugin_graph(name):
         return charts.PieChart(data)
 
     elif name == 'error':
-        data = stats.get_mean_error_by_plugin()
-        data.append(('[random guess]', 1.0/(1 + settings.N_DISTRACTORS)))
-        return charts.BarChart(data, y_axis=(0,0.25,0.05))
+        raw_data = stats.get_mean_error_by_plugin()
+        data = []
+        for label, scores in itertools.groupby(raw_data, lambda x: x[0]):
+            data.append((label, mean(v for (l, v) in scores)))
+        k = (1 + settings.N_DISTRACTORS)
+        data.append(('[random guess]', (k-1)/float(k)))
+        chart = charts.BarChart(data, y_axis=(0,1.0,0.2))
+        chart.add_data('raw', raw_data)
+        return chart
 
     raise KeyError(name)
 

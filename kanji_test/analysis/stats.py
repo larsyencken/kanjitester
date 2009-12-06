@@ -63,8 +63,6 @@ def histogram(data, n_bins=10, x_min=None, x_max=None, normalize=True):
         for x in data:
             assert x_min <= x <= x_max
 
-    interval = float((x_max - x_min) / n_bins)
-    eps = 1e-8
     results = []
     for bin_min, bin_max in _bin_sequence(x_min, x_max, n_bins):
         midpoint = (bin_max + bin_min) / 2
@@ -657,7 +655,7 @@ def get_mean_error_by_plugin():
         FROM (
             SELECT
                 question.question_plugin_id,
-                AVG(chosen_option.is_correct) as score
+                chosen_option.is_correct as score
             FROM (
                 SELECT mco.question_id, mco.is_correct
                 FROM drill_multiplechoiceresponse AS mcr
@@ -666,7 +664,6 @@ def get_mean_error_by_plugin():
             ) as chosen_option
             INNER JOIN drill_question AS question
             ON chosen_option.question_id = question.id
-            GROUP BY question.question_plugin_id
         ) AS plugin_score
         INNER JOIN drill_questionplugin AS plugin
         ON plugin_score.question_plugin_id = plugin.id
@@ -696,8 +693,6 @@ def get_accuracy_by_pivot_type():
     counts = {'Hiragana': FreqDist(), 'Katakana': FreqDist(), 'Kanji':
         FreqDist()}
     complex_scripts = set([scripts.Script.Kanji, scripts.Script.Unknown])
-    kanji_script = scripts.Script.Kanji
-    only_hiragana = set([scripts.Script.Hiragana])
     only_katakana = set([scripts.Script.Katakana])
     for word, n_correct, n_responses in raw_data:
         scripts_found = scripts.script_types(word)

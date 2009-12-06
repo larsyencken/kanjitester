@@ -10,21 +10,14 @@
 import time
 
 from django.shortcuts import render_to_response
-from django.core.urlresolvers import reverse
-from django.http import Http404, HttpResponseRedirect
 from django.template import RequestContext
 from django.conf import settings
-from django.db.models import Q
-
-from cjktools import scripts
-from cjktools.scripts import contains_script, Script
 
 from kanji_test.drill import models as drill_models
-from kanji_test.drill import plugin_api, load_plugins, stats
+from kanji_test.drill import stats
 from kanji_test.drill.views import TestSetForm
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile.decorators import profile_required
-from kanji_test.util import html
 from kanji_test.tutor import study_list
 
 #----------------------------------------------------------------------------#
@@ -97,8 +90,6 @@ def study(request):
         test_set_id = int(request.POST['test_set_id'])
         test_set = drill_models.TestSet.objects.get(id=test_set_id)
         
-    syllabus = request.user.get_profile().syllabus
-    
     failed_responses = test_set.responses.filter(option__is_correct=False)
     failed_questions = test_set.questions.filter(
             response__in=failed_responses)
