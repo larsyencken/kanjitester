@@ -15,6 +15,7 @@ low-level SQL queries in order to calculate them efficiently.
 import sys
 from itertools import groupby
 from datetime import timedelta, datetime
+from simplestats import sequences
 
 from django.db import connection
 from django.conf import settings
@@ -669,7 +670,72 @@ def get_mean_error_by_plugin():
         ON plugin_score.question_plugin_id = plugin.id
         ORDER BY plugin.name ASC
     """)
-    return [(l, float(v)) for (l, v) in cursor.fetchall()] 
+    return [(l, float(v)) for (l, v) in cursor.fetchall()]
+
+def get_power_binned_error_by_plugin(n=5):
+    assert n > 0 and type(n) == int
+    cursor = connection.cursor()
+    
+    # get user ids for top n power users
+    rater_stats = get_global_rater_stats()
+    rater_stats.sort(key=lambda r: r['n_tests'], reverse=True)
+    power_user_ids = [r['user_id'] for r in rater_stats[:n]]
+    assert len(power_user_ids) == n
+    
+    cursor.execute("""
+        SELECT plugin_score.user_id, plugin_score.timestamp,
+                plugin.name, 1 - plugin_score.score
+        FROM (
+            SELECT
+                question.question_plugin_id,
+                chosen_option.is_correct as score,
+                response.user_id,
+                response.timestamp
+            FROM (
+                SELECT mcr.response_ptr_id, mco.question_id, mco.is_correct
+                FROM drill_multiplechoiceresponse AS mcr
+                INNER JOIN drill_multiplechoiceoption AS mco
+                ON mcr.option_id = mco.id
+            ) as chosen_option
+            INNER JOIN drill_question AS question
+            ON chosen_option.question_id = question.id
+            INNER JOIN drill_response AS response
+            ON chosen_option.response_ptr_id = response.id
+            WHERE response.user_id IN (%s)
+        ) AS plugin_score
+        INNER JOIN drill_questionplugin AS plugin
+        ON plugin_score.question_plugin_id = plugin.id
+        ORDER BY plugin_score.user_id ASC, plugin_score.timestamp ASC
+    """ % ', '.join(str(uid) for uid in power_user_ids))
+
+    early = []
+    mid = []
+    late = []
+    for user_id, rows in groupby(cursor.fetchall(), lambda r: r[0]):
+        data = [(t, p, s) for (uid, t, p, s) in rows]
+        timestamps = sorted(set(t for (t, p, s) in data))
+        start = min(timestamps)
+        end = max(timestamps)
+        interval = (end - start) / 3
+        
+        early_bin_end = start + interval
+        mid_bin_end = start + 2 * interval
+        
+        early_data, data = sequences.separate(
+                    lambda r: r[0] <= early_bin_end,
+                    data 
+                )
+        early.extend((p, s) for (t, p, s) in early_data)
+        mid_data, data = sequences.separate(
+                    lambda r: r[0] <= mid_bin_end,
+                    data)
+        mid.extend((p, s) for (t, p, s) in mid_data)
+        late.extend((p, s) for (t, p, s) in data)
+    
+    early.sort()
+    mid.sort()
+    late.sort()
+    return early, mid, late
 
 def get_accuracy_by_pivot_type():
     cursor = connection.cursor()

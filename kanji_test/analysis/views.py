@@ -103,7 +103,7 @@ def chart_dashboard(request, name=None):
             available_charts
     
     if name is not None:
-        if name.count('_') > 1:
+        if name.count('_') > 2:
             raise Http404
         
         context['name'] = name
@@ -166,10 +166,10 @@ def rater_csv(request, rater_id=None, data_type=None):
     word_chart, kanji_chart = study_list.get_performance_charts(rater)
     name = 'rater_%d_%s' % (rater_id, data_type)
     if data_type == 'kanji':
-        return _chart_csv_response(kanji_chart, name)
+        return _chart_csv_response(kanji_chart, name, data_set_name='charted')
     
     assert data_type == 'word'
-    return _chart_csv_response(word_chart, name)
+    return _chart_csv_response(word_chart, name, data_set_name='charted')
 
 @staff_only
 def pivots(request):
@@ -242,9 +242,10 @@ def pivot_detail(request, syllabus_tag=None, pivot_type=None, pivot_id=None):
 # HELPERS
 #----------------------------------------------------------------------------#
 
-def _chart_csv_response(chart, name):
+def _chart_csv_response(chart, name, data_set_name=None):
     "Respond with the data from a chart."
-    data_set_name = name.split('_')[2]
+    if not data_set_name:
+        data_set_name = name.split('_')[2]
     if not settings.DEBUG:
         response = HttpResponse(mimetype='text/csv')
         response['Content-Disposition'] = \
@@ -292,6 +293,10 @@ available_charts = (
             ('pivot_exposures',     'Mean # exposures per pivot'),
             ('plugin_questions',    'Plugin by # questions'),
             ('plugin_error',        'Mean error by plugin'),
+            ('plugin_errorbin_early', 'Mean error by plugin [early]'),
+            ('plugin_errorbin_mid',  'Mean error by plugin [mid]'),
+            ('plugin_errorbin_late', 'Mean error by plugin [late]'),
+            ('plugin_errorbin_volume', 'Volume of early/mid/late responses'),
             ('pivot_type',          'Accuracy by word type'),
         ])
     )
@@ -301,9 +306,8 @@ name_to_desc = dict(reduce(operator.add, (c.charts for c in \
 
 def _build_graph(name):
     "Builds a graph using the given name."
-    parts = name.split('_')[:2] # ignore trailing components
+    parts = name.split('_', 1)
     first_part = parts.pop(0)
-
     try:
         method = globals()['_build_%s_graph' % first_part]
     except KeyError:
@@ -447,6 +451,11 @@ def _build_pivot_graph(name):
     raise KeyError(name)
 
 def _build_plugin_graph(name):
+    if '_' in name:
+        name, subpart = name.split('_', 1)
+    else:
+        subpart = None
+    
     if name == 'questions':
         data = []
         for plugin in models.QuestionPlugin.objects.all():
@@ -459,15 +468,44 @@ def _build_plugin_graph(name):
 
     elif name == 'error':
         raw_data = stats.get_mean_error_by_plugin()
-        data = []
-        for label, scores in itertools.groupby(raw_data, lambda x: x[0]):
-            data.append((label, mean(v for (l, v) in scores)))
+        data = _accumulate_plugin_errors(raw_data)
         k = (1 + settings.N_DISTRACTORS)
         data.append(('[random guess]', (k-1)/float(k)))
         chart = charts.BarChart(data, y_axis=(0,1.0,0.2))
         chart.add_data('raw', raw_data)
         return chart
+    
+    elif name == 'errorbin':
+        data_sets = stats.get_power_binned_error_by_plugin()
+        is_error_chart = True
+        if subpart == 'early':
+            raw_data = data_sets[0]
+            data = _accumulate_plugin_errors(raw_data)
+        elif subpart == 'mid':
+            raw_data = data_sets[1]
+            data = _accumulate_plugin_errors(raw_data)
+        elif subpart == 'late':
+            raw_data = data_sets[2]
+            data = _accumulate_plugin_errors(raw_data)
+        elif subpart == 'volume':
+            is_error_chart = False
+            data = zip(['Early', 'Mid', 'Late'], map(len, data_sets))
+        else:
+            raise KeyError(name)
+            
+        if is_error_chart:
+            chart = charts.BarChart(data)#, y_axis=(0, 0.5, 0.1))
+            chart.add_data('raw', raw_data)
+        else:
+            chart = charts.BarChart(data)
+        return chart
 
-    raise KeyError(name)
+    raise KeyError(name)    
+
+def _accumulate_plugin_errors(raw_data):
+    data = []
+    for label, scores in itertools.groupby(raw_data, lambda x: x[0]):
+        data.append((label, mean(v for (l, v) in scores)))
+    return data    
 
 # vim: ts=4 sw=4 sts=4 et tw=78:
