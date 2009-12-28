@@ -14,7 +14,7 @@ Abstract models for probability distributions.
 import random
 
 from django.db import models, connection
-from cjktools.sequences import groups_of_n
+from simplestats.sequences import groups_of_n
 
 from kanji_test.settings import N_ROWS_PER_INSERT
 

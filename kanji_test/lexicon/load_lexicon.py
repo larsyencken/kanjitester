@@ -12,8 +12,8 @@ from os import path
 from xml.etree import cElementTree as ElementTree
 
 from django.db import connection
+from simplestats.sequences import groups_of_n_iter
 from cjktools.common import sopen
-from cjktools.sequences import groups_of_n_iter
 from cjktools import scripts
 import consoleLog
 from checksum.models import Checksum

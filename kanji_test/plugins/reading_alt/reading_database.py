@@ -16,7 +16,7 @@ import sys, optparse
 import math
 from django.db import connection
 
-from cjktools.sequences import groups_of_n
+from simplestats.sequences import groups_of_n
 from cjktools.resources import kanjidic
 import consoleLog
 from checksum.models import Checksum

@@ -22,7 +22,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from simplestats import mean, basic_stats
 from cjktools import scripts
-from cjktools.sequences import unzip
 
 from kanji_test.user_profile.models import UserProfile, Syllabus
 from kanji_test.user_model.models import PartialLexeme, PartialKanji
@@ -552,7 +551,7 @@ def get_pivots_by_questions(n, syllabus_id, pivot_type):
     })
     
     base_results = cursor.fetchall()
-    pivot_ids = unzip(base_results)[0]
+    pivot_ids = sequences.unzip(base_results)[0]
     if pivot_type == 'k':
         pivot_model = PartialKanji
     else:
@@ -588,7 +587,7 @@ def get_pivots_by_errors(n, syllabus_id, pivot_type):
         'n':                n,
     })
     base_results = cursor.fetchall()
-    pivot_ids = unzip(base_results)[0]
+    pivot_ids = sequences.unzip(base_results)[0]
     if pivot_type == 'k':
         pivot_model = PartialKanji
     else:

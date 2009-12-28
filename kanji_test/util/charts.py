@@ -16,7 +16,7 @@ import re
 import numpy
 from django.conf import settings
 from django.utils.http import urlencode
-from cjktools.sequences import unzip
+from simplestats.sequences import unzip
 
 _google_charts_url = "http://chart.apis.google.com/chart?"
 _default_size = '750x375'
