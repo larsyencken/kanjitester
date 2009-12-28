@@ -27,7 +27,7 @@ def get_revision():
 
 setup(
         name='kanji_test',
-        version='1.6alpha.r%s' % get_revision(),
+        version='1.4',
         description='Kanji testing framework',
         author='Lars Yencken',
         author_email='lljy@csse.unimelb.edu.au',
