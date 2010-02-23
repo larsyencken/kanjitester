@@ -177,12 +177,13 @@ class TestSetForm(forms.Form):
                 else:
                     template = normal_row
 
-                output.append(
-                        template % {'errors': force_unicode(bf_errors),
-                        'label': force_unicode(label),
-                        'field': field_output,
-                        'help_text': help_text},
-                    )
+                output.append(template % {
+                            'errors': force_unicode(bf_errors),
+                            'label': force_unicode(label),
+                            'field': field_output,
+                            'help_text': help_text
+                        })
+                output.append("<hr/>")
 
         if top_errors:
             output.insert(0, error_row % force_unicode(top_errors))

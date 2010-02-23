@@ -12,9 +12,7 @@ a { text-decoration: none; }
 
 .container { width:750px; }
 
-#user-tools { text-align: right; vertical-align: bottom; }
-
-#footer { text-align: center; }
+.errorlist { color:red; list-style-type: none; margin: 0 0 0.5em 0; }
 
 table.results { border: 1px solid #ddd; border-collapse: collapse; }
 .results th { border: 1px solid #ddd; }
@@ -65,7 +63,7 @@ form.navigation {
   color: black;
   display: inline;
   list-style: none inside;
-  margin: 0pt 5pt 5pt 0pt !important;
+  margin: 0pt 0pt 5pt 0pt !important;
   padding: 0pt !important;
 }
 
