@@ -103,13 +103,13 @@ class TestSetForm(forms.Form):
         "Returns an html table representation of this test set."
         return mark_safe(self._html_output(
                 # normal row
-                """<tr><td><div class="instructions">%(help_text)s</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
+                """<tr><td class="test-set"><div class="instructions">%(help_text)s</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # correct row
-                """<tr class="correct"><td><div class="instructions">%(help_text)s</div><div class="success">Correct</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
+                """<tr class="correct"><td class="test-set"><div class="instructions">%(help_text)s</div><div class="success">Correct</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # incorrect row
-                """<tr class="incorrect"><td><div class="instructions">%(help_text)s</div><div class="failure">Incorrect</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
+                """<tr class="incorrect"><td class="test-set"><div class="instructions">%(help_text)s</div><div class="failure">Incorrect</div><div class="stimulus-cjk">%(label)s</div><div class="mc-select">%(field)s</div>%(errors)s""",
                 # error row
-                u'<tr><td colspan="2">%s</td></tr>',
+                u'<tr><td colspan="2" class="error">%s</td></tr>',
                 # row ender
                 '</td></tr>', 
                 # help text html
@@ -131,6 +131,7 @@ class TestSetForm(forms.Form):
         """
         # Errors that should be displayed above all fields.
         top_errors = self.non_field_errors()
+        had_unanswered_questions = False
 
         output, hidden_fields = [], []
         for name, field in self.fields.items():
@@ -177,14 +178,23 @@ class TestSetForm(forms.Form):
                 else:
                     template = normal_row
 
+                errors = force_unicode(bf_errors)
+                if "This field is required." in errors:
+                    had_unanswered_questions = True
+                    
+                errors = errors.replace(
+                        "This field is required.",
+                        "Please answer this question.",
+                    )
                 output.append(template % {
-                            'errors': force_unicode(bf_errors),
+                            'errors': errors,
                             'label': force_unicode(label),
                             'field': field_output,
                             'help_text': help_text
                         })
-                output.append("<hr/>")
 
+        if had_unanswered_questions:
+            output.insert(0, error_row % u"You forgot to answer one or more questions. Please answer them before continuing.")
         if top_errors:
             output.insert(0, error_row % force_unicode(top_errors))
         if hidden_fields: # Insert any hidden fields in the last row.

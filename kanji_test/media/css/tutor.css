@@ -67,8 +67,13 @@ form.navigation {
   padding: 0pt !important;
 }
 
+.mc-select ul {
+  list-style-type: none;
+}
+
 td.test-set {
   padding: 10px 0px;
+  border-bottom: 1px solid #ddd !important;
 }
 
 tr.correct {
