@@ -8,6 +8,12 @@ Kanji Tester is an adaptive testing system for Japanese, which automatically
 generates multiple choice questions for learners. This README describes how to
 build it from scratch.
 
+For other information, check Kanji Tester's wiki page:
+
+    http://bitbucket.org/lars512/kanji-tester/wiki/
+
+or email Lars directly (lljy@csse.unimelb.edu.au).
+
 PACKAGE DEPENDENCIES
 --------------------
 
@@ -48,8 +54,9 @@ A number of files are required in the following structure:
         JMdict.gz                       # Japanese-English dictionary
 
 In the future, these would ideally be decoupled somewhat from Kanji Tester. At
-the current time, the easiest thing is to email and ask for a copy of this data 
-bundle.
+the current time, the easiest thing is to email and ask for a copy of this
+data bundle, or to download it from the Bitbucket project page, if you have
+access.
 
 BUILDING THE DATABASE
 ---------------------
@@ -84,14 +91,14 @@ them.
     ./manage.py build
 
 This step may take a while, and is very database (and disk) intensive. You
-should also ensure DEBUG is set to False in local_settings.py, otherwise memory
-usage will be very high, since Django stores all database queries in memory
-when in debug mode.
+should also ensure DEBUG is set to False in local_settings.py, otherwise
+memory usage will be very high, since Django stores all database queries in
+memory when in debug mode.
 
 When this step is completed, Kanji Tester is ready for use. Note that if the
 build is interupted for any reason, you can simply run the build command again
-and it will resume where it left off. If you run it on an already built system,
-it will only rebuild parts which have changed.  
+and it will resume where it left off. If you run it on an already built
+system, it will only rebuild parts which have changed.
 
 Finally, run
 
