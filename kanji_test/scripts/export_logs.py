@@ -8,11 +8,12 @@
 #  Copyright 2009 Lars Yencken. All rights reserved.
 #
 
+from __future__ import with_statement
+
 import os, sys, optparse
 import datetime
 import itertools
-from xml.etree.ElementTree import Element, SubElement, tostring
-
+from xml.etree.ElementTree import Element, SubElement, tostring 
 from consoleLog import default as _log
 from consoleLog import withProgress
 
