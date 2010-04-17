@@ -32,6 +32,8 @@ class QuestionField(forms.ChoiceField):
                 label=question.stimulus,
             )
 
+# XXX could be cleaned up a bit, perhaps using suggestions from:
+# http://jacobian.org/writing/dynamic-form-generation/
 class TestSetForm(forms.Form):
     def __init__(self, test_set, *args, **kwargs):
         "Builds a test-set-specific form."
