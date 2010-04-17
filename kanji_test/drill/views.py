@@ -18,6 +18,20 @@ from django.utils.encoding import force_unicode
 
 from kanji_test.drill import models
 
+class QuestionField(forms.ChoiceField):
+    def __init__(self, question):
+        options = list(question.options.all())
+        random.shuffle(options)
+        super(QuestionField, self).__init__(
+                choices=tuple([
+                        (unicode(opt.id), unicode(opt.value))\
+                        for opt in options
+                    ]),
+                widget=forms.RadioSelect,
+                help_text=question.instructions,
+                label=question.stimulus,
+            )
+
 class TestSetForm(forms.Form):
     def __init__(self, test_set, *args, **kwargs):
         "Builds a test-set-specific form."
@@ -26,22 +40,14 @@ class TestSetForm(forms.Form):
         self.label_suffix = None
         self.ordered_questions = self.test_set.ordered_questions
         self.question_map = {}
+        self.n_correct = None
+        self.n_unknown = None
 
         random.seed(test_set.random_seed)
         for question in self.ordered_questions:
-            options = list(question.options.all())
-            random.shuffle(options)
             question_key = 'question_%d' % question.id
             self.question_map[question_key] = question
-            self.fields[question_key] = forms.ChoiceField(
-                    choices=tuple([
-                            (unicode(opt.id), unicode(opt.value))\
-                            for opt in options
-                        ]),
-                    widget=forms.RadioSelect,
-                    help_text=question.instructions,
-                    label=question.stimulus,
-                )
+            self.fields[question_key] = QuestionField(question)
 
         # Are we fully answered?
         if self.is_valid():
