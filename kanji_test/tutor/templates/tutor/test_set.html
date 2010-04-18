@@ -9,6 +9,14 @@
   ul { margin-right:0em; padding-left:0em; }
   li { display:inline; margin-right:0.8em;}
   label { font-weight:normal; }
+  @font-face {
+    font-family: Epson-Kyokasho;
+    src: url('{{media_url}}/fonts/Epson-Kyokasho.otf');
+  }
+  span[lang='ja'] {
+    font-family: "Epson-Kyokasho", "mincho", serif;
+    font-size: 150%;
+  }
 </style>
 {% endblock %}
 

@@ -80,6 +80,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'kanji_test.middleware.TagLanguageMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
