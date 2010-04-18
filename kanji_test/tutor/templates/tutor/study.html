@@ -4,6 +4,19 @@
   Revision
 {% endblock %}
 
+{% block extra_head %}
+<style type="text/css">
+  @font-face {
+    font-family: Epson-Kyokasho;
+    src: url('{{media_url}}/fonts/Epson-Kyokasho.otf');
+  }
+  span[lang='ja'] {
+    font-family: "Epson-Kyokasho", "mincho", serif;
+    font-size: 150%;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
   <h2>Revision</h2>
   {% if not partial_kanji  and not partial_lexemes %}
@@ -20,7 +33,9 @@
     <table>
       <thead>
         <tr>
-          <th>Kanji</th><th>Readings</th><th>Glosses</th>
+          <th width="20%">Kanji</th>
+          <th width="30%">Readings</th>
+          <th width="50%">Glosses</th>
         </tr>
       </thead>
       <tbody>
@@ -44,7 +59,9 @@
     <table>
       <thead>
         <tr>
-          <th>Word</th><th>Readings</th><th>Glosses</th>
+          <th width="20%">Word</th>
+          <th width="30%">Readings</th>
+          <th width="50%">Glosses</th>
         </tr>
       </thead>
       <tbody>
@@ -62,9 +79,13 @@
             {% endif %}
           </td>
           <td>
-            {% for lexeme_reading in partial_lexeme.reading_set.all %}
-              {{lexeme_reading.reading}}{% if not forloop.last %}, {% endif %}
-            {% endfor %}
+            {% if partial_lexeme.surface_set.count %}
+              {% for lexeme_reading in partial_lexeme.reading_set.all %}
+                {{lexeme_reading.reading}}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            {% else %}
+              &nbsp;
+            {% endif %}
           </td>
           <td>
             {% for lexeme_sense in partial_lexeme.lexeme.sense_set.all %}
