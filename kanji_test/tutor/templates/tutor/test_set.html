@@ -4,6 +4,14 @@
   Test {{syllabus.tag}} knowledge
 {% endblock %}
 
+{% block extra_head %}
+<style type="text/css">
+  ul { margin-right:0em; padding-left:0em; }
+  li { display:inline; margin-right:0.8em;}
+  label { font-weight:normal; }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Testing {{syllabus.tag}}</h2>
 {% if form.has_answers %}
