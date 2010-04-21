@@ -54,7 +54,7 @@ class Chart(dict):
         else:
             url = _google_charts_url + urlencode(self)
             
-        if (settings.DEBUG or check_size) and len(url) > 2048:
+        if check_size and len(url) > 2048:
             raise UrlTooLongError(
                     'url length %d, should be < 2048' % len(url)
                 )
