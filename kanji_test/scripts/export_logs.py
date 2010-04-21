@@ -10,9 +10,7 @@
 
 from __future__ import with_statement
 
-import os, sys, optparse
-import datetime
-import itertools
+import sys, optparse
 from consoleLog import default as _log
 from consoleLog import withProgress
 import simplejson
@@ -48,10 +46,10 @@ def _dump_users(filename):
             record = {
                         'user_id': user_profile.user.id,
                         'first_language': user_profile.first_language,
-                        'second_languages':[
+                        'second_languages': filter(None, [
                             l.strip().title() for l in \
                             user_profile.second_languages.split(',')
-                        ],
+                        ]),
                         'syllabus': user_profile.syllabus.tag,
                     }
             print >> ostream, simplejson.dumps(record)
@@ -59,8 +57,6 @@ def _dump_users(filename):
 def _dump_responses(filename):
     _log.log(filename + ' ', newLine=False)
     with open(filename, 'w') as ostream:
-        earliest = datetime.datetime.now()
-        latest = datetime.datetime.now() - datetime.timedelta(365 * 20)
         users = User.objects.exclude(email__in=EXCLUDE_EMAILS)
         for user in withProgress(users):
             for response in drill_models.MultipleChoiceResponse.objects.filter(
