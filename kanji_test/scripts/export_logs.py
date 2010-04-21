@@ -29,8 +29,9 @@ EXCLUDE_EMAILS = (
 def export_logs():
     _log.start('Dumping logs', nSteps=2)
 
-    latest = drill_models.Response.objects.all().order_by('-timestamp'
-            )[0].timestamp
+    latest = drill_models.Response.objects.exclude(
+                user__email__in=EXCLUDE_EMAILS
+            ).order_by('-timestamp')[0].timestamp
     datestamp = '%s_%.02d_%.02d' % (latest.year, latest.month, latest.day)
     _dump_users('user_metadata_%s.json' % datestamp)
     _dump_responses('user_responses_%s.json' % datestamp)
@@ -56,7 +57,7 @@ def _dump_users(filename):
             print >> ostream, simplejson.dumps(record)
         
 def _dump_responses(filename):
-    _log.log(filename, newLine=False)
+    _log.log(filename + ' ', newLine=False)
     with open(filename, 'w') as ostream:
         earliest = datetime.datetime.now()
         latest = datetime.datetime.now() - datetime.timedelta(365 * 20)
