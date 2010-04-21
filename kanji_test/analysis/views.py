@@ -306,14 +306,13 @@ name_to_desc = dict(reduce(operator.add, (c.charts for c in \
 
 def _build_graph(name):
     "Builds a graph using the given name."
-    parts = name.split('_', 1)
-    first_part = parts.pop(0)
+    first_part, rest = name.split('_', 1)
     try:
         method = globals()['_build_%s_graph' % first_part]
     except KeyError:
         raise KeyError(name)
 
-    return method(*parts)
+    return method(rest.split('_', 1)[0])
 
 def _build_user_graph(name):
     if name.endswith('lang'):
@@ -442,7 +441,7 @@ def _build_response_graph(name):
 def _build_pivot_graph(name):
     if name == 'exposures':
         data = stats.get_mean_exposures_per_pivot()
-        return charts.BarChart(data, y_axis=(0, 50, 10))
+        return charts.BarChart(data, y_axis=(0, 100, 20))
 
     if name == 'type':
         data = stats.get_accuracy_by_pivot_type()

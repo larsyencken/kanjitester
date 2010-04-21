@@ -136,7 +136,7 @@ def clean_manual():
     except ObjectDoesNotExist:
         anna_profile = UserProfile(
                 user=User.objects.get(username='anna'),
-                syllabus=Syllabus.objects.get(tag='jlpt_4'),
+                syllabus=Syllabus.objects.get(tag='jlpt 4'),
                 first_language='English',
             )
         anna_profile.save()
