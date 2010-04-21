@@ -60,7 +60,8 @@ def _dump_responses(filename):
     with open(filename, 'w') as ostream:
         earliest = datetime.datetime.now()
         latest = datetime.datetime.now() - datetime.timedelta(365 * 20)
-        for user in withProgress(User.objects.all()):
+        users = User.objects.exclude(email__in=EXCLUDE_EMAILS)
+        for user in withProgress(users):
             for response in drill_models.MultipleChoiceResponse.objects.filter(
                     user=user):
                 question = response.question
