@@ -43,6 +43,8 @@ def _dump_users(filename):
                 user__email__in=EXCLUDE_EMAILS).order_by('user__id')
 
         for user_profile in profiles:
+            if user_profile.user.response_set.count() == 0:
+                continue
             record = {
                         'user_id': user_profile.user.id,
                         'first_language': user_profile.first_language,
