@@ -33,8 +33,8 @@ def export_logs():
                 user__email__in=EXCLUDE_EMAILS
             ).order_by('-timestamp')[0].timestamp
     datestamp = '%s_%.02d_%.02d' % (latest.year, latest.month, latest.day)
-    _dump_users('user_metadata_%s.json' % datestamp)
-    _dump_responses('user_responses_%s.json' % datestamp)
+    _dump_users('kanjitester_users_%s.json' % datestamp)
+    _dump_responses('kanjitester_responses_%s.json' % datestamp)
 
     _log.finish()
 
