@@ -70,7 +70,8 @@ def basic(request):
     pretty_results = [(k, 100*t, 100*c) for (k, t, c) in test_stats]
     context['test_dist'] = pretty_results
 
-    context['mean_time_used'] = stats.get_mean_time_used()
+    context['time_used_mean'], context['time_used_std'] = \
+            stats.get_mean_time_used()
 
     return render_to_response("analysis/basic.html", context,
             RequestContext(request))

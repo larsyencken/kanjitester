@@ -645,7 +645,7 @@ def get_mean_time_used():
         days = _scale_time_delta(time_used, one_day)
         rows.append(days)
     
-    return mean(rows)
+    return basic_stats(rows)
         
 
 def get_mean_error_by_plugin():

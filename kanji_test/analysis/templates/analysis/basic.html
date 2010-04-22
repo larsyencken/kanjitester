@@ -33,15 +33,18 @@ active user is one that has completed at least one test.</p>
   
   <tr>
     <th rowspan="2">Time between tests:</th>
-    <td>Mean</td><td colspan="2">{{mean_tbt}}</td>
+    <td>Mean</td><td colspan="2">{{mean_tbt|floatformat:2}} days</td>
   </tr>
   <tr>
-    <td>Stddev</td><td colspan="2">{{std_tbt}}</td>
+    <td>Stddev</td><td colspan="2">{{std_tbt|floatformat:2}} days</td>
   </tr>
 
   <tr>
-    <th>Usage timespan:</th>
-    <td colspan="3">{{mean_time_used|floatformat:2}} days</td>
+    <th rowspan="2">Total period of use:</th>
+    <td>Mean</td><td colspan="2">{{time_used_mean|floatformat:2}} days</td>
+  </tr>
+  <tr>
+    <td>Stddev</td><td colspan="2">{{time_used_std|floatformat:2}} days</td>
   </tr>
   
   <tr>
