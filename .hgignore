@@ -26,3 +26,4 @@ doc/*.{pdf,out,aux,toc}
 tags
 *.egg
 *.synctex.gz
+*-env
