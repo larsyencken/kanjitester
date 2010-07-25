@@ -48,7 +48,7 @@ class QuestionPlugin(models.Model):
                         traceback.format_exc(),
                     )
                 send_mail(
-                        'Error at jlpt.gakusha.info',
+                        'Error at kanjitester.gakusha.info',
                         error_message,
                         settings.DEFAULT_FROM_EMAIL,
                         [settings.DEFAULT_FROM_EMAIL],
