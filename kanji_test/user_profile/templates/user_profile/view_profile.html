@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Your profile
+{% endblock %}
+
+{% block content %}
+  <h2>Your profile</h2>
+  
+  <p>Your current profile is as follows.</p>
+  
+  <table>
+    <tr>
+      <th>Syllabus:</th><td>{{profile.syllabus.tag}}</td>
+    </tr>
+    <tr>
+      <th>First language:</th><td>{{profile.first_language}}</td>
+    </tr>
+    <tr>
+      <th>Second languages:</th><td>{{profile.second_languages}}</td>
+    </tr>
+  </table>
+
+  
+  <form method="GET" action="{% url tutor_dashboard %}">
+    <input type="submit" value="Back to dashboard"/>
+  </form>
+{% endblock %}

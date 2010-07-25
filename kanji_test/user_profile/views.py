@@ -17,6 +17,7 @@ from django import forms
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 
 from kanji_test.user_model import models as usermodel_models
 from kanji_test.user_profile import models
@@ -24,6 +25,16 @@ from kanji_test.user_model import add_syllabus
 
 @login_required
 def create_profile(request):
+    "Create a profile if none exists."
+    try:
+        profile = request.user.get_profile()
+    except ObjectDoesNotExist:
+        profile = None
+    
+    if profile is not None:
+        # a profile already exists, redirect to a read-only view
+        return view_profile(request)
+
     ProfileForm = _get_profile_form()
     if request.method == 'POST':
         form = ProfileForm(request.POST)
@@ -36,7 +47,7 @@ def create_profile(request):
                     first_language=form.cleaned_data['first_language'],
                     second_languages=form.cleaned_data['second_languages'],
                 )
-            profile.save()
+            profile.save() # XXX error being thrown here
             add_syllabus.add_per_user_models(request.user.username)
             return HttpResponseRedirect(reverse('tutor_dashboard'))
     else:
@@ -44,6 +55,13 @@ def create_profile(request):
     
     return render_to_response('user_profile/create_profile.html',
             {'form': form}, context_instance=RequestContext(request))
+
+@login_required
+def view_profile(request):
+    "View an existing profile."
+    return render_to_response('user_profile/view_profile.html',
+            {'profile': request.user.get_profile()},
+            context_instance=RequestContext(request))
 
 def _get_profile_form():
     syllabus_choices = [(o['tag'], o['tag']) for o in \

@@ -376,7 +376,8 @@ class ErrorDist(models.Model):
         query = self.density.filter(condition=condition)
         whole_dist = ProbDist.from_query_set(query)
 
-        sub_dist = ProbDist.from_query_set(query.filter(symbol__in=symbol_set))
+        sub_dist = ProbDist.from_query_set(query.filter(
+                symbol__in=symbol_set))
         assert sub_dist
         m = max(v for (s, v) in sub_dist.iteritems() if s != symbol) + \
                 settings.UPDATE_EPSILON
