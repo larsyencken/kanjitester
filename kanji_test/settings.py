@@ -169,7 +169,12 @@ UPDATE_EPSILON = 0.2
 # When True, enables the debugging media view.
 DEPLOYED = False
 
-DEFAULT_FROM_EMAIL = "Kanji Tester <lars@yencken.org>"
+DEFAULT_FROM_EMAIL = 'Kanji Tester <kanjitester@gakusha.info>'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'kanjitester@gakusha.info'
+EMAIL_HOST_PASSWORD = 'Rulgoittee'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
 
 GOOGLE_ANALYTICS_CODE = None
 
