@@ -25,6 +25,7 @@
 {% if form.has_answers %}
   <p class="score">Your score: {{form.n_correct}}/{{form.n_questions}}</p>
   <form method="POST" action="{% url tutor_study %}" class="navigation">
+    {% csrf_token %}
     <input type="hidden" name="test_set_id" value="{{test_set.id}}">
     <input type="submit" value="Study mistakes"
       {% if all_correct %}disabled="disabled"{% endif %}>
@@ -39,6 +40,7 @@
   {% endif %}
 {% endif %}
 <form method="POST">
+  {% csrf_token %}
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
   <input type="hidden" name="action" value="test">
   <table class="test-set" lang="ja" xml:lang="ja">
@@ -47,6 +49,7 @@
 {% if form.has_answers %}
 </form>
 <form method="POST" action="{% url tutor_study %}" class="navigation">
+{% csrf_token %}
 <p>
   <input type="hidden" name="test_set_id" value="{{test_set.id}}">
   <input type="submit" value="Study mistakes"

@@ -10,6 +10,7 @@
   <p>Before practising your kanji knowledge, we need to know a little bit about you. Please choose the syllabus you're aiming at.</p>
   
   <form method="POST">
+  {% csrf_token %}
   <table>
   {{form}}
   <td colspan="2" style="text-align:right">

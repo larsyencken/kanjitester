@@ -10,7 +10,8 @@
 <p class="error">Please correct the errors below:</p>
 {% endif %}
 
-<form method="post" action="?next={{ next|default:"/" }}">
+<form method="POST" action="?next={{ next|default:"/" }}">
+{% csrf_token %}
 <fieldset>
 <table>
   <tr>

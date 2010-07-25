@@ -58,6 +58,7 @@
 
   <h3>Actions</h3>
   <form method="POST" action="{% url tutor_testuser %}">
+    {% csrf_token %}
   <p>
   <input type="submit" value="Take a test &rarr;">
   (with 
