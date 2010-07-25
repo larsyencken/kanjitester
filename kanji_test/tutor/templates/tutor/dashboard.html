@@ -57,7 +57,6 @@
   <h3>Actions</h3>
   <form method="POST" action="{% url tutor_testuser %}">
     {% csrf_token %}
-  <p>
   <input type="submit" value="Take a test &rarr;">
   (with 
   <select name="n_questions">
@@ -66,7 +65,9 @@
     <option value="30">30</option>
     <option value="50">50</option>
   </select> questions)
-  </p>
+  </form>
+  <form method="GET" action="{% url userprofile_profile %}">
+    <input type="submit" value="View your profile" />
   </form>
   {% if has_results %}
   <form method="GET" action="{% url tutor_study %}">

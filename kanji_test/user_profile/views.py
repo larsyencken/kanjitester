@@ -47,7 +47,7 @@ def create_profile(request):
                     first_language=form.cleaned_data['first_language'],
                     second_languages=form.cleaned_data['second_languages'],
                 )
-            profile.save() # XXX error being thrown here
+            profile.save()
             add_syllabus.add_per_user_models(request.user.username)
             return HttpResponseRedirect(reverse('tutor_dashboard'))
     else:
@@ -59,9 +59,23 @@ def create_profile(request):
 @login_required
 def view_profile(request):
     "View an existing profile."
+    context = {}
+    context['profile'] = request.user.get_profile()
+    context['syllabi'] = [s.tag for s in \
+            usermodel_models.Syllabus.objects.all()]
+
+    if request.method == 'POST':
+        syllabus = usermodel_models.Syllabus.objects.get(
+                tag=request.POST['syllabus'])
+        profile = request.user.get_profile()
+        if syllabus != profile.syllabus:
+            profile.syllabus = syllabus
+            profile.save()
+            add_syllabus.add_per_user_models(request.user.username)
+            context['feedback'] = 'Your profile has been updated.'
+
     return render_to_response('user_profile/view_profile.html',
-            {'profile': request.user.get_profile()},
-            context_instance=RequestContext(request))
+            context, context_instance=RequestContext(request))
 
 def _get_profile_form():
     syllabus_choices = [(o['tag'], o['tag']) for o in \

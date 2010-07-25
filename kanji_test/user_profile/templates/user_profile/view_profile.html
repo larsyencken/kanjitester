@@ -6,12 +6,29 @@
 
 {% block content %}
   <h2>Your profile</h2>
+
+  {% if feedback %}
+  <p class="success">{{feedback}}</p>
+  {% endif %}
   
   <p>Your current profile is as follows.</p>
   
+  <form method="POST">
+  {% csrf_token %}
   <table>
     <tr>
-      <th>Syllabus:</th><td>{{profile.syllabus.tag}}</td>
+      <th>Syllabus:</th>
+      <td>
+        <select name="syllabus">
+          {% for syllabus in syllabi %}
+            <option value="{{syllabus}}"
+              {% ifequal syllabus profile.syllabus.tag %}
+                selected="selected"
+              {% endifequal %}
+            >{{syllabus}}</option>
+          {% endfor %}
+        </select>
+      </td>
     </tr>
     <tr>
       <th>First language:</th><td>{{profile.first_language}}</td>
@@ -20,7 +37,8 @@
       <th>Second languages:</th><td>{{profile.second_languages}}</td>
     </tr>
   </table>
-
+  <input type="submit" value="Save changes" />
+  </form>
   
   <form method="GET" action="{% url tutor_dashboard %}">
     <input type="submit" value="Back to dashboard"/>
