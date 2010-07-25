@@ -169,7 +169,7 @@ UPDATE_EPSILON = 0.2
 # When True, enables the debugging media view.
 DEPLOYED = False
 
-DEFAULT_FROM_EMAIL = "Kanji Tester <lljy@csse.unimelb.edu.au>"
+DEFAULT_FROM_EMAIL = "Kanji Tester <lars@yencken.org>"
 
 GOOGLE_ANALYTICS_CODE = None
 

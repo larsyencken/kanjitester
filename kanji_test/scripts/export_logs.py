@@ -20,7 +20,7 @@ from kanji_test.drill import models as drill_models
 from django.contrib.auth.models import User 
 
 EXCLUDE_EMAILS = (
-        'lljy@csse.unimelb.edu.au',
+        'lars@yencken.org',
         'tim@csse.unimelb.edu.au',
     )
 
