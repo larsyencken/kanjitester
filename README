@@ -12,7 +12,7 @@ For other information, check Kanji Tester's wiki page:
 
     http://bitbucket.org/lars512/kanji-tester/wiki/
 
-or email Lars directly (lljy@csse.unimelb.edu.au).
+or email Lars directly (lars@yencken.org).
 
 PACKAGE DEPENDENCIES
 --------------------
@@ -106,4 +106,4 @@ Finally, run
 
 to run the system. You can then find the system at http://localhost:8000/.
 
-- Lars Yencken <lljy@csse.unimelb.edu.au>
+- Lars Yencken <lars@yencken.org>

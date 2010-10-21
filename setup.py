@@ -30,9 +30,9 @@ setup(
         version='1.4',
         description='Kanji testing framework',
         author='Lars Yencken',
-        author_email='lljy@csse.unimelb.edu.au',
+        author_email='lars@yencken.org',
         license='GPL',
-        url='http://www.csse.unimelb.edu.au/~lljy/',
+        url='http://kanjitester.gakusha.info/',
 
         setup_requires=['setuptools_hg'],
         install_requires=['django >= 1.0', 'consoleLog', 'cjktools >= 1.3.0',
