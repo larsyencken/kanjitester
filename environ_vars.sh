@@ -1,6 +1,6 @@
 #!/bin/bash
 # 
-#  environmentVars.sh
+#  environ_vars.sh
 #  kanji_test
 #  
 #  Created by Lars Yencken on 2008-09-18.
