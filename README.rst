@@ -10,7 +10,7 @@ build it from scratch.
 
 For other information, check Kanji Tester's wiki page:
 
-    http://bitbucket.org/lars512/kanji-tester/wiki/
+    http://bitbucket.org/larsyencken/kanji-tester/wiki/
 
 or email Lars directly (lars@yencken.org).
 
@@ -30,16 +30,16 @@ DATA DEPENDENCIES
 -----------------
 
 A number of data files are required to build Kanji Tester. Currently, they
-require a single directory to contain them. Create a file
+require a single directory to contain them. Create a file::
 
     kanji_tester/local_settings.py
 
 to contain your settings for this workspace, and add the path to a data folder
-in the DATA_DIR settings, e.g.
+in the DATA_DIR settings, e.g.::
     
     DATA_DIR = '/home/lars/kanji_test/data'
 
-A number of files are required in the following structure:
+A number of files are required in the following structure::
 
     data/
         corpus/
@@ -62,23 +62,23 @@ BUILDING THE DATABASE
 ---------------------
 
 Kanji Tester also needs MySQL as its database backend. Construct an empty
-database for it, and place the settings for accessing the database in
+database for it, and place the settings for accessing the database in::
     
     kanji_test/local_settings.py
 
-In particular, you need:
+In particular, you need::
 
     DATABASE_ENGINE = 'mysql'
 
 and also set DATABASE_NAME, DATABASE_USER and DATABASE_PASSWORD appropriately.
 Ensure the database is constructed with utf8 as the default encoding, and
-utf8_general_ci as the default collation. For example, in mysql, type:
+utf8_general_ci as the default collation. For example, in mysql, type::
 
     CREATE DATABASE kanjitest_dev
     DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci; 
 
 Kanji Tester then needs its initial tables generated. You achieve this by
-running:
+running::
 
     source environmentVars.sh
     cd kanji_test
@@ -86,7 +86,7 @@ running:
     ./manage.py migrate
 
 At this stage, Kanji Tester will have empty tables. You now need to populate
-them.
+them::
 
     ./manage.py build
 
@@ -100,7 +100,7 @@ build is interupted for any reason, you can simply run the build command again
 and it will resume where it left off. If you run it on an already built
 system, it will only rebuild parts which have changed.
 
-Finally, run
+Finally, run::
 
     ./manage.py runserver
 
