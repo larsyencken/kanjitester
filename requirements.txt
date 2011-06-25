@@ -1,0 +1,8 @@
+django >= 1.0
+consoleLog
+cjktools >= 1.3.0
+mysql-python
+south
+django-checksum
+pyyaml
+nltk == 2.0b8

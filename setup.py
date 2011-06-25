@@ -35,8 +35,16 @@ setup(
         url='http://kanjitester.gakusha.info/',
 
         setup_requires=['setuptools_hg'],
-        install_requires=['django >= 1.0', 'consoleLog', 'cjktools >= 1.3.0',
-                'mysql-python', 'south', 'django-checksum', 'nltk'],
+        install_requires=[
+            'django >= 1.0',
+            'consoleLog',
+            'cjktools >= 1.3.0',
+            'mysql-python',
+            'south',
+            'django-checksum',
+            'pyyaml',
+            'nltk',
+        ],
 
         packages=find_packages(),
         ext_modules=[Extension(
