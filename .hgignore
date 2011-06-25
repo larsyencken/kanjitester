@@ -27,3 +27,4 @@ tags
 *.egg
 *.synctex.gz
 *-env
+data
