@@ -16,7 +16,7 @@ admin.autodiscover()
 
 base_patterns = ('',
         url(r'^admin/(.*)', admin.site.root, name='admin_home'),
-        (r'^accounts/', include('kanji_test.registration.urls')),
+        (r'^accounts/', include('registration.urls')),
     )
 
 # Optional media view for debugging and testing.

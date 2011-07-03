@@ -107,7 +107,6 @@ INSTALLED_APPS = (
     'kanji_test.lexicon',
     'kanji_test.drill',
     'kanji_test.util',
-    'kanji_test.registration',
     'kanji_test.user_model',
     'kanji_test.plugins.visual_similarity',
     'kanji_test.plugins.reading_alt',
@@ -115,6 +114,7 @@ INSTALLED_APPS = (
     'kanji_test.user_profile',
     'kanji_test.analysis',
     'checksum',
+    'registration',
     'south',
 )
 
