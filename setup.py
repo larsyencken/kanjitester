@@ -39,6 +39,7 @@ setup(
             'django >= 1.0',
             'consoleLog',
             'cjktools >= 1.3.0',
+            'cjktools_data',
             'mysql-python',
             'south',
             'django-checksum',

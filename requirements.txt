@@ -1,8 +1,10 @@
 django >= 1.0
 consoleLog
 cjktools >= 1.3.0
+cjktools_data
 mysql-python
 south
 django-checksum
 pyyaml
 nltk == 2.0b8
+django-registration == 0.7
