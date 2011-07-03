@@ -81,6 +81,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'kanji_test.middleware.TagLanguageMiddleware',
 )
 
@@ -88,6 +89,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.auth',
     'django.core.context_processors.debug',
     'django.core.context_processors.i18n',
+    'django.contrib.messages.context_processors.messages',
     'kanji_test.context_processors.basic_vars',
 )
 
@@ -101,6 +103,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.admin',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     'kanji_test.tutor',

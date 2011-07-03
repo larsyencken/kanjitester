@@ -36,7 +36,7 @@ setup(
 
     setup_requires=['setuptools_hg'],
     install_requires=[
-        'django >= 1.0',
+        'django == 1.3',
         'consoleLog',
         'cjktools >= 1.3.0',
         'cjktools_data',
@@ -44,7 +44,8 @@ setup(
         'south',
         'django-checksum',
         'pyyaml',
-        'nltk',
+        'numpy',
+        'nltk == 2.0b8',
         'django-registration == 0.7',
     ],
 

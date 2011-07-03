@@ -15,7 +15,7 @@ import settings
 admin.autodiscover()
 
 base_patterns = ('',
-        url(r'^admin/(.*)', admin.site.root, name='admin_home'),
+        #url(r'^admin/(.*)', include('admin.site.urls')),
         (r'^accounts/', include('registration.urls')),
     )
 
