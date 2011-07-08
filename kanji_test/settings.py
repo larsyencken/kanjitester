@@ -96,7 +96,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 ROOT_URLCONF = 'kanji_test.urls'
 
 TEMPLATE_DIRS = (
-    path.join(PROJECT_ROOT, 'templates')
+    path.join(PROJECT_ROOT, 'templates'),
+)
+
+FIXTURE_DIRS = (
+    path.join(PROJECT_ROOT, 'fixtures'),
 )
 
 INSTALLED_APPS = (
