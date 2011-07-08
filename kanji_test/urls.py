@@ -7,7 +7,7 @@
 #  Copyright 2008-06-13 Lars Yencken. All rights reserved.
 # 
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import url, patterns, include
 from django.contrib import admin
 
 import settings
@@ -15,7 +15,7 @@ import settings
 admin.autodiscover()
 
 base_patterns = ('',
-        #url(r'^admin/(.*)', include('admin.site.urls')),
+        url(r'^admin/', include(admin.site.urls)),
         (r'^accounts/', include('registration.urls')),
     )
 
