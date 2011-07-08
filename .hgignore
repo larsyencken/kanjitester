@@ -28,3 +28,4 @@ tags
 *.synctex.gz
 *-env
 data
+*.un~
