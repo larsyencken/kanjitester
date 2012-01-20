@@ -81,7 +81,7 @@ def add_syllabus(syllabus_name, force=False):
 #----------------------------------------------------------------------------#
 
 def add_per_user_models(username):
-    _log.log('Initializing error models for user %s' % username)
+    #_log.log('Initializing error models for user %s' % username)
     user = auth_models.User.objects.get(username=username)
     usermodel_models.ErrorDist.init_from_priors(user)
 
