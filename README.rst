@@ -1,6 +1,8 @@
 Kanji Tester
 ============
 
+Status: no longer maintained
+
 OVERVIEW
 --------
 
@@ -36,7 +38,7 @@ require a single directory to contain them. Create a file::
 
 to contain your settings for this workspace, and add the path to a data folder
 in the DATA_DIR settings, e.g.::
-    
+
     DATA_DIR = '/home/lars/kanji_test/data'
 
 A number of files are required in the following structure::
@@ -63,7 +65,7 @@ BUILDING THE DATABASE
 
 Kanji Tester also needs MySQL as its database backend. Construct an empty
 database for it, and place the settings for accessing the database in::
-    
+
     kanji_test/local_settings.py
 
 In particular, you need::
@@ -75,7 +77,7 @@ Ensure the database is constructed with utf8 as the default encoding, and
 utf8_general_ci as the default collation. For example, in mysql, type::
 
     CREATE DATABASE kanjitest_dev
-    DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci; 
+    DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
 
 Kanji Tester then needs its initial tables generated. You achieve this by
 running::
